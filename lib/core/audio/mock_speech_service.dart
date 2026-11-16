@@ -1,0 +1,92 @@
+import 'dart:async';
+
+import 'speech_service.dart';
+
+/// Predictable mock implementation of [ISpeechService] for testing and simulation.
+class MockSpeechService implements ISpeechService {
+  final _stateController = StreamController<VoiceEngineState>.broadcast();
+  final _transcriptController = StreamController<String>.broadcast();
+
+  VoiceEngineState _state = VoiceEngineState.idle;
+  String simulatedTranscript = '';
+  bool shouldFailMic = false;
+  bool shouldFailInit = false;
+
+  @override
+  VoiceEngineState get state => _state;
+
+  @override
+  Stream<VoiceEngineState> get stateStream => _stateController.stream;
+
+  @override
+  Stream<String> get partialTranscriptStream => _transcriptController.stream;
+
+  void _setState(VoiceEngineState newState) {
+    _state = newState;
+    _stateController.add(newState);
+  }
+
+  @override
+  Future<void> initialize() async {
+    if (shouldFailInit) {
+      _setState(VoiceEngineState.error);
+      return;
+    }
+    _setState(VoiceEngineState.idle);
+  }
+
+  @override
+  Future<void> speakCustomerPrompt(
+    String text, {
+    VoidCallback? onFinished,
+  }) async {
+    _setState(VoiceEngineState.customerSpeaking);
+    // Simulate brief TTS duration
+    await Future.delayed(const Duration(milliseconds: 50));
+    _setState(VoiceEngineState.idle);
+    if (onFinished != null) onFinished();
+  }
+
+  @override
+  Future<void> stopSpeaking() async {
+    if (_state == VoiceEngineState.customerSpeaking) {
+      _setState(VoiceEngineState.idle);
+    }
+  }
+
+  @override
+  Future<void> startListening({
+    required ResultCallback onResult,
+    Function(String error)? onError,
+  }) async {
+    if (shouldFailMic) {
+      _setState(VoiceEngineState.error);
+      if (onError != null) {
+        onError('Microphone permission denied (Simulated).');
+      }
+      return;
+    }
+
+    _setState(VoiceEngineState.listeningToUser);
+    _transcriptController.add(simulatedTranscript);
+
+    // Simulate completion
+    await Future.delayed(const Duration(milliseconds: 20));
+    _setState(VoiceEngineState.processing);
+    await onResult(simulatedTranscript);
+    _setState(VoiceEngineState.idle);
+  }
+
+  @override
+  Future<void> stopListening() async {
+    if (_state == VoiceEngineState.listeningToUser) {
+      _setState(VoiceEngineState.idle);
+    }
+  }
+
+  @override
+  void dispose() {
+    _stateController.close();
+    _transcriptController.close();
+  }
+}

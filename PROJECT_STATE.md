@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Current Project Status
 
 **Repository**: `https://github.com/abuhmaid28/callforge-voice-academy`  
-**Current Branch**: `main` (Bootstrapping Phase)  
+**Current Branch**: `feat/m1-voice-prototype` (M1 Implementation & Verification Phase)  
 **Last Updated**: 2026-11-16
 
 ---
@@ -23,17 +23,18 @@
 ## 🎯 Active Milestone: M1 — Voice Prototype & Core Simulation Loop
 
 - [x] Phase 1: Environment verification & Git origin connection.
-- [ ] Phase 2: Bootstrap project documentation & GitHub milestones/issues.
-- [ ] Phase 3: Define production-quality voice architecture & Android prototype design.
-- [ ] Phase 4: Implement Flutter M1 voice prototype on `feat/m1-voice-prototype`.
-  - [ ] Android permissions (`RECORD_AUDIO`, audio modes).
-  - [ ] TTS engine wrapper (American customer voice persona).
-  - [ ] STT engine wrapper (Alex microphone speech recognition).
-  - [ ] Inbound greeting verification loop ("Hello, thank you for calling AT&T...").
-  - [ ] Evidence-based speech transcript & accuracy feedback.
-  - [ ] Offline local persistence for completed practice drills.
-  - [ ] Comprehensive unit & widget tests.
-  - [ ] Gradle build validation (`flutter build apk --debug`).
+- [x] Phase 2: Bootstrap project documentation & GitHub milestones/issues (Milestone #1, Issue #1).
+- [x] Phase 3: Define production-quality voice architecture & Android prototype design.
+- [x] Phase 4: Implement Flutter M1 voice prototype on `feat/m1-voice-prototype`.
+  - [x] Android permissions (`RECORD_AUDIO`, `INTERNET`, queries).
+  - [x] TTS engine wrapper (American customer voice persona via `flutter_tts`).
+  - [x] STT engine wrapper (Alex microphone speech recognition via `speech_to_text`).
+  - [x] Inbound greeting verification loop ("Hello, thank you for calling AT&T...").
+  - [x] Evidence-based speech transcript & accuracy feedback (Levenshtein distance, WER, semantic anchors, P/B phonetics).
+  - [x] Egyptian Arabic coaching feedback cards.
+  - [x] Offline local persistence for completed practice drills (`SharedPreferences`).
+  - [x] Comprehensive unit & widget tests (19/19 tests passing).
+  - [x] Gradle build validation (`build/app/outputs/flutter-apk/app-debug.apk` compiled successfully in 84.0s).
 
 ---
 
