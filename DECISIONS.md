@@ -145,3 +145,22 @@ This document records the key architectural, technical, and domain decisions mad
   - Eliminates dependency on personal hardware while maintaining strict verification rigor.
   - Development continues autonomously with reproducible CI and cloud emulator gates.
   - Zero spending on paid runners or external cloud device labs; runs entirely on standard GitHub-hosted infrastructure.
+
+---
+
+## ADR 011: C1-MEGA Architecture — M2 Disclosure Studio, M3 Floor Skills, and Multi-Turn Voice Arena
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: Issue #4 authorized an autonomous mega-campaign (C1-MEGA) delivering the combined capabilities of M2 (Disclosure Studio) and M3 (Core Floor Care), expanding from single-turn greeting validation to complete multi-turn conversational simulations, legal disclosure tracking, and floor skill drills.
+- **Decision**:
+  1. **6-Tier Typed Provenance Framework**: Integrated `ProvenanceTier` enum into all domain entities, explicitly categorizing content as `userConfirmed`, `officialVerified`, `workReported`, `derivedTraining`, `fictionalSimulation`, or `unknown`.
+  2. **Token-by-Token Karaoke Tracking**: Implemented `DisclosureEvaluator` with Levenshtein-based token alignment, critical term validation (prices, timeframes, penalties), WER, and P/B phonemic alerts.
+  3. **30-Scenario Voice Arena**: Authored 30 comprehensive fictional call scenarios spanning billing proration, fiber troubleshooting, de-escalation, sales discovery, and floor care, with multi-turn branching dialogue trees and Egyptian Arabic coaching cards.
+  4. **Multi-Turn Conversation Evaluator**: Created `MultiTurnEvaluator` combining semantic anchor coverage, AERD (Acknowledge, Empathy, Reassure, Defuse) scoring, and dynamic branch resolution.
+  5. **Floor Skills Drills**: Built dedicated interactive modules for P/B bilabial minimal pair drills and fast numbers & active listening dictation.
+  6. **Feature-First Navigation**: Implemented `MainScaffold` with 5 primary destinations (Today/Home, Voice Arena, Disclosure Studio, Floor Skills, Progress) powered by a lightweight `ServiceLocator`.
+  7. **Deterministic Daily Coach**: Built rule-based daily workout recommendation identifying the user's weakest skill tag without fake AI scoring.
+- **Consequences**:
+  - Delivers complete end-to-end training experience covering greeting, disclosures, de-escalation, and floor drills in one cohesive application.
+  - Maintains 100% backward compatibility with M1 tests and legacy entrypoints.
+  - Fully verified with 67 automated tests and clean static analysis.
