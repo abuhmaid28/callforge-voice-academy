@@ -56,7 +56,7 @@ void main() {
 
       // Evaluation result rendered with honest text-matching labels
       expect(
-        find.text('VERBATIM TARGET MET (100% Exact Script)'),
+        find.text('VERBATIM TRANSCRIPT MATCH (100% Text Match)'),
         findsOneWidget,
       );
       expect(find.text('100%'), findsOneWidget);

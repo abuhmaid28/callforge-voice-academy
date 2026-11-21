@@ -62,11 +62,12 @@ void main() {
         await controller.startListening();
         expect(controller.hasEvaluation, isTrue);
 
-        controller.retry();
+        await controller.retry();
 
         expect(controller.hasEvaluation, isFalse);
         expect(controller.liveTranscript, isEmpty);
         expect(controller.errorMessage, isNull);
+        expect(controller.engineState, equals(VoiceEngineState.idle));
       },
     );
 

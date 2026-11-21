@@ -39,15 +39,20 @@
 - [x] Task 003 Final M1 Reliability & Review Hardening:
   - [x] Replaced substring anchor matching with token-boundary evaluation to eliminate false positives (`matter`, `Alexander`, `firstname`, `lastname`).
   - [x] Added recognition of AT&T speech-to-text rendering variations (`att`, `at&t`, `at and t`, `at t`, `a t and t`).
-  - [x] Separated `VERBATIM TARGET MET (100% Exact Script)` from `DRILL TARGET MET (70%+ Practice Threshold)` in evaluation and UI.
-  - [x] Removed misleading WPM performance grading and neutral-styled session pace indicators.
-  - [x] Added session generation IDs (`_sessionGeneration`) to protect STT against duplicate callbacks, late events, and stale speech completions.
-  - [x] Ensured asynchronous audio callback sequencing (`await _activeOnResult`) and safe resource cleanup on disposal.
-  - [x] Decoupled TTS completion from error dispatching, preventing failed TTS playback from advancing the drill state.
+  - [x] Audio session generation IDs (`_sessionGeneration`) preventing duplicate callbacks and stale completions.
   - [x] Reconciled M0–M6 technical roadmap with product requirements and all 10 curriculum modules in `docs/ROADMAP.md`.
-  - [x] Verified GitHub PR #2 mergeability status via GitHub CLI (`mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`).
-  - [x] Expanded test suite to 27 unit and widget tests (100% passing).
-  - [x] Rebuilt debug APK: `build/app/outputs/flutter-apk/app-debug.apk` (171,416,830 bytes, built 2026-11-21 06:39:01).
+- [x] Task 004 Physical Android Voice Acceptance & Review Hardening:
+  - [x] Unified canonical ST-01 through ST-11 checklist in `docs/QA_ACCEPTANCE.md`.
+  - [x] Renamed verbatim banner to `VERBATIM TRANSCRIPT MATCH (100% Text Match)` to avoid misrepresenting transcript match as acoustic pronunciation.
+  - [x] Removed uncalibrated WPM badge from coaching UI until calibrated audio timing is integrated.
+  - [x] Fixed audio lifecycle races: `retry()` awaits `stopSpeaking()` and cancels listening; `_handleSpeechError` ignores stale errors outside listening/processing; `_deliverFinalTranscript` preserves `customerSpeaking` state.
+  - [x] Rebuilt and fingerprinted debug APK at verified HEAD:
+    - Path: `build/app/outputs/flutter-apk/app-debug.apk`
+    - Size: 171,416,911 bytes
+    - SHA-256: `C516B51EDAF0E88BC1D3B2C620872332DE8D1CAC63F3994D50330CBA98193D01`
+    - Timestamp: 2026-11-21 06:52:04
+  - [x] Automated test suite: 27 / 27 unit & widget tests passing (100%).
+  - [x] ADB device status: 0 physical devices attached via ADB. Smoke-test matrix ST-01 through ST-11 is `PENDING HARDWARE`.
 
 ---
 
@@ -72,7 +77,7 @@
 
 1. **Physical Device Pending**:
    - `adb devices -l` reports 0 connected devices (`List of devices attached` empty).
-   - Automated checks pass: 27/27 tests passing, `flutter analyze` 0 issues, debug APK compiled.
+   - Automated checks pass: 27/27 tests passing, `flutter analyze` 0 issues, debug APK compiled and fingerprinted.
    - Physical smoke test matrix ST-01 through ST-11 in `docs/QA_ACCEPTANCE.md` remains `PENDING HARDWARE` until an authorized physical Android device is attached via USB debugging.
 2. **Merge Recommendation**:
    - **DO NOT MERGE PR #2** until physical Android smoke-test checklist is validated on attached hardware.

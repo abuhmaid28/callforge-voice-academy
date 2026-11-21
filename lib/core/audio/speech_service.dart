@@ -101,6 +101,11 @@ class NativeSpeechService implements ISpeechService {
 
   void _handleSpeechError(SpeechRecognitionError error) {
     _watchdogTimer?.cancel();
+    // Guard: Ignore late or stale error events if not listening or processing
+    if (_state != VoiceEngineState.listeningToUser &&
+        _state != VoiceEngineState.processing) {
+      return;
+    }
     final errorMsg = _translateSpeechError(error.errorMsg);
     _setState(VoiceEngineState.error);
     if (_activeOnError != null) {
@@ -168,7 +173,9 @@ class NativeSpeechService implements ISpeechService {
       if (_activeOnResult != null) {
         await _activeOnResult!(transcript);
       }
-      if (sessionGen == _sessionGeneration) {
+      // Only return to idle if still in processing state for this session generation
+      if (sessionGen == _sessionGeneration &&
+          _state == VoiceEngineState.processing) {
         _setState(VoiceEngineState.idle);
       }
     }
@@ -312,7 +319,10 @@ class NativeSpeechService implements ISpeechService {
     try {
       await _stt.cancel();
     } catch (_) {}
-    _setState(VoiceEngineState.idle);
+    if (_state == VoiceEngineState.listeningToUser ||
+        _state == VoiceEngineState.processing) {
+      _setState(VoiceEngineState.idle);
+    }
   }
 
   @override

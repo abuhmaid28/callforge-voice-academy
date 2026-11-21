@@ -25,7 +25,7 @@ class CoachingCard extends StatelessWidget {
         : AppColors.error;
     final String statusTitle;
     if (result.isVerbatimMatch) {
-      statusTitle = 'VERBATIM TARGET MET (100% Exact Script)';
+      statusTitle = 'VERBATIM TRANSCRIPT MATCH (100% Text Match)';
     } else if (result.scriptTargetMet) {
       statusTitle = 'DRILL TARGET MET (70%+ Practice Threshold)';
     } else {
@@ -83,12 +83,6 @@ class CoachingCard extends StatelessWidget {
                   color: result.wordErrorRate <= 0.2
                       ? AppColors.success
                       : AppColors.warning,
-                ),
-                MetricBadge(
-                  label: 'Session Pace (unvalidated)',
-                  value: '${result.estimatedWpm} wpm',
-                  icon: Icons.timer_outlined,
-                  color: AppColors.textSecondary,
                 ),
               ],
             ),

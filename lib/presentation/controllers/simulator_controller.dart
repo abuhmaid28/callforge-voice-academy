@@ -147,8 +147,11 @@ class SimulatorController extends ChangeNotifier {
     }
   }
 
-  void retry() {
-    speechService.stopSpeaking();
+  Future<void> retry() async {
+    await speechService.stopSpeaking();
+    if (speechService.state == VoiceEngineState.listeningToUser) {
+      await speechService.cancelListening();
+    }
     _liveTranscript = '';
     _evaluationResult = null;
     _errorMessage = null;
