@@ -1,81 +1,85 @@
 # CALLFORGE — Voice-First Flutter Academy for AT&T CS & Sales
 
-CALLFORGE is an autonomous, voice-first Flutter Android training academy specifically engineered for an AT&T Customer Service & Sales Representative (working through Sutherland, using required agent alias **Alex**).
+CALLFORGE is a personal, voice-first Flutter Android training academy specifically designed for an AT&T Customer Service & Sales Representative (working through Sutherland in Egypt, using the mandatory professional agent alias **Alex**).
 
-The mission of CALLFORGE is to transform the representative into a confident, highly skilled, top-tier performer through high-fidelity, evidence-based spoken call simulations, pronunciation mastery, real-time call control coaching, and systematic sales conversion drills.
-
----
-
-## 🎯 Core Product Mission & Philosophy
-
-- **Target User**: AT&T Customer Service & Sales Representative (Sutherland partner operations).
-- **Mandatory Agent Alias**: `Alex`
-- **Standard Inbound Greeting**:  
-  > *"Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?"*
-- **Pedagogical Dual-Language Approach**:
-  - **Spoken Practice & Customer Persona**: Native American English (en-US) simulation with authentic pacing, colloquialisms, rate-of-speech variations, and caller emotion.
-  - **Coaching & Strategic Explanations**: Natural Egyptian Arabic (عربي مصري) for actionable psychological insights, dialect coaching, and empathetic motivation.
-- **Evidence-Based Feedback**: No fabricated pronunciation algorithms or synthetic percentages without phonetic grounding. Rigorous comparison against phonetic anchors (such as Egyptian Arabic P vs. B phonemic contrast drills), disclosure precision, acoustic timing, and AERD compliance.
-- **Privacy & Compliance**: Fictionalized customer profiles and simulated data only. Never stores real customer PII or confidential proprietary client data. All mock plans and promotions are labeled as simulation training contexts, never official carrier binding policies.
+The purpose of CALLFORGE is to build conversational fluency, call steering, consultative sales confidence, and standard script discipline through structured spoken practice drills, dual-language coaching, and local progress tracking.
 
 ---
 
-## 📚 10 Core Training Modules
+## 🧭 Source Provenance & Governance Framework
 
-1. **Real Voice Call Simulator**: Interactive, multi-turn inbound call flows with dynamic customer personas (frustrated, inquiring, upgrading, canceling).
-2. **Disclosure Reading & Pronunciation Precision**: Strict timing, verbatim accuracy, and phoneme contrast training (especially P vs. B distinctions for Arabic speakers).
-3. **American English Listening & Speaking**: Dialect comprehension, active listening, handling fast speech, colloquial contractions, and background noise.
-4. **AERD & Call Control**: Systematic execution of **A**cknowledge, **E**mpathy, **R**eassure, and **D**efuse while maintaining call steering and avoiding dead air.
-5. **AT&T Product Knowledge**: Fictionalized representations of fiber tiers, unlimited wireless plans, equipment installment plans, trade-ins, and add-on services (*all marked as training simulations*).
-6. **Sales Discovery & Conversion**: Open-ended discovery questions, value bridging, identifying unmet needs, and confident closing without high-pressure tactics.
-7. **Billing & Technical Troubleshooting**: De-escalating bill confusion, explaining proration, one-time fees, equipment cycles, and network restarts.
-8. **Escalation & Angry Customers**: Managing de-escalation pyramids, supervisor call transfer protocol, and maintaining composure under high stress.
-9. **KPI & Quality Tracking**: Scoring Average Handling Time (AHT) awareness, First Call Resolution (FCR), QA scorecard compliance, and empathy indices.
-10. **Adaptive 90-Day Learning System**: Structured day-by-day progression tracking from nesting/onboarding to veteran master representative status.
+To maintain complete truth in engineering and avoid presenting simulated exercises as corporate policy, all requirements, scripts, and domain logic in CALLFORGE adhere to explicit provenance tiers:
+
+| Tier | Category | Description & Scope in CALLFORGE |
+| :--- | :--- | :--- |
+| **P-1** | `[User-Confirmed Workflow]` | Verified representative workflow: Agent alias **Alex**, inbound opening greeting, Sutherland offshore call center context, Android-first priority, Windows 8 GB RAM local development constraint. |
+| **P-2** | `[Official Public Verified Information]` | Public technical facts: Flutter SDK capabilities, Android SDK 34–37 APIs, Google `SpeechRecognizer` and `TextToSpeech` platform channels, Gradle heap configurations. |
+| **P-3** | `[Work-Reported Information]` | Operational observations reported from representative floor experience: Supervisor callbacks are **not** available in the user's specific process; other authorized escalation paths remain `UNKNOWN [Training Context Only]`. |
+| **P-4** | `[Derived Training Material]` | Educational methodologies developed for skill building: AERD framework exercises, Egyptian Arabic trainer coaching prompts, P/B phonemic contrast educational drills. |
+| **P-5** | `[Fictional / Simulation Only]` | All customer profiles (*e.g., David Miller*), account numbers (*e.g., 902-555-0192*), promotional offers, and dollar balances are strictly fictional simulations. |
+| **P-6** | `[UNKNOWN]` | Any employer policy, mandatory carrier script, pricing matrix, or proprietary tool not officially verified is marked `UNKNOWN` rather than invented. |
 
 ---
 
-## 🛠️ Technical Specifications & Constraints
+## 🎯 Core Operating Principles & Voice Truth
+
+- **Turn-Based Spoken Simulation (Push-to-Talk)**: Simulated calls operate in discrete audio turns. Inbound calls initiate with the representative's mandatory greeting, followed by customer audio responses. The interaction is half-duplex (push-to-talk / tap-to-speak), not full-duplex.
+- **Conditional Voice Engine (Online & Offline Realities)**:
+  - Android Text-to-Speech (`flutter_tts`) runs locally via native Android TTS voices (`en-US`).
+  - Android Speech-to-Text (`speech_to_text` wrapping `android.speech.SpeechRecognizer`) operates offline **only** if the user's physical Android device has the English (US) offline speech package pre-installed in Google Speech Services. Otherwise, network connectivity is required by the Android operating system.
+- **Evidence-Based Evaluation (No Fabricated Metrics)**:
+  - Transcribed speech is compared against target scripts using **Recognized-Text Similarity** (normalized Levenshtein distance) and **Token Error Rate (WER)**.
+  - CALLFORGE measures text match against reference strings. It **does not** claim to measure acoustic native accent percentages, acoustic formant accuracy, or official employer QA compliance.
+  - P/B contrast drills flag recognized text substitutions as awareness prompts; they do not claim laboratory acoustic phoneme detection.
+- **Dual-Language Architecture**:
+  - **Spoken Practice & Customer Audio**: English (US) (`en-US`).
+  - **Coaching & Strategic Explanations**: Natural Egyptian Arabic (عربي مصري معاصر) for deep pedagogical comprehension.
+
+---
+
+## 📚 10 Core Pedagogical Training Modules
+
+The CALLFORGE training curriculum covers 10 targeted operational competencies:
+
+1. **Real Voice Call Simulator**: Interactive spoken turn-by-turn scenarios with realistic caller personas.
+2. **Disclosure Reading & Pronunciation Precision**: Verbatim accuracy drills for legal disclosures and P/B contrast awareness.
+3. **American English Listening & Speaking**: Fast speech comprehension, dialect variations, and ear-training.
+4. **AERD & Call Control**: Systematic execution of Acknowledge, Empathy, Reassure, and Defuse without dead air.
+5. **AT&T Product Knowledge (Training Context)**: Fictionalized practice models for fiber, unlimited wireless tiers, and device installments.
+6. **Sales Discovery & Conversion**: Consultative open-ended questions, value bridging, and objection handling.
+7. **Billing & Technical Troubleshooting**: Deconstructing bill confusion, proration explanations, and device troubleshooting.
+8. **Escalation & Angry Customers**: Composure under pressure, de-escalation drills, and authorized transfer etiquette.
+9. **KPI & Quality Tracking**: Average handling pace awareness, resolution tracking, and practice scorecards.
+10. **Adaptive 90-Day Learning System**: Structured day-by-day practice progression from onboarding to elite mastery.
+
+---
+
+## 🗺️ Engineering Release Strategy (M0–M6)
+
+Technical deliverables are organized into 7 structured milestones:
+
+- **M0: Foundation & Environment Verification**: Toolchains, low-RAM Gradle tuning, governance, and source provenance.
+- **M1: Voice Prototype & Inbound Greeting Simulator**: Core turn-by-turn greeting loop (Alex speaks first, customer responds), TTS/STT lifecycle, text similarity scoring, Egyptian Arabic coaching, local attempt persistence, and Android physical smoke checklist.
+- **M2: Disclosure Reading & Pronunciation Precision**: Verbatim karaoke tracking and P/B phonemic contrast drill suite.
+- **M3: Interactive Multi-Turn Simulator & Branching Flows**: Dynamic multi-turn customer dialogues with caller sentiment shifts.
+- **M4: Listening, Fluency & Dialect Comprehension**: Fast-paced American audio listening quizzes and active listening extraction.
+- **M5: AERD & Sales Discovery Mastery**: Structured call control, de-escalation practice, and consultative sales roleplay.
+- **M6: Comprehensive Academy & 90-Day Adaptive System**: Advanced billing simulations, comprehensive practice dashboards, and full 90-day trajectory.
+
+---
+
+## 🛠️ Technical Specifications & Local Constraints
 
 - **Platform**: Flutter (Android-first).
-- **Target Device**: Physical Android phone via USB debugging / direct APK deployment. (Windows PC development environment with 8 GB RAM; avoiding heavy emulators and Docker).
-- **Voice Stack**:
-  - Local-first Android Speech-to-Text (`speech_to_text`) utilizing Google Voice Recognition engines.
-  - Local Android Text-to-Speech (`flutter_tts`) configured with `en-US` locale voices.
-  - Zero mandatory paid API subscriptions; completely offline-functional where practical.
-- **Local Persistence**: Embedded SQLite / Hive / SharedPreferences for offline progress tracking, scenario completion records, and performance analytics.
-
----
-
-## 📂 Repository Architecture
-
-```text
-callforge-voice-academy/
-├── AGENTS.md                  # Autonomous agent roles and development contracts
-├── PROJECT_STATE.md           # Real-time state of features, tests, and milestones
-├── DECISIONS.md               # Architecture Decision Records (ADRs)
-├── README.md                  # Project overview and quickstart
-├── docs/
-│   ├── PRODUCT_REQUIREMENTS.md # Exhaustive PRD for all 10 modules
-│   ├── ARCHITECTURE.md        # Technical architecture, audio pipeline & state
-│   ├── VOICE_STRATEGY.md       # STT/TTS pipeline, phonetic contrasts & NLP logic
-│   ├── ROADMAP.md             # Milestones M1 through M10
-│   └── QA_ACCEPTANCE.md       # Quality gates, test criteria, and verification
-├── lib/                       # Flutter production source code
-└── test/                      # Unit, widget, and integration tests
-```
+- **Minimum Android SDK**: API 24 (Android 7.0).
+- **Target Android SDK**: API 34–37.
+- **Host Development Environment**: Windows 10/11 x64, 8 GB RAM (optimized Gradle heap `-Xmx2048m`, zero emulators/Docker).
+- **Dependencies**: Local-first (`speech_to_text`, `flutter_tts`, `shared_preferences`, `permission_handler`). Zero mandatory paid cloud APIs or recurring subscriptions.
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Flutter SDK 3.47+ (Dart 3.13+)
-- Android SDK 36+ with command-line tools & platform tools
-- Java OpenJDK 25 (bundled with Android Studio)
-- Windows 10/11 x64 (8 GB RAM environment optimized)
-
-### Setup & Run
 ```bash
 # Clone repository
 git clone https://github.com/abuhmaid28/callforge-voice-academy.git
@@ -84,7 +88,7 @@ cd callforge-voice-academy
 # Install dependencies
 flutter pub get
 
-# Run tests
+# Run test suite
 flutter test
 
 # Build debug APK for Android
@@ -93,6 +97,6 @@ flutter build apk --debug
 
 ---
 
-## 🛡️ License & Disclaimers
+## 🛡️ Disclaimers & Compliance
 
-CALLFORGE is an independent training tool built for educational and personal skill development purposes. It is not an official product of AT&T Inc. or Sutherland Global Services. All account profiles, customer dialogues, and scenarios are strictly fictional.
+CALLFORGE is an independent educational training tool built for personal skill enhancement. It is not affiliated with, sponsored by, or an official product of AT&T Inc. or Sutherland Global Services. All customer accounts, telephone numbers, and scenarios are strictly fictional.

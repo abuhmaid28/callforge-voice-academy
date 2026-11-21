@@ -1,120 +1,109 @@
 # PRODUCT_REQUIREMENTS.md — Product Requirements Document (PRD)
 
-## 1. Executive Summary
+## 1. Executive Summary & Source Provenance
 
 - **Product Name**: CALLFORGE (CallForge Voice Academy)
-- **Target Audience**: Offshore Customer Service & Sales Representatives handling AT&T inbound voice queues (specifically at Sutherland Global Services, Egypt).
-- **Core User Persona**: **Alex** (the designated agent professional alias).
-- **Primary Objective**: Build supreme confidence, conversational mastery, call control, objection handling, and sales conversion through realistic spoken voice simulations.
-- **Platform**: Flutter mobile application (Android-first).
+- **Target Audience**: Offshore Customer Service & Sales Representatives handling AT&T inbound queues (specifically at Sutherland Global Services, Egypt).
+- **Core User Persona**: **Alex** `[User-Confirmed Workflow]`.
+- **Primary Objective**: Build conversational confidence, call steering, consultative sales discovery, and standard script adherence through structured spoken voice practice.
+- **Platform**: Flutter mobile application (Android-first) `[User-Confirmed Workflow]`.
+
+### Source Provenance Legend:
+- `[User-Confirmed Workflow]`: Verified directly by user.
+- `[Official Public Verified Information]`: Verifiable via official documentation.
+- `[Work-Reported Information]`: Reported from operational floor practice without proprietary exposure.
+- `[Derived Training Material]`: Instructional design created for skill building.
+- `[Fictional / Simulation Only]`: Simulated scenario context.
+- `[UNKNOWN]`: Missing policy or technical detail.
 
 ---
 
-## 2. Pedagogical Framework & Language Strategy
+## 2. Voice Simulation Reality & Technical Boundaries
 
-CALLFORGE employs a targeted dual-language cognitive architecture:
-1. **Simulation Domain (Spoken & Auditory)**:  
-   - **Language**: English (US) — `en-US`.
-   - **Acoustic Characteristics**: Authentic American regional accents, natural conversational velocity (140–180 WPM), casual contractions ("gonna", "wanna", "I'd"), hesitation pauses, and varied emotional states (frustrated, confused, hurried, analytical).
-2. **Coaching & Strategic Domain (Visual & Instructional)**:  
-   - **Language**: Natural Egyptian Arabic (عربي مصري معاصر وسلس).
-   - **Tone**: Direct, encouraging, tactical, and psychologically empathetic (like a veteran team lead sitting right next to Alex on the production floor).
-   - **Examples**:
-     - *"خد نفس، العميل متعصب من الفاتورة مش منك شخصياً. طبق قاعدة AERD فوراً."*
-     - *"ركز في نطق حرف P في كلمة 'Plan' و 'Payment'. طلع هوا خفيف من شفايفك عشان العميل ميفهمهاش 'B'."*
+1. **Simulation Model**:
+   - **Mode**: Push-to-Talk / Tap-to-Speak turn-based roleplaying `[Technical Fact]`. (The system is **not** full-duplex continuous open-mic).
+   - **Turn Sequence**: For inbound calls, the representative **Alex** initiates the turn with the mandatory opening greeting upon call arrival (Turn 1). Once recognized and evaluated, the simulated customer responds via Text-to-Speech (Turn 2) `[Derived Training Material]`.
+2. **Audio Stack & Availability**:
+   - **TTS**: Native Android `TextToSpeech` (`en-US`) `[Official Public Verified Information]`.
+   - **STT**: Native Android `SpeechRecognizer` (`en_US`) `[Official Public Verified Information]`.
+   - **Offline Realities**: Offline STT is **conditional** on the physical Android device having the Google Speech Services English (US) offline model pre-installed. When offline and without the local model, the Android recognizer will report an error; the app catches this and displays clear user instructions `[Official Public Verified Information]`.
+3. **Usage & Compliance Scope**:
+   - CALLFORGE is a personal educational training aid. It **does not** guarantee specific floor performance metrics, employer certification, or employment outcomes.
 
 ---
 
-## 3. Mandatory Protocol & Guardrails
+## 3. Floor Context & Guardrails (Training Handoff Integration)
 
-- **Mandatory Inbound Greeting**:  
+- **Mandatory Inbound Greeting** `[User-Confirmed Workflow]`:
   > *"Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?"*
-- **AERD Framework**:
-  - **A**cknowledge: Explicitly confirm hearing the customer's specific issue.
-  - **E**mpathy: Genuine statement validating their emotional frustration.
-  - **R**eassure: Clear declaration of personal ownership to solve the problem.
-  - **D**efuse: Transition smoothly into actionable discovery without escalating tension.
-- **Fictional Data & Compliance Guardrails**:
-  - All names (e.g., "John Miller", "Sarah Jenkins"), account numbers (e.g., `902-555-0192`), billing balances, and device models are fictional.
-  - Internal proprietary AT&T systems (e.g., internal billing engines or non-public tools) will never be emulated or stored.
-  - Any missing carrier procedure is designated as `UNKNOWN [Training Context Only]`.
+- **AERD Framework** `[Derived Training Material]`:
+  - **A**cknowledge: Explicitly confirm hearing the caller's concern.
+  - **E**mpathy: Validate customer frustration without accepting legal liability.
+  - **R**eassure: State personal ownership to assist.
+  - **D**efuse: Transition smoothly into discovery questions.
+- **Escalation Realities & Boundaries**:
+  - In the user's specific operational process, **supervisor callbacks are not available** `[Work-Reported Information]`.
+  - Authorized supervisor transfer mechanisms (e.g. warm transfers, internal floor support) remain `UNKNOWN [Training Context Only]`.
+  - CALLFORGE **does not** mandate arbitrary de-escalation quotas (such as forcing exactly two de-escalation attempts before a transfer) because employer policies vary and are not verified.
+- **Verification & Account Security Protocols**:
+  - CPNI (Customer Proprietary Network Information) verification requirements (e.g., verifying passcodes, authorized callers, one-time pins) are treated as training drills `[Derived Training Material]`.
+- **Work-Reported Offers & Limitations**:
+  - Promotional items like 55+ plan eligibility are restricted by geographic market and account conditions `[Work-Reported Information]`. Specific tier pricing remains `UNKNOWN [Training Context Only]`.
+- **Fictional Data & Compliance Guardrails** `[Fictional / Simulation Only]`:
+  - All customer identities (*e.g., David Miller*), account numbers (*e.g., 902-555-0192*), bill balances, activation fees, and device models are strictly fictional simulations.
+  - Fictional billing examples (*e.g., promotional credit timing*) are training drills, not binding carrier policy.
+  - Proprietary AT&T tools, intranet systems, or confidential employer documentation are never stored or simulated.
 
 ---
 
-## 4. Detailed Specification of the 10 Training Modules
+## 4. Specification of the 10 Pedagogical Training Modules
 
 ### Module 1: Real Voice Call Simulator
-- **Description**: Full-duplex interactive voice role-playing engine. The simulated customer speaks via Android TTS; the agent listens, presses the mic, and speaks their response.
-- **Key Features**:
-  - Turn-based conversational state machine.
-  - Realistic caller interruptions and pauses.
-  - Multi-path branching: depending on Alex's tone and keywords, the customer's mood score shifts.
+- **Focus**: Turn-based interactive voice roleplay.
+- **Simulation Flow**: Alex speaks opening greeting -> Customer responds via TTS -> Alex executes AERD discovery -> Turn progression.
+- **Evaluation**: Recognized-text similarity and token-aware semantic anchor verification.
 
 ### Module 2: Disclosure Reading & Pronunciation Precision
-- **Description**: Drill verbatim accuracy on mandatory legal disclosures (e.g., auto-pay terms, 36-month installment agreements, return window policies, and credit authorization).
-- **Key Features**:
-  - Word-by-word visual karaoke tracker.
-  - Real-time detection of omitted words, inserted words, or phonetic ambiguities.
-  - Dedicated **P vs. B Contrast Drill**: Focus on typical Arabic language transfer issues (e.g., "Price/Bice", "Payment/Bayment", "Paperless/Baperless", "Pro/Bro").
+- **Focus**: Verbatim delivery of mandatory legal disclosures and phonemic awareness drills.
+- **Components**:
+  - Verbatim text comparison against target disclosure scripts (e.g. CPNI, autopay terms, 36-month installment agreements).
+  - P/B Phonemic Contrast Learning Drills (educational awareness for Arabic speakers regarding `/p/` vs `/b/` confusion pairs like *plan/blan*, *payment/bayment*). Note: Evaluated via text recognition heuristics, not laboratory acoustic analysis.
 
 ### Module 3: American English Listening & Speaking
-- **Description**: Ear-training for fast-paced American speech, regional dialects (Southern, Midwestern, New York), slang, and background noise (car speakers, crying babies, barking dogs).
-- **Key Features**:
-  - Fast-speech comprehension quizzes.
-  - Active listening drills: Extract customer names, phone numbers, and root problems from 20-second rambling caller monologues.
+- **Focus**: Comprehending American conversational velocity, idioms, and caller emotional states.
+- **Components**: Listening comprehension drills, active listening extraction (capturing customer name, phone number, issue from customer audio prompt).
 
 ### Module 4: AERD and Call Control
-- **Description**: Master the art of steering the call without interrupting the customer or letting them derail handling time.
-- **Key Features**:
-  - Dead air prevention: Drills for filling 5–10 second system pauses professionally (*"While my system loads your billing breakdown, Mr. Jenkins..."*).
-  - Polite interruptions: Reclaiming the floor from chronically talking callers.
-  - Real-time AERD scorecard for every response.
+- **Focus**: De-escalating tense calls and preventing dead air.
+- **Components**: Acknowledge/Empathy/Reassure/Defuse verification, professional filler phrases during system lookup pauses.
 
 ### Module 5: AT&T Product Knowledge (Training Context)
-- **Description**: Understanding fiber tiers (300M, 500M, 1 GIG), unlimited wireless tiers, trade-in value ladders, and international roaming features (fictionalized training models).
-- **Key Features**:
-  - Feature-to-Benefit translation: Converting technical specs into tangible customer life improvements.
-  - Plan comparison drills: Answering "Why is my bill higher than my neighbor's?"
+- **Focus**: Understanding wireless plans, fiber broadband tiers, and trade-in concepts (*all modeled as fictional training constructs* `[Fictional / Simulation Only]`).
+- **Components**: Feature-to-benefit translation exercises.
 
 ### Module 6: Sales Discovery & Conversion
-- **Description**: Moving from pure customer care to ethical, consultative sales generation.
-- **Key Features**:
-  - Discovery questions: *"How many devices stream simultaneously in your house during the evening?"*
-  - Overcoming objections: Handling "I don't need it", "It's too expensive", or "I need to check with my spouse".
-  - Assumptive and alternative closes.
+- **Focus**: Transitioning customer service calls into consultative sales opportunities.
+- **Components**: Asking open-ended discovery questions, value bridging, and ethical closing.
 
 ### Module 7: Billing & Technical Troubleshooting
-- **Description**: Deconstructing complex first-bill surprises, activation fees, proration, promotional credits lag (takes 2–3 billing cycles), and basic device troubleshooting (eSIM setup, network reset).
-- **Key Features**:
-  - Line-by-line bill explanation simulator.
-  - Technical diagnostic call flows (no service, slow data, Wi-Fi calling issues).
+- **Focus**: Deconstructing customer billing questions (e.g., first bill proration, activation fees) and basic device troubleshooting (e.g., restart, network reset).
+- **Status**: All billing values are fictional simulations `[Fictional / Simulation Only]`.
 
 ### Module 8: Escalation & Angry Customers
-- **Description**: High-stress de-escalation practice.
-- **Key Features**:
-  - Dealing with abusive, screaming, or demanding callers.
-  - De-escalation matrix: Refusal of immediate supervisor transfer until minimum 2 de-escalation attempts are made in accordance with standard call center protocols.
-  - Clear supervisor hand-off briefing generation.
+- **Focus**: Maintaining emotional composure under high stress.
+- **Components**: De-escalation language, handling abusive language professionally, and authorized transfer etiquette (`[UNKNOWN]` proprietary policies omitted).
 
 ### Module 9: KPI and Quality Tracking
-- **Description**: Comprehensive analytics dashboard reflecting representative performance against standard BPO metrics.
-- **Key Metrics Tracked**:
-  - **AHT (Average Handling Time)**: Measuring conciseness and pace.
-  - **FCR (First Call Resolution)**: Did Alex solve the issue without requiring repeat calls?
-  - **QA Scorecard**: Adherence to greeting, verification, AERD, disclosure, and closing.
-  - **Empathy Index**: Keyword and sentiment verification.
+- **Focus**: Developing personal awareness of standard call center metrics (Average Handling Time awareness, First Call Resolution mindset, practice script compliance).
+- **Status**: Practice tracking only; not official employer QA certification.
 
 ### Module 10: Adaptive 90-Day Learning System
-- **Description**: Personalized curriculum guiding Alex from day 1 on the floor to elite representative rank.
-- **Phases**:
-  - **Days 1–30 (Nesting & Foundation)**: Flawless greeting, account verification, P/B pronunciation, basic billing explanations.
-  - **Days 31–60 (Proficiency & Speed)**: Call control, AERD under pressure, AHT reduction, technical resets.
-  - **Days 61–90 (Elite Sales & Escalation)**: Consultative selling, high-value trade-ins, de-escalating supervisor demands, advanced retention.
+- **Focus**: Structured curriculum guiding Alex through 90 days of progressive practice from onboarding to veteran confidence.
 
 ---
 
-## 5. Technical & Non-Functional Requirements
+## 5. Non-Functional & Operational Requirements
 
-- **Local-First & Offline**: Core drills must run without internet access using Android's offline STT/TTS engine.
-- **Low Footprint**: App memory usage strictly controlled to operate smoothly on resource-constrained devices.
-- **Zero Cost**: No third-party paid subscriptions (OpenAI, ElevenLabs, etc.) required for normal operation.
+- **Local-First**: Core drills run locally on device with zero required cloud subscriptions or token costs.
+- **Hardware Optimization**: Runs smoothly on low-memory physical Android devices without requiring heavy emulation.
+- **Truth in Evaluation**: All scoring reflects recognized-text similarity, never fabricated acoustic metrics or official QA compliance certifications.
