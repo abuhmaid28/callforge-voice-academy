@@ -138,7 +138,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                '${record.accuracyPercentage}% Accuracy',
+                                '${record.accuracyPercentage}% Text Match',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   color: color,

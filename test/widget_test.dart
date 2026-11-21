@@ -11,7 +11,7 @@ import 'package:callforge/presentation/screens/simulator_screen.dart';
 
 void main() {
   testWidgets(
-    'SimulatorScreen renders core elements and supports voice drill loop',
+    'SimulatorScreen renders inbound opening first and executes voice drill loop',
     (WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -31,24 +31,43 @@ void main() {
         ),
       );
 
-      // Initial render verification
+      // Initial render verification: Inbound Turn 1 Opening
       expect(find.text('CALLFORGE SIMULATOR'), findsOneWidget);
       expect(find.text('Agent: Alex (AT&T)'), findsOneWidget);
-      expect(find.text(TrainingConstants.m1CustomerPersona), findsOneWidget);
-      expect(find.text(TrainingConstants.standardGreeting), findsOneWidget);
+      expect(find.text('INBOUND CALL CONNECTED'), findsOneWidget);
+      expect(find.text('Turn 1: Opening'), findsOneWidget);
+      expect(
+        find.textContaining('Caller: ${TrainingConstants.m1CustomerPersona}'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('"${TrainingConstants.standardGreeting}"'),
+        findsOneWidget,
+      );
       expect(find.text('Tap to Speak'), findsOneWidget);
+      expect(find.text('Activity Indicator (Simulated)'), findsOneWidget);
 
-      // Tap Mic to speak
+      // Tap Mic to speak greeting
       await tester.tap(find.byIcon(Icons.mic_none));
       await tester.pump(); // Start listening
       await tester.pump(
         const Duration(milliseconds: 100),
       ); // Process simulated speech
 
-      // Evaluation result rendered
-      expect(find.text('PASSED — QA COMPLIANT'), findsOneWidget);
+      // Evaluation result rendered with honest text-matching labels
+      expect(
+        find.text('SCRIPT TARGET MET (Practice Simulation)'),
+        findsOneWidget,
+      );
       expect(find.text('100%'), findsOneWidget);
       expect(find.textContaining('الله ينور يا أليكس'), findsOneWidget);
+
+      // Customer Spoken Response (Turn 2) card appears
+      expect(find.text('Customer Response (Turn 2):'), findsOneWidget);
+      expect(
+        find.text('"${TrainingConstants.m1CustomerResponse}"'),
+        findsOneWidget,
+      );
 
       final tryAgainFinder = find.text('Try Again (إعادة المحاولة)');
       expect(tryAgainFinder, findsOneWidget);
@@ -61,9 +80,12 @@ void main() {
       await tester.tap(tryAgainFinder);
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verifies it returned to tap to speak
+      // Verifies it returned cleanly to Turn 1 tap-to-speak state
       expect(find.text('Tap to Speak'), findsOneWidget);
-      expect(find.text('PASSED — QA COMPLIANT'), findsNothing);
+      expect(
+        find.text('SCRIPT TARGET MET (Practice Simulation)'),
+        findsNothing,
+      );
     },
   );
 }

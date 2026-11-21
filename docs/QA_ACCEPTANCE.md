@@ -1,50 +1,57 @@
-# QA_ACCEPTANCE.md — Quality Assurance & Acceptance Criteria
+# QA_ACCEPTANCE.md — Quality Assurance, Governance Gates, & Smoke-Test Checklist
 
-This document defines the strict quality gates, testing requirements, and acceptance criteria required for code to merge into `main` and be released.
+This document defines the quality gates, acceptance criteria, and physical hardware verification protocols for CALLFORGE.
 
 ---
 
-## 🚦 Quality Gates
+## 🚦 Automated Quality Gates
 
-Every Pull Request must satisfy the following 5 gates before merging:
+Every Pull Request must satisfy all automated quality gates prior to merging:
 
-### Gate 1: Static Analysis & Code Formatting
-- `dart format --set-exit-if-changed .` must pass with 0 formatting deviations.
+### Gate 1: Code Formatting & Static Analysis
+- `dart format --set-exit-if-changed .` must pass with 0 deviations.
 - `flutter analyze` must pass with **0 errors, 0 warnings, and 0 lints**.
 
-### Gate 2: Automated Unit & Domain Tests
-- Pure Dart domain models, scoring algorithms, and text evaluation utilities must achieve $\ge 90\%$ test coverage.
-- All edge cases (silence, empty strings, casing, punctuation, homophones, P/B substitutions) must have dedicated test cases.
-- All tests must pass: `flutter test`.
+### Gate 2: Automated Unit & Domain Test Suite
+- Domain logic, scoring algorithms, and repository persistence must pass with 0 failures: `flutter test`.
+- All edge cases (empty speech, punctuation, homophones, P/B substitutions, error handling) must be covered.
 
-### Gate 3: Widget & UI State Tests
-- Core widgets (`MicButton`, `CoachingCard`, `GreetingSimulatorScreen`) must verify visual state changes between `Idle`, `TTS_Speaking`, `STT_Listening`, and `Evaluation_Ready`.
-- No memory leaks or uncancelled timers / streams.
+### Gate 3: Widget & UI State Test Suite
+- Core widgets (`MicControlButton`, `CoachingCard`, `SimulatorScreen`) must verify state transitions across `idle`, `listening`, `processing`, `customerSpeaking`, and `error`.
+- Scrolling, retry buttons, and history list rendering must be verified.
 
 ### Gate 4: Android Build Validation
-- Gradle build must successfully produce a debug APK without memory exhaustion:
+- Headless Gradle compilation must successfully produce a debug APK:
   ```bash
   flutter build apk --debug
   ```
-- Android Manifest permissions must include `RECORD_AUDIO` and `INTERNET` (for recognition services).
-
-### Gate 5: Physical Hardware Verification Policy
-- **Strict Rule**: An agent or developer must **NEVER** claim physical device verification unless ADB shows a connected physical device and the APK was actually installed and executed on hardware.
-- If physical hardware is disconnected during automated CI or offline development, the status must clearly state:
-  > *"Verified via automated unit/widget tests and headless APK compilation; physical device runtime verification pending hardware attachment."*
+- Memory heap must remain within `-Xmx2048m` without Windows system thrashing.
 
 ---
 
-## 📋 M1 Prototype Acceptance Criteria Checklist
+## 📱 Physical Android Device Smoke-Test Checklist (M1 Hardware Gate)
 
-- [ ] **AC-01 (Greeting Script Verification)**: The engine verifies spoken input against the user-confirmed greeting:
-  *"Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?"*
-- [ ] **AC-02 (Acoustic Playback)**: Customer prompts play cleanly via Android TTS in an American English accent.
-- [ ] **AC-03 (Microphone Input & Transcription)**: Alex's spoken response is captured via microphone and transcribed into text.
-- [ ] **AC-04 (Evidence-Based Scoring)**:
-  - Transcript is normalized and compared via edit distance.
-  - Presence of semantic anchors (`AT&T`, `Alex`, `first`, `last`, `name`) is checked.
-  - No synthetic/fake score percentages are invented.
-- [ ] **AC-05 (Egyptian Arabic Coaching)**: Specific, encouraging feedback is generated in Egyptian Arabic explaining exact missed words or pronunciation tips.
-- [ ] **AC-06 (Retry & Persistence)**: User can retry the drill immediately, and their attempt history is saved locally.
-- [ ] **AC-07 (Error & Permission Resilience)**: Missing mic permissions or speech recognizer timeouts are caught gracefully with actionable UI prompts.
+> [!IMPORTANT]
+> In accordance with `AGENTS.md`, an agent or reviewer must **NEVER** declare M1 physically verified unless tested on actual attached Android hardware. The following checklist must be physically executed on device:
+
+| Test ID | Test Scenario | Procedure | Expected Physical Outcome | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **ST-01** | **Permission Request** | Launch app fresh, tap microphone button. | Android OS runtime permission dialog for `RECORD_AUDIO` appears. | `PENDING HARDWARE` |
+| **ST-02** | **Permission Denial** | Deny microphone permission when prompted. | UI catches denial, displays friendly error message, and does not crash. | `PENDING HARDWARE` |
+| **ST-03** | **Opening Greeting STT** | Tap mic, speak standard greeting into physical microphone. | Spoken audio is transcribed into live transcript box; final text matches speech. | `PENDING HARDWARE` |
+| **ST-04** | **Text Evaluation & Coaching** | Complete greeting delivery. | Recognized-text similarity %, missing anchors, and Egyptian Arabic coaching render accurately. | `PENDING HARDWARE` |
+| **ST-05** | **Customer Audio Playback (TTS)**| Complete greeting meeting target script. | Phone speaker plays American customer audio response (*David Miller*) clearly. | `PENDING HARDWARE` |
+| **ST-06** | **User-Initiated Stop** | Tap mic to start listening, tap mic again after 2 seconds. | Recording stops immediately, transitions to processing, and evaluates spoken slice. | `PENDING HARDWARE` |
+| **ST-07** | **Silence Timeout** | Tap mic, remain completely silent for 5 seconds. | Recognizer detects silence, does not freeze, and resets to idle with retry prompt. | `PENDING HARDWARE` |
+| **ST-08** | **Offline Airplane Mode** | Enable Airplane mode (Wi-Fi and Cellular off), tap mic to speak. | If Google offline English pack is installed: transcribes offline. If missing: catches error and displays offline guidance. | `PENDING HARDWARE` |
+| **ST-09** | **Retry Flow** | Tap "Try Again" after an evaluation. | Resets transcript and evaluation card, restoring mic to tap-to-speak state. | `PENDING HARDWARE` |
+| **ST-10** | **Local Persistence & History** | Perform 2 drills, open History screen from app bar. | Both attempts appear in history with timestamp, score %, and transcript. | `PENDING HARDWARE` |
+| **ST-11** | **History Clear** | In History screen, tap clear icon and confirm dialog. | Attempt logs are cleared from local storage. | `PENDING HARDWARE` |
+
+---
+
+## 📋 M1 Acceptance Verdict Criteria
+
+- **Automated Gates**: PASS (Format, Analyze, 19+ Tests, APK Build).
+- **Physical Device Gate**: PENDING physical phone attachment.
+- **Merge Recommendation**: **DO NOT MERGE** until physical smoke-test checklist ST-01 through ST-11 is executed on real Android hardware.

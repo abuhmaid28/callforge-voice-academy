@@ -112,7 +112,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                           ),
                         ),
                         child: Text(
-                          'Best: ${ctrl.bestScore}%',
+                          'Best Match: ${ctrl.bestScore}%',
                           style: const TextStyle(
                             color: AppColors.success,
                             fontSize: 12,
@@ -124,7 +124,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Customer Prompt Bubble
+                // Inbound Call Header Card (Turn 1 Opening)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(14.0),
@@ -134,101 +134,110 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                const CircleAvatar(
-                                  radius: 14,
-                                  backgroundColor: AppColors.surfaceElevated,
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 16,
-                                    color: AppColors.primaryLight,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.call_received,
+                                      size: 16,
+                                      color: AppColors.success,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  ctrl.scenario.customerPersona,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                    color: AppColors.textPrimary,
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'INBOUND CALL CONNECTED',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11,
+                                            letterSpacing: 0.5,
+                                            color: AppColors.success,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Caller: ${ctrl.scenario.customerPersona}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                ctrl.isCustomerSpeaking
-                                    ? Icons.volume_off
-                                    : Icons.volume_up,
-                                color: ctrl.isCustomerSpeaking
-                                    ? AppColors.primaryLight
-                                    : AppColors.textSecondary,
+                                ],
                               ),
-                              tooltip: 'Hear Customer Again',
-                              onPressed: ctrl.isListening || ctrl.isProcessing
-                                  ? null
-                                  : () => ctrl.playCustomerPrompt(),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Turn 1: Opening',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '"${ctrl.scenario.customerPrompt}"',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            height: 1.4,
-                            color: AppColors.textPrimary,
-                            fontStyle: FontStyle.italic,
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Deliver the standard AT&T inbound greeting to initiate the call:',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        AudioWaveformVisualizer(
-                          isActive: ctrl.isCustomerSpeaking,
-                          activeColor: AppColors.ttsSpeakingGlow,
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.surfaceElevated,
+                            ),
+                          ),
+                          child: Text(
+                            '"${ctrl.scenario.expectedResponse}"',
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryLight,
+                              height: 1.35,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-                // Target Response Guide
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.surfaceElevated),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Target Inbound Response (Standard Script):',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textSecondary,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        ctrl.scenario.expectedResponse,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryLight,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Live Transcript Box (if listening or spoke)
+                // Live Transcript Box (if speaking or spoken)
                 if (ctrl.liveTranscript.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -248,7 +257,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Live Spoken Recognition:',
+                              'Recognized Speech Transcript:',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
@@ -278,7 +287,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                 ],
 
                 // Error Message Notice
@@ -293,6 +302,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                       ),
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(
                           Icons.error_outline,
@@ -305,17 +315,18 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                             ctrl.errorMessage!,
                             style: const TextStyle(
                               color: AppColors.error,
-                              fontSize: 13,
+                              fontSize: 12.5,
+                              height: 1.35,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                 ],
 
-                // Mic Center Action
+                // Mic Center Action (When evaluating or waiting for speech)
                 if (!ctrl.hasEvaluation) ...[
                   const SizedBox(height: 8),
                   Center(
@@ -336,15 +347,94 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                   AudioWaveformVisualizer(
                     isActive: ctrl.isListening,
                     activeColor: AppColors.micListeningGlow,
+                    showLabel: true,
                   ),
                 ],
 
-                // Evaluation & Coaching Results
-                if (ctrl.hasEvaluation)
+                // Evaluation Results Card
+                if (ctrl.hasEvaluation) ...[
                   CoachingCard(
                     result: ctrl.evaluationResult!,
                     onRetry: () => ctrl.retry(),
+                    onReplayCustomerResponse: () => ctrl.playCustomerResponse(),
+                    isCustomerSpeaking: ctrl.isCustomerSpeaking,
                   ),
+
+                  // Turn 2 Customer Spoken Response (When script target met)
+                  if (ctrl.hasTargetMet) ...[
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor:
+                                          AppColors.surfaceElevated,
+                                      child: Icon(
+                                        Icons.person,
+                                        size: 14,
+                                        color: AppColors.primaryLight,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Customer Response (Turn 2):',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12.5,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    ctrl.isCustomerSpeaking
+                                        ? Icons.volume_up
+                                        : Icons.volume_mute,
+                                    size: 18,
+                                    color: ctrl.isCustomerSpeaking
+                                        ? AppColors.primaryLight
+                                        : AppColors.textSecondary,
+                                  ),
+                                  tooltip: 'Replay Customer Audio',
+                                  onPressed:
+                                      ctrl.isListening || ctrl.isProcessing
+                                      ? null
+                                      : () => ctrl.playCustomerResponse(),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '"${ctrl.scenario.customerResponse}"',
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                height: 1.4,
+                                fontStyle: FontStyle.italic,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            AudioWaveformVisualizer(
+                              isActive: ctrl.isCustomerSpeaking,
+                              activeColor: AppColors.ttsSpeakingGlow,
+                              showLabel: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ],
             ),
           ),

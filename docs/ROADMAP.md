@@ -1,43 +1,51 @@
-# ROADMAP.md — Project Milestones & Release Trajectory
+# ROADMAP.md — Technical Release Milestones (M0–M6)
 
-This roadmap outlines the iterative development trajectory for CALLFORGE, divided into 10 structured milestones mapping to the 10 core academy modules.
+This roadmap defines the technical milestone delivery plan for CALLFORGE, organized into 7 structured milestones (M0 through M6) that systematically implement the 10 core pedagogical modules.
 
 ---
 
-## 🗺️ Milestone Overview
+## 🗺️ Technical Milestone Architecture (M0–M6)
 
-| Milestone | Target Module | Objective | Core Deliverable |
+| Milestone | Target Scope | Associated Academy Modules | Core Deliverables |
 | :--- | :--- | :--- | :--- |
-| **M1** | Foundations & Voice Prototype | Core audio loop: TTS customer + STT mic + Greeting verification + local progress | Working Android voice prototype & test suite |
-| **M2** | Module 1: Real Voice Call Simulator | Multi-turn conversational engine with branching states & customer emotion | Full interactive call flow simulator |
-| **M3** | Module 2: Disclosures & Pronunciation | Verbatim karaoke tracker & P/B phonetic contrast drill suite | Disclosure accuracy & phonetics engine |
-| **M4** | Module 3: American English Listening | Dialect comprehension, fast speech, background noise ear-training | Audio listening comprehension quiz suite |
-| **M5** | Module 4: AERD & Call Control | Acknowledge, Empathy, Reassure, Defuse scoring & dead-air reduction | Call control & pacing evaluator |
-| **M6** | Module 5: AT&T Product Knowledge | Fictionalized Fiber, Unlimited Wireless, EIP & Trade-in training catalog | Product mastery drills & plan comparisons |
-| **M7** | Module 6: Sales Discovery & Conversion | Consultative questioning, value bridging, and objection handling | Sales roleplay simulator & close analyzer |
-| **M8** | Module 7: Billing & Technical Care | Bill proration breakdown, first bill surprises & device network resets | Bill explanation & tech triage module |
-| **M9** | Modules 8 & 9: Escalation & QA KPIs | De-escalation matrix, supervisor transfer etiquette, AHT & FCR dashboard | Escalation room & QA scorecard analytics |
-| **M10**| Module 10: Adaptive 90-Day System | 90-day progressive curriculum from Nesting to Elite Master | Complete adaptive academy & graduation report |
+| **M0** | Foundation & Environment Verification | Governance & Architecture | Environment verification, low-RAM Windows tuning, Android SDK setup, source provenance framework. |
+| **M1** | Voice Prototype & Inbound Greeting Simulator | Module 1 (Turn 1 Opening) | Turn-based greeting loop (Alex opening first -> customer audio response), push-to-talk STT, TTS playback, recognized-text scoring, local storage, Android physical smoke checklist. |
+| **M2** | Disclosure Reading & Pronunciation Precision | Module 2 | Verbatim disclosure karaoke engine, timing tracker, and P/B phonemic contrast educational drill suite. |
+| **M3** | Interactive Multi-Turn Simulator & Branching Flows | Module 1 (Full Call) & Module 8 | Multi-turn conversational state machine, branching customer mood states, and de-escalation practice. |
+| **M4** | American English Listening & Fluency | Module 3 | Rapid American speech playback, dialect variations, and active listening information extraction quizzes. |
+| **M5** | AERD & Sales Discovery Mastery | Modules 4, 5, 6 | Acknowledge/Empathy/Reassure/Defuse rubric, open-ended sales discovery questions, and consultative closing drills. |
+| **M6** | Comprehensive Academy & 90-Day Adaptive System | Modules 7, 9, 10 | Billing explanation drills, practice KPI dashboard, and 90-day adaptive learning trajectory. |
 
 ---
 
-## 🎯 Active Milestone: M1 — Core Voice Prototype Details
+## 🎯 Active Milestone: M1 — Voice Prototype & Inbound Greeting Simulator
 
-- **Deliverables**:
-  1. Flutter project scaffolding with Clean Architecture (`core`, `data`, `domain`, `presentation`).
-  2. Android permissions configuration for microphone access and audio focus.
-  3. Native Android TTS playback for simulated customer.
-  4. Native Android STT voice recording and transcript capture for Alex.
-  5. Mandatory greeting verification engine against:
-     > *"Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?"*
-  6. Evidence-based scoring engine (Levenshtein similarity, missing anchor tokens, WPM).
-  7. Dual-language feedback card (English accuracy audit + Egyptian Arabic tactical coaching).
-  8. Local persistence of attempt history.
-  9. Automated unit, widget, and architecture tests passing with 0 errors.
-  10. Debug APK build verification.
+### Scope & Acceptance Criteria:
+1. **Inbound Call Turn Sequence**:
+   - Call initiates -> Alex delivers standard greeting:
+     *"Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?"*
+   - Once recognized, simulated customer (*David Miller*) responds with first-bill inquiry via TTS.
+2. **Local-First Audio Engine**:
+   - `NativeSpeechService` integrating Android `flutter_tts` and `speech_to_text`.
+   - Explicit offline error handling and guidance when offline speech models are unavailable.
+   - Clean lifecycle handling (cancellation, stop, silence timeouts, resource disposal).
+3. **Evidence-Based Evaluation Engine**:
+   - **Recognized-Text Similarity** (normalized Levenshtein edit distance).
+   - **Token Error Rate (WER)** and semantic anchor verification (`att`, `alex`, `first`, `last`, `name`).
+   - Estimated speech session pace (tokens per session minute).
+   - Educational P/B contrast awareness reminders.
+   - Zero claims of acoustic native pronunciation or official employer QA compliance.
+4. **Bilingual Coaching Card**:
+   - English transcript analysis + natural Egyptian Arabic trainer guidance.
+5. **Local Offline Persistence**:
+   - Attempt records saved to `SharedPreferences` with retry flow.
+6. **Verification & Physical Smoke Test**:
+   - Automated unit and widget tests passing.
+   - Debug APK compilation verified.
+   - Explicit physical Android device smoke-test checklist documented.
 
 ---
 
-## 🔮 Future Milestones (M2–M10)
+## 🔮 Subsequent Milestones (M2–M6)
 
-Detailed requirements for each subsequent milestone will be expanded into dedicated GitHub milestones and issues as M1 completes QA acceptance.
+Milestones M2 through M6 will be scheduled and executed sequentially following physical hardware validation and formal acceptance of M1.

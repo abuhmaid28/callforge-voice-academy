@@ -28,7 +28,7 @@ void main() {
     controller.dispose();
   });
 
-  group('SimulatorController Tests', () {
+  group('SimulatorController Tests & Inbound Audio Lifecycle', () {
     test('initializes with idle state and loads empty history', () {
       expect(controller.engineState, equals(VoiceEngineState.idle));
       expect(controller.hasEvaluation, isFalse);
@@ -36,34 +36,42 @@ void main() {
       expect(controller.bestScore, isNull);
     });
 
-    test('plays customer prompt and completes cleanly', () async {
-      await controller.playCustomerPrompt();
+    test('plays customer response audio and completes cleanly', () async {
+      await controller.playCustomerResponse();
       expect(controller.engineState, equals(VoiceEngineState.idle));
     });
 
+    test('processes spoken greeting, evaluates, persists attempt, and triggers customer response on target met', () async {
+      mockSpeech.simulatedTranscript = TrainingConstants.standardGreeting;
+
+      await controller.startListening();
+
+      expect(controller.hasEvaluation, isTrue);
+      expect(controller.evaluationResult!.scriptTargetMet, isTrue);
+      expect(controller.evaluationResult!.similarityPercentage, equals(100));
+      expect(controller.bestScore, equals(100));
+      expect(controller.recentAttempts.length, equals(1));
+      expect(controller.hasTargetMet, isTrue);
+    });
+
     test(
-      'processes spoken greeting, evaluates, and persists attempt',
+      'retry clears live transcript, evaluation state, and stops audio',
       () async {
         mockSpeech.simulatedTranscript = TrainingConstants.standardGreeting;
-
         await controller.startListening();
-
         expect(controller.hasEvaluation, isTrue);
-        expect(controller.evaluationResult!.passed, isTrue);
-        expect(controller.evaluationResult!.accuracyPercentage, equals(100));
-        expect(controller.bestScore, equals(100));
-        expect(controller.recentAttempts.length, equals(1));
+
+        controller.retry();
+
+        expect(controller.hasEvaluation, isFalse);
+        expect(controller.liveTranscript, isEmpty);
+        expect(controller.errorMessage, isNull);
       },
     );
 
-    test('retry clears live transcript and evaluation state', () async {
-      mockSpeech.simulatedTranscript = TrainingConstants.standardGreeting;
-      await controller.startListening();
-      expect(controller.hasEvaluation, isTrue);
-
-      controller.retry();
-
-      expect(controller.hasEvaluation, isFalse);
+    test('cancelListening resets listening state without throwing', () async {
+      await controller.cancelListening();
+      expect(controller.engineState, equals(VoiceEngineState.idle));
       expect(controller.liveTranscript, isEmpty);
     });
 
@@ -71,8 +79,30 @@ void main() {
       mockSpeech.shouldFailMic = true;
       await controller.startListening();
 
-      expect(controller.errorMessage, contains('permission denied'));
+      expect(controller.errorMessage, contains('Microphone permission'));
       expect(controller.engineState, equals(VoiceEngineState.error));
+    });
+
+    test(
+      'handles offline/network required error with explicit user guidance',
+      () async {
+        mockSpeech.shouldFailNetwork = true;
+        await controller.startListening();
+
+        expect(
+          controller.errorMessage,
+          contains('Offline speech recognition model not available'),
+        );
+        expect(controller.engineState, equals(VoiceEngineState.error));
+      },
+    );
+
+    test('handles silence timeout gracefully without crashing', () async {
+      mockSpeech.shouldTimeoutWithSilence = true;
+      await controller.startListening();
+
+      expect(controller.errorMessage, contains('No speech was captured'));
+      expect(controller.engineState, equals(VoiceEngineState.idle));
     });
   });
 }

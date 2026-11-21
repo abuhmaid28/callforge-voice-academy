@@ -4,10 +4,11 @@ import '../constants/training_constants.dart';
 import 'evaluation_result.dart';
 
 /// Pure logic speech evaluation engine.
-/// Computes evidence-based metrics without synthetic black-box numbers.
+/// Computes evidence-based recognized-text similarity metrics without synthetic black-box numbers.
 class SpeechEvaluator {
   /// Known bilabial transfer confusion pairs for Arabic speakers.
   /// Map of [transcribed_b_variation] -> [expected_p_word].
+  /// Used for educational awareness coaching, not clinical phonetics.
   static const Map<String, String> pbConfusionDictionary = {
     'blan': 'plan',
     'blans': 'plans',
@@ -102,7 +103,8 @@ class SpeechEvaluator {
     return (totalErrors / n).clamp(0.0, 2.0);
   }
 
-  /// Detects common Arabic P vs B phonological substitutions.
+  /// Detects common Arabic P vs B phonological substitutions in recognized text tokens.
+  /// Note: This is an educational text heuristic, not laboratory acoustic phonetics.
   static List<String> detectPbErrors(String transcript) {
     final tokens = normalize(transcript).split(' ');
     final errors = <String>[];
@@ -144,20 +146,19 @@ class SpeechEvaluator {
     final refTokens = normalize(expected).split(' ');
     final wer = calculateWordErrorRate(refTokens, words);
 
-    // Phonetic P/B errors
+    // Phonetic P/B educational warnings
     final pbErrors = detectPbErrors(transcript);
 
-    // Compute Words Per Minute (WPM)
+    // Approximate Speaking Pace (Tokens per Active Minute)
     final seconds = max(1, duration.inSeconds);
     final wpm = ((words.length / seconds) * 60).round();
 
-    // Determine pass / fail
-    // Pass requires similarity >= 0.70 AND all mandatory semantic anchors present.
-    final passed = similarity >= 0.70 && missingAnchors.isEmpty;
+    // Script target is met if normalized similarity >= 0.70 AND all mandatory semantic anchors present
+    final scriptTargetMet = similarity >= 0.70 && missingAnchors.isEmpty;
 
     // Generate Natural Egyptian Arabic Coaching
     final arabicCoaching = _generateArabicCoaching(
-      passed: passed,
+      passed: scriptTargetMet,
       similarity: similarity,
       missingAnchors: missingAnchors,
       pbErrors: pbErrors,
@@ -166,14 +167,14 @@ class SpeechEvaluator {
     return EvaluationResult(
       transcribedText: transcript,
       expectedText: expected,
-      accuracyScore: similarity,
+      textSimilarityScore: similarity,
       wordErrorRate: wer,
-      passed: passed,
+      scriptTargetMet: scriptTargetMet,
       missingAnchors: missingAnchors,
       matchedAnchors: matchedAnchors,
       detectedPbErrors: pbErrors,
       arabicCoachingFeedback: arabicCoaching,
-      wpm: wpm,
+      estimatedWpm: wpm,
     );
   }
 

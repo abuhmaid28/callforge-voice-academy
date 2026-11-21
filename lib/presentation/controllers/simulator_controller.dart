@@ -15,7 +15,6 @@ class SimulatorController extends ChangeNotifier {
 
   final Scenario scenario;
 
-  VoiceEngineState _engineState = VoiceEngineState.idle;
   String _liveTranscript = '';
   EvaluationResult? _evaluationResult;
   String? _errorMessage;
@@ -31,8 +30,7 @@ class SimulatorController extends ChangeNotifier {
     required this.repository,
     Scenario? scenario,
   }) : scenario = scenario ?? Scenario.m1GreetingScenario() {
-    _stateSub = speechService.stateStream.listen((state) {
-      _engineState = state;
+    _stateSub = speechService.stateStream.listen((_) {
       notifyListeners();
     });
 
@@ -51,9 +49,11 @@ class SimulatorController extends ChangeNotifier {
 
   bool get isCustomerSpeaking =>
       speechService.state == VoiceEngineState.customerSpeaking;
-  bool get isListening => speechService.state == VoiceEngineState.listeningToUser;
+  bool get isListening =>
+      speechService.state == VoiceEngineState.listeningToUser;
   bool get isProcessing => speechService.state == VoiceEngineState.processing;
   bool get hasEvaluation => _evaluationResult != null;
+  bool get hasTargetMet => _evaluationResult?.scriptTargetMet == true;
 
   Future<void> initialize() async {
     await speechService.initialize();
@@ -66,20 +66,20 @@ class SimulatorController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> playCustomerPrompt() async {
+  Future<void> playCustomerResponse() async {
     _errorMessage = null;
-    _liveTranscript = '';
-    _evaluationResult = null;
     notifyListeners();
 
     await speechService.speakCustomerPrompt(
-      scenario.customerPrompt,
+      scenario.customerResponse,
       onFinished: () {
-        // Customer finished prompt; ready for Alex
         notifyListeners();
       },
     );
   }
+
+  /// Backward-compatible alias
+  Future<void> playCustomerPrompt() => playCustomerResponse();
 
   Future<void> startListening() async {
     _errorMessage = null;
@@ -102,6 +102,12 @@ class SimulatorController extends ChangeNotifier {
     await speechService.stopListening();
   }
 
+  Future<void> cancelListening() async {
+    await speechService.cancelListening();
+    _liveTranscript = '';
+    notifyListeners();
+  }
+
   Future<void> processTranscript(String transcript) async {
     _liveTranscript = transcript;
     final duration = _listeningStartTime != null
@@ -120,9 +126,9 @@ class SimulatorController extends ChangeNotifier {
       scenarioId: scenario.id,
       timestamp: DateTime.now(),
       transcript: transcript,
-      accuracyPercentage: result.accuracyPercentage,
-      passed: result.passed,
-      wpm: result.wpm,
+      accuracyPercentage: result.similarityPercentage,
+      passed: result.scriptTargetMet,
+      wpm: result.estimatedWpm,
       missingAnchors: result.missingAnchors,
       pbErrors: result.detectedPbErrors,
       arabicCoaching: result.arabicCoachingFeedback,
@@ -130,9 +136,15 @@ class SimulatorController extends ChangeNotifier {
 
     await repository.saveAttempt(record);
     await loadHistory();
+
+    // If script target met, play customer response
+    if (result.scriptTargetMet) {
+      await playCustomerResponse();
+    }
   }
 
   void retry() {
+    speechService.stopSpeaking();
     _liveTranscript = '';
     _evaluationResult = null;
     _errorMessage = null;

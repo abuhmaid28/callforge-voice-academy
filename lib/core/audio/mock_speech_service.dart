@@ -10,7 +10,9 @@ class MockSpeechService implements ISpeechService {
   VoiceEngineState _state = VoiceEngineState.idle;
   String simulatedTranscript = '';
   bool shouldFailMic = false;
+  bool shouldFailNetwork = false;
   bool shouldFailInit = false;
+  bool shouldTimeoutWithSilence = false;
 
   @override
   VoiceEngineState get state => _state;
@@ -23,7 +25,9 @@ class MockSpeechService implements ISpeechService {
 
   void _setState(VoiceEngineState newState) {
     _state = newState;
-    _stateController.add(newState);
+    if (!_stateController.isClosed) {
+      _stateController.add(newState);
+    }
   }
 
   @override
@@ -42,7 +46,7 @@ class MockSpeechService implements ISpeechService {
   }) async {
     _setState(VoiceEngineState.customerSpeaking);
     // Simulate brief TTS duration
-    await Future.delayed(const Duration(milliseconds: 50));
+    await Future.delayed(const Duration(milliseconds: 20));
     _setState(VoiceEngineState.idle);
     if (onFinished != null) onFinished();
   }
@@ -62,13 +66,35 @@ class MockSpeechService implements ISpeechService {
     if (shouldFailMic) {
       _setState(VoiceEngineState.error);
       if (onError != null) {
-        onError('Microphone permission denied (Simulated).');
+        onError('Microphone permission is required to practice spoken calls.');
+      }
+      return;
+    }
+
+    if (shouldFailNetwork) {
+      _setState(VoiceEngineState.error);
+      if (onError != null) {
+        onError(
+          'Offline speech recognition model not available. To use speech offline, install English (US) in Android Settings > Google > Speech Services, or connect to the internet.',
+        );
+      }
+      return;
+    }
+
+    if (shouldTimeoutWithSilence) {
+      _setState(VoiceEngineState.listeningToUser);
+      await Future.delayed(const Duration(milliseconds: 20));
+      _setState(VoiceEngineState.idle);
+      if (onError != null) {
+        onError('No speech was captured. Please tap the mic and try again.');
       }
       return;
     }
 
     _setState(VoiceEngineState.listeningToUser);
-    _transcriptController.add(simulatedTranscript);
+    if (!_transcriptController.isClosed) {
+      _transcriptController.add(simulatedTranscript);
+    }
 
     // Simulate completion
     await Future.delayed(const Duration(milliseconds: 20));
@@ -79,6 +105,13 @@ class MockSpeechService implements ISpeechService {
 
   @override
   Future<void> stopListening() async {
+    if (_state == VoiceEngineState.listeningToUser) {
+      _setState(VoiceEngineState.idle);
+    }
+  }
+
+  @override
+  Future<void> cancelListening() async {
     if (_state == VoiceEngineState.listeningToUser) {
       _setState(VoiceEngineState.idle);
     }

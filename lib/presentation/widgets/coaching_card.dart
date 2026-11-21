@@ -7,15 +7,25 @@ import 'metric_badge.dart';
 class CoachingCard extends StatelessWidget {
   final EvaluationResult result;
   final VoidCallback onRetry;
+  final VoidCallback? onReplayCustomerResponse;
+  final bool isCustomerSpeaking;
 
-  const CoachingCard({super.key, required this.result, required this.onRetry});
+  const CoachingCard({
+    super.key,
+    required this.result,
+    required this.onRetry,
+    this.onReplayCustomerResponse,
+    this.isCustomerSpeaking = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = result.passed ? AppColors.success : AppColors.error;
-    final statusTitle = result.passed
-        ? 'PASSED — QA COMPLIANT'
-        : 'NEEDS PRACTICE — UNVERIFIED';
+    final statusColor = result.scriptTargetMet
+        ? AppColors.success
+        : AppColors.error;
+    final statusTitle = result.scriptTargetMet
+        ? 'SCRIPT TARGET MET (Practice Simulation)'
+        : 'PRACTICE TARGET UNMET (Incomplete Script)';
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 12),
@@ -28,39 +38,41 @@ class CoachingCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  result.passed
+                  result.scriptTargetMet
                       ? Icons.check_circle
                       : Icons.warning_amber_rounded,
                   color: statusColor,
                   size: 22,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  statusTitle,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+                Expanded(
+                  child: Text(
+                    statusTitle,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // Metric Badges Row
+            // Metric Badges Row (Honest, Text-Based Labels)
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 MetricBadge(
-                  label: 'Similarity',
-                  value: '${result.accuracyPercentage}%',
+                  label: 'Text Match',
+                  value: '${result.similarityPercentage}%',
                   icon: Icons.graphic_eq,
                   color: statusColor,
                 ),
                 MetricBadge(
-                  label: 'Word Error Rate',
+                  label: 'Token Error Rate',
                   value: '${(result.wordErrorRate * 100).round()}%',
                   icon: Icons.analytics_outlined,
                   color: result.wordErrorRate <= 0.2
@@ -68,10 +80,11 @@ class CoachingCard extends StatelessWidget {
                       : AppColors.warning,
                 ),
                 MetricBadge(
-                  label: 'Cadence (WPM)',
-                  value: '${result.wpm} wpm',
+                  label: 'Session Pace (est.)',
+                  value: '${result.estimatedWpm} wpm',
                   icon: Icons.speed,
-                  color: (result.wpm >= 110 && result.wpm <= 170)
+                  color:
+                      (result.estimatedWpm >= 100 && result.estimatedWpm <= 170)
                       ? AppColors.success
                       : AppColors.warning,
                 ),
@@ -79,9 +92,9 @@ class CoachingCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Transcript Comparison
+            // Transcript Box
             const Text(
-              'Your Transcribed Greeting:',
+              'Transcribed Greeting:',
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
@@ -98,7 +111,7 @@ class CoachingCard extends StatelessWidget {
               ),
               child: Text(
                 result.transcribedText.isEmpty
-                    ? '(No speech detected)'
+                    ? '(No speech captured)'
                     : '"${result.transcribedText}"',
                 style: const TextStyle(
                   fontSize: 14,
@@ -109,10 +122,10 @@ class CoachingCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Missing Anchors Warning
+            // Missing Mandatory Semantic Anchors
             if (result.missingAnchors.isNotEmpty) ...[
               const Text(
-                'Missing Mandatory Compliance Anchors:',
+                'Missing Mandatory Semantic Anchors:',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.error,
@@ -142,7 +155,7 @@ class CoachingCard extends StatelessWidget {
               const SizedBox(height: 12),
             ],
 
-            // Phonetic P/B Warnings
+            // Phonetic P/B Educational Alert
             if (result.detectedPbErrors.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -163,7 +176,7 @@ class CoachingCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Phonetic Alert: Detected P/B confusion on ${result.detectedPbErrors.join(', ')}',
+                        'Educational Alert: Detected possible P/B confusion on ${result.detectedPbErrors.join(', ')}',
                         style: const TextStyle(
                           color: AppColors.warning,
                           fontSize: 12,
@@ -192,8 +205,8 @@ class CoachingCard extends StatelessWidget {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const Text(
+                    children: const [
+                      Text(
                         'توجيه المدرب (Egyptian Coaching)',
                         style: TextStyle(
                           fontSize: 13,
@@ -201,7 +214,7 @@ class CoachingCard extends StatelessWidget {
                           color: AppColors.primaryLight,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Icon(
                         Icons.psychology,
                         size: 18,
@@ -227,7 +240,24 @@ class CoachingCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Retry Button
+            // If script target met, offer to replay customer response
+            if (result.scriptTargetMet && onReplayCustomerResponse != null) ...[
+              OutlinedButton.icon(
+                onPressed: isCustomerSpeaking ? null : onReplayCustomerResponse,
+                icon: Icon(
+                  isCustomerSpeaking ? Icons.volume_up : Icons.replay,
+                  size: 18,
+                ),
+                label: Text(
+                  isCustomerSpeaking
+                      ? 'Customer Speaking...'
+                      : 'Replay Customer Response (استمع لرد العميل)',
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            // Retry Drill Button
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 20),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 
@@ -30,6 +31,7 @@ abstract class ISpeechService {
     Function(String error)? onError,
   });
   Future<void> stopListening();
+  Future<void> cancelListening();
   void dispose();
 }
 
@@ -43,6 +45,12 @@ class NativeSpeechService implements ISpeechService {
 
   VoiceEngineState _state = VoiceEngineState.idle;
   bool _isInitialized = false;
+  String _latestRecognizedWords = '';
+  bool _hasDeliveredFinalResult = false;
+  Timer? _watchdogTimer;
+
+  Function(String error)? _activeOnError;
+  ResultCallback? _activeOnResult;
 
   @override
   VoiceEngineState get state => _state;
@@ -55,7 +63,9 @@ class NativeSpeechService implements ISpeechService {
 
   void _setState(VoiceEngineState newState) {
     _state = newState;
-    _stateController.add(newState);
+    if (!_stateController.isClosed) {
+      _stateController.add(newState);
+    }
   }
 
   @override
@@ -69,26 +79,81 @@ class NativeSpeechService implements ISpeechService {
       await _tts.setPitch(1.0);
       await _tts.awaitSpeakCompletion(true);
     } catch (_) {
-      // Best-effort initialization on non-mobile or headless host
+      // Best-effort initialization on host
     }
 
-    // Configure Speech-To-Text
+    // Configure Speech-To-Text with robust error and status handlers
     try {
       final available = await _stt.initialize(
-        onError: (val) {
-          _setState(VoiceEngineState.idle);
-        },
-        onStatus: (status) {
-          if (status == 'done' || status == 'notListening') {
-            if (_state == VoiceEngineState.listeningToUser) {
-              _setState(VoiceEngineState.processing);
-            }
-          }
-        },
+        onError: _handleSpeechError,
+        onStatus: _handleSpeechStatus,
       );
       _isInitialized = available;
     } catch (_) {
       _isInitialized = false;
+    }
+  }
+
+  void _handleSpeechError(SpeechRecognitionError error) {
+    _watchdogTimer?.cancel();
+    final errorMsg = _translateSpeechError(error.errorMsg);
+    _setState(VoiceEngineState.error);
+    if (_activeOnError != null) {
+      _activeOnError!(errorMsg);
+    }
+  }
+
+  void _handleSpeechStatus(String status) {
+    if (status == 'done' || status == 'notListening') {
+      if (_state == VoiceEngineState.listeningToUser) {
+        _setState(VoiceEngineState.processing);
+
+        // Watchdog: If engine stopped without firing finalResult, resolve with latest words
+        _watchdogTimer?.cancel();
+        _watchdogTimer = Timer(const Duration(milliseconds: 600), () {
+          if (!_hasDeliveredFinalResult &&
+              _state == VoiceEngineState.processing) {
+            _deliverFinalTranscript();
+          }
+        });
+      }
+    }
+  }
+
+  String _translateSpeechError(String rawError) {
+    final lower = rawError.toLowerCase();
+    if (lower.contains('timeout') || lower.contains('no_match')) {
+      return 'No speech detected. Please speak clearly into the microphone.';
+    }
+    if (lower.contains('network') || lower.contains('server')) {
+      return 'Offline speech recognition model not available. To use speech offline, install English (US) in Android Settings > Google > Speech Services, or connect to the internet.';
+    }
+    if (lower.contains('busy') ||
+        lower.contains('audio') ||
+        lower.contains('client')) {
+      return 'Speech audio subsystem is currently busy. Please tap to retry.';
+    }
+    return 'Speech recognition error: $rawError';
+  }
+
+  void _deliverFinalTranscript() {
+    _watchdogTimer?.cancel();
+    _hasDeliveredFinalResult = true;
+
+    final transcript = _latestRecognizedWords.trim();
+    if (transcript.isEmpty) {
+      _setState(VoiceEngineState.idle);
+      if (_activeOnError != null) {
+        _activeOnError!(
+          'No speech was captured. Please tap the mic and try again.',
+        );
+      }
+    } else {
+      _setState(VoiceEngineState.processing);
+      if (_activeOnResult != null) {
+        _activeOnResult!(transcript);
+      }
+      _setState(VoiceEngineState.idle);
     }
   }
 
@@ -135,6 +200,12 @@ class NativeSpeechService implements ISpeechService {
   }) async {
     await stopSpeaking();
 
+    _activeOnResult = onResult;
+    _activeOnError = onError;
+    _latestRecognizedWords = '';
+    _hasDeliveredFinalResult = false;
+    _watchdogTimer?.cancel();
+
     // Check runtime microphone permissions
     final status = await Permission.microphone.request();
     if (status.isDenied || status.isPermanentlyDenied) {
@@ -162,10 +233,12 @@ class NativeSpeechService implements ISpeechService {
     try {
       await _stt.listen(
         onResult: (result) {
-          _transcriptController.add(result.recognizedWords);
+          _latestRecognizedWords = result.recognizedWords;
+          if (!_transcriptController.isClosed) {
+            _transcriptController.add(result.recognizedWords);
+          }
           if (result.finalResult) {
-            _setState(VoiceEngineState.processing);
-            onResult(result.recognizedWords);
+            _deliverFinalTranscript();
           }
         },
         listenOptions: stt.SpeechListenOptions(
@@ -177,25 +250,43 @@ class NativeSpeechService implements ISpeechService {
     } catch (e) {
       _setState(VoiceEngineState.error);
       if (onError != null) {
-        onError('Error listening: $e');
+        onError('Error initializing microphone listener: $e');
       }
     }
   }
 
   @override
   Future<void> stopListening() async {
+    _watchdogTimer?.cancel();
     try {
       await _stt.stop();
     } catch (_) {}
     if (_state == VoiceEngineState.listeningToUser) {
-      _setState(VoiceEngineState.idle);
+      // If words were captured before user tapped stop, deliver them
+      if (!_hasDeliveredFinalResult && _latestRecognizedWords.isNotEmpty) {
+        _deliverFinalTranscript();
+      } else {
+        _setState(VoiceEngineState.idle);
+      }
     }
   }
 
   @override
+  Future<void> cancelListening() async {
+    _watchdogTimer?.cancel();
+    _hasDeliveredFinalResult = true;
+    _latestRecognizedWords = '';
+    try {
+      await _stt.cancel();
+    } catch (_) {}
+    _setState(VoiceEngineState.idle);
+  }
+
+  @override
   void dispose() {
+    _watchdogTimer?.cancel();
     stopSpeaking();
-    stopListening();
+    cancelListening();
     _stateController.close();
     _transcriptController.close();
   }

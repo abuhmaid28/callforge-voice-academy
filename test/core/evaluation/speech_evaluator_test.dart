@@ -105,7 +105,7 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.missingAnchors, contains('alex'));
-      expect(result.arabicCoachingFeedback, contains('الكلمات دي ناقصة'));
+      expect(result.arabicCoachingFeedback, contains('الكلمات الإلزامية'));
     });
 
     test('greeting missing carrier AT&T fails anchor check', () {
@@ -123,7 +123,7 @@ void main() {
       final result = SpeechEvaluator.evaluateGreeting(transcript);
 
       expect(result.detectedPbErrors, isNotEmpty);
-      expect(result.arabicCoachingFeedback, contains('ملحوظة صوتية هامة'));
+      expect(result.arabicCoachingFeedback, contains('ملحوظة تدريبية'));
       expect(result.arabicCoachingFeedback, contains('blan'));
     });
   });
