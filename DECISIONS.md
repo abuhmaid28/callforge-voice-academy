@@ -191,3 +191,28 @@ This document records the key architectural, technical, and domain decisions mad
   - Eliminates all default branching placeholders and guarantees pedagogically rich, responsive multi-turn simulations.
   - Guarantees strict verbatim legal disclosure evaluation that rejects out-of-order and negation-altered speech.
   - Fully verified across 76 automated unit, widget, and integration tests with zero static analysis issues and 100% Dart formatting.
+
+---
+
+## ADR 013: Strict Mandatory Gates, Locked Disclosure Consent, Versioned Practice Attempts, and Calendar-Day Streaks
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: Independent PR #5 review identified six final acceptance criteria required for C1 product completion:
+  1. Opening Turn 1 must strictly gate progression: missing required anchors (Alex, AT&T) or empty audio must remain on Turn 1 and block customer Turn 2.
+  2. Terminal call completion must only be granted upon successful final-turn evaluation, preventing empty audio passes and recording progress at most once.
+  3. Customer consent simulation outcomes (Agreed, Questioned, Refused) in Disclosure Studio must be locked behind successful practice reading (`isTargetMet == true`).
+  4. Fictional scenarios must strictly adhere to floor realities: zero unauthorized commitments to waive activation fees, guarantee rate locks, or promise supervisor callbacks.
+  5. Learning progress requires genuine consecutive calendar-day streak calculation, and attempt history must store versioned script title and snapshot copy.
+  6. Audio lifecycle requires centralized teardown on tab navigation and session generation tokens guarding asynchronous callbacks.
+- **Decision**:
+  1. **Strict Opening & Completion Gates**: Updated `MultiTurnEvaluator` and `MultiTurnController` to enforce that failed Turn 1 greetings and failed terminal turns remain in `MultiTurnState.idle` without advancing or recording premature completion.
+  2. **Locked Consent Outcome Simulation**: Updated `DisclosureStudioScreen` and `DisclosureController` to disable and visually lock consent simulation until a successful practice read is completed (`isTargetMet == true`).
+  3. **Billing Script Policy Sanitization**: Audited all 30 scenarios in `ScenarioCatalog`, removing unauthorized commitments (activation fee waivers, rate locks, supervisor callbacks, replacement guarantees) and substituting realistic conditional dispute requests and billing review flows.
+  4. **Calendar-Day Streak Logic**: Implemented `calculateNewStreak` in `ProgressRepositoryImpl` using date difference math: same day maintains streak, consecutive calendar day increments streak by 1, and gaps of 2+ days reset streak to 1.
+  5. **Versioned Attempt History**: Extended `AttemptRecord` with `scriptTitle`, `scriptSnapshot`, and `attemptType`, persisting complete historical snapshots on disclosure and scenario completion.
+  6. **Centralized Audio Lifecycle & Tab Safety**: Implemented awaited cancellation of speech and playback in `MainScaffold` on destination changes, combined with incrementing session generation counters across all controllers.
+  7. **Negative & Recovery Test Suite**: Added `C1-05` to smoke and emulator integration suites verifying greeting gates, locked consent, and rapid tab switching safety.
+- **Consequences**:
+  - Eliminates all progression loopholes, unauthorized promises, and false progress claims.
+  - Guarantees complete data integrity and backward-compatible persistence.
+  - Validated by 87 automated tests (0 failures), 0 analyzer warnings, and 100% clean formatting.

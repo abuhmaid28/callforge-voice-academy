@@ -203,5 +203,62 @@ void main() {
         expect(nonExistent, isNull);
       },
     );
+
+    test('Policy Guard (B4): all 30 scenarios contain zero unauthorized fee waivers, rate locks, or supervisor callback promises', () {
+      for (final s in ScenarioCatalog.allScenarios) {
+        for (final turn in s.turns) {
+          final textToCheck =
+              '${turn.spokenText} ${turn.trainerGuidanceArabic}';
+
+          // Check for explicit prohibited policy phrases in agent and customer utterances
+          expect(
+            textToCheck.toLowerCase().contains('lock your rate'),
+            isFalse,
+            reason:
+                'Scenario ${s.id} Turn ${turn.id} contains prohibited rate lock promise',
+          );
+          expect(
+            textToCheck.toLowerCase().contains('supervisor will call'),
+            isFalse,
+            reason:
+                'Scenario ${s.id} Turn ${turn.id} contains prohibited supervisor callback promise',
+          );
+          expect(
+            textToCheck.toLowerCase().contains(
+              'schedule a supervisor callback',
+            ),
+            isFalse,
+            reason:
+                'Scenario ${s.id} Turn ${turn.id} contains prohibited supervisor callback scheduling',
+          );
+          expect(
+            textToCheck.toLowerCase().contains('arrange a supervisor callback'),
+            isFalse,
+            reason:
+                'Scenario ${s.id} Turn ${turn.id} contains prohibited supervisor callback arrangement',
+          );
+          expect(
+            textToCheck.toLowerCase().contains('waiving the activation fee'),
+            isFalse,
+            reason:
+                'Scenario ${s.id} Turn ${turn.id} contains unauthorized activation fee waiver',
+          );
+          expect(
+            textToCheck.toLowerCase().contains('waive your activation fee'),
+            isFalse,
+            reason:
+                'Scenario ${s.id} Turn ${turn.id} contains unauthorized activation fee waiver',
+          );
+          expect(
+            textToCheck.toLowerCase().contains(
+              'guaranteed that your replacement is completely free',
+            ),
+            isFalse,
+            reason:
+                'Scenario ${s.id} Turn ${turn.id} contains unauthorized replacement guarantee',
+          );
+        }
+      }
+    });
   });
 }

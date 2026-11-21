@@ -36,10 +36,10 @@ class ProgressRepositoryImpl implements IProgressRepository {
     }
 
     final today = _getTodayDateString();
-    int newStreak = current.streakDays;
-    if (current.lastPracticeDate != today) {
-      newStreak += 1;
-    }
+    final newStreak = calculateNewStreak(
+      currentStreak: current.streakDays,
+      lastPracticeDateStr: current.lastPracticeDate,
+    );
 
     final updated = current.copyWith(
       streakDays: newStreak,
@@ -75,10 +75,10 @@ class ProgressRepositoryImpl implements IProgressRepository {
     );
 
     final today = _getTodayDateString();
-    int newStreak = current.streakDays;
-    if (current.lastPracticeDate != today) {
-      newStreak += 1;
-    }
+    final newStreak = calculateNewStreak(
+      currentStreak: current.streakDays,
+      lastPracticeDateStr: current.lastPracticeDate,
+    );
 
     final updated = current.copyWith(
       streakDays: newStreak,
@@ -121,10 +121,10 @@ class ProgressRepositoryImpl implements IProgressRepository {
     );
 
     final today = _getTodayDateString();
-    int newStreak = current.streakDays;
-    if (current.lastPracticeDate != today) {
-      newStreak += 1;
-    }
+    final newStreak = calculateNewStreak(
+      currentStreak: current.streakDays,
+      lastPracticeDateStr: current.lastPracticeDate,
+    );
 
     final updated = current.copyWith(
       streakDays: newStreak,
@@ -141,8 +141,47 @@ class ProgressRepositoryImpl implements IProgressRepository {
     await _dataSource.clearProgress();
   }
 
-  static String _getTodayDateString() {
-    final now = DateTime.now();
+  /// Calculates the new practice streak enforcing strictly consecutive calendar days.
+  static int calculateNewStreak({
+    required int currentStreak,
+    required String? lastPracticeDateStr,
+    DateTime? todayDate,
+  }) {
+    final now = todayDate ?? DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    if (lastPracticeDateStr == null || lastPracticeDateStr.isEmpty) {
+      return 1;
+    }
+
+    try {
+      final parts = lastPracticeDateStr.split('-');
+      if (parts.length != 3) return 1;
+      final last = DateTime(
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+        int.parse(parts[2]),
+      );
+
+      final diffDays = today.difference(last).inDays;
+
+      if (diffDays == 0) {
+        // Practiced today already; maintain streak
+        return currentStreak == 0 ? 1 : currentStreak;
+      } else if (diffDays == 1) {
+        // Consecutive calendar day
+        return currentStreak + 1;
+      } else {
+        // Skipped one or more days (diffDays >= 2) or time shifted backwards
+        return 1;
+      }
+    } catch (_) {
+      return 1;
+    }
+  }
+
+  static String _getTodayDateString([DateTime? date]) {
+    final now = date ?? DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 }

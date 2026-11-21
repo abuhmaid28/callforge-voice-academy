@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/audio/speech_service.dart';
 import '../../core/evaluation/disclosure_evaluator.dart';
+import '../../data/models/attempt_record.dart';
 import '../../data/models/disclosure_script.dart';
+import '../../domain/repositories/attempt_repository.dart';
 import '../../domain/repositories/disclosure_repository.dart';
 import '../../domain/repositories/progress_repository.dart';
 
@@ -19,9 +21,10 @@ enum DisclosureState {
 }
 
 class DisclosureController extends ChangeNotifier {
-  final ISpeechService _speechService;
-  final IDisclosureRepository _disclosureRepository;
-  final IProgressRepository? _progressRepository;
+  final ISpeechService speechService;
+  final IDisclosureRepository disclosureRepository;
+  final IProgressRepository? progressRepository;
+  final IAttemptRepository? attemptRepository;
 
   DisclosureState _state = DisclosureState.idle;
   DisclosureState get state => _state;
@@ -46,12 +49,14 @@ class DisclosureController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   DateTime? _listeningStartTime;
+  int _sessionGeneration = 0;
   bool _isDisposed = false;
 
   DisclosureController({
-    required this._speechService,
-    required this._disclosureRepository,
-    this._progressRepository,
+    required this.speechService,
+    required this.disclosureRepository,
+    this.progressRepository,
+    this.attemptRepository,
   });
 
   @override
@@ -63,8 +68,8 @@ class DisclosureController extends ChangeNotifier {
 
   Future<void> initialize() async {
     try {
-      await _speechService.initialize();
-      _scripts = await _disclosureRepository.getAllScripts();
+      await speechService.initialize();
+      _scripts = await disclosureRepository.getAllScripts();
       if (_scripts.isNotEmpty) {
         _selectedScript = _scripts.first;
       }
@@ -77,18 +82,21 @@ class DisclosureController extends ChangeNotifier {
   }
 
   void selectScript(DisclosureScript script) {
+    _sessionGeneration++;
     _selectedScript = script;
     _latestResult = null;
     _currentTranscript = '';
     _activeCustomerResponse = null;
     _state = DisclosureState.idle;
-    _speechService.stopSpeaking();
-    _speechService.cancelListening();
+    speechService.stopSpeaking();
+    speechService.cancelListening();
     notifyListeners();
   }
 
   Future<void> startReading() async {
     if (_selectedScript == null) return;
+    final currentSession = ++_sessionGeneration;
+
     _errorMessage = null;
     _latestResult = null;
     _currentTranscript = '';
@@ -99,18 +107,21 @@ class DisclosureController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _speechService.startListening(
+      await speechService.startListening(
         onResult: (text) {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _currentTranscript = text;
           notifyListeners();
         },
         onError: (err) {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _errorMessage = err;
           _state = DisclosureState.error;
           notifyListeners();
         },
       );
     } catch (e) {
+      if (_isDisposed || currentSession != _sessionGeneration) return;
       _errorMessage = 'Audio capture failed: $e';
       _state = DisclosureState.error;
       notifyListeners();
@@ -119,12 +130,13 @@ class DisclosureController extends ChangeNotifier {
 
   Future<void> stopReadingAndEvaluate() async {
     if (_state != DisclosureState.listening || _selectedScript == null) return;
+    final currentSession = ++_sessionGeneration;
 
     _state = DisclosureState.evaluating;
     notifyListeners();
 
     try {
-      await _speechService.stopListening();
+      await speechService.stopListening();
     } catch (_) {}
 
     final duration = _listeningStartTime != null
@@ -137,6 +149,7 @@ class DisclosureController extends ChangeNotifier {
       duration: duration,
     );
 
+    if (_isDisposed || currentSession != _sessionGeneration) return;
     _state = DisclosureState.evaluated;
 
     if (_latestResult != null && _latestResult!.isTargetMet) {
@@ -144,10 +157,32 @@ class DisclosureController extends ChangeNotifier {
         _activeCustomerResponse = _selectedScript!.customerResponses.first;
       }
 
-      if (_progressRepository != null) {
-        await _progressRepository.recordDisclosureCompletion(
+      if (progressRepository != null) {
+        await progressRepository!.recordDisclosureCompletion(
           scriptId: _selectedScript!.id,
           score: _latestResult!.similarityScore * 100,
+        );
+      }
+
+      if (attemptRepository != null) {
+        await attemptRepository!.saveAttempt(
+          AttemptRecord(
+            id: 'att-disc-${DateTime.now().millisecondsSinceEpoch}',
+            scenarioId: _selectedScript!.id,
+            timestamp: DateTime.now(),
+            transcript: _currentTranscript,
+            accuracyPercentage: (_latestResult!.similarityScore * 100).round(),
+            passed: _latestResult!.isTargetMet,
+            wpm: _latestResult!.estimatedWpm,
+            missingAnchors: _latestResult!.missingCriticalTerms
+                .map((t) => t.term)
+                .toList(),
+            pbErrors: _latestResult!.detectedPbErrors,
+            arabicCoaching: _latestResult!.arabicCoaching,
+            scriptTitle: _selectedScript!.title,
+            scriptSnapshot: _selectedScript!.scriptText,
+            attemptType: 'disclosure',
+          ),
         );
       }
     }
@@ -156,24 +191,35 @@ class DisclosureController extends ChangeNotifier {
   }
 
   Future<void> playCustomerResponse(SimulatedCustomerResponse response) async {
+    // GUARD (B3): Customer consent outcomes can only be triggered after meeting practice target
+    if (_latestResult == null || !_latestResult!.isTargetMet) {
+      _errorMessage = 'Complete a successful practice read (100% Target Met) before simulating customer consent.';
+      notifyListeners();
+      return;
+    }
+
+    final currentSession = ++_sessionGeneration;
     _activeCustomerResponse = response;
     _state = DisclosureState.playingCustomerResponse;
     notifyListeners();
 
     try {
-      await _speechService.speakCustomerPrompt(
+      await speechService.speakCustomerPrompt(
         response.spokenText,
         onFinished: () {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _state = DisclosureState.evaluated;
           notifyListeners();
         },
         onError: (err) {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _errorMessage = 'Audio playback failed: $err';
           _state = DisclosureState.evaluated;
           notifyListeners();
         },
       );
     } catch (e) {
+      if (_isDisposed || currentSession != _sessionGeneration) return;
       _errorMessage = 'Audio playback failed: $e';
       _state = DisclosureState.evaluated;
       notifyListeners();
@@ -189,23 +235,27 @@ class DisclosureController extends ChangeNotifier {
       return;
     }
 
+    final currentSession = ++_sessionGeneration;
     _state = DisclosureState.playingReference;
     notifyListeners();
 
     try {
-      await _speechService.speakCustomerPrompt(
+      await speechService.speakCustomerPrompt(
         _selectedScript!.scriptText,
         onFinished: () {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _state = DisclosureState.idle;
           notifyListeners();
         },
         onError: (err) {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _errorMessage = 'Reference playback failed: $err';
           _state = DisclosureState.idle;
           notifyListeners();
         },
       );
     } catch (e) {
+      if (_isDisposed || currentSession != _sessionGeneration) return;
       _errorMessage = 'Reference playback failed: $e';
       _state = DisclosureState.idle;
       notifyListeners();
@@ -213,8 +263,9 @@ class DisclosureController extends ChangeNotifier {
   }
 
   Future<void> stopReferenceAudio() async {
+    _sessionGeneration++;
     try {
-      await _speechService.stopSpeaking();
+      await speechService.stopSpeaking();
     } catch (_) {}
     _state = DisclosureState.idle;
     notifyListeners();
@@ -235,8 +286,8 @@ class DisclosureController extends ChangeNotifier {
       isCustomUserDraft: true,
     );
 
-    await _disclosureRepository.saveUserDraft(draft);
-    _scripts = await _disclosureRepository.getAllScripts();
+    await disclosureRepository.saveUserDraft(draft);
+    _scripts = await disclosureRepository.getAllScripts();
     _selectedScript = draft;
     _latestResult = null;
     _currentTranscript = '';
@@ -245,8 +296,8 @@ class DisclosureController extends ChangeNotifier {
   }
 
   Future<void> updateCustomDraft(DisclosureScript updated) async {
-    await _disclosureRepository.saveUserDraft(updated);
-    _scripts = await _disclosureRepository.getAllScripts();
+    await disclosureRepository.saveUserDraft(updated);
+    _scripts = await disclosureRepository.getAllScripts();
     _selectedScript = updated;
     _latestResult = null;
     _currentTranscript = '';
@@ -255,8 +306,8 @@ class DisclosureController extends ChangeNotifier {
   }
 
   Future<void> deleteCustomDraft(String id) async {
-    await _disclosureRepository.deleteUserDraft(id);
-    _scripts = await _disclosureRepository.getAllScripts();
+    await disclosureRepository.deleteUserDraft(id);
+    _scripts = await disclosureRepository.getAllScripts();
     _selectedScript = _scripts.isNotEmpty ? _scripts.first : null;
     _latestResult = null;
     _currentTranscript = '';
@@ -265,8 +316,9 @@ class DisclosureController extends ChangeNotifier {
   }
 
   void cancel() {
-    _speechService.cancelListening();
-    _speechService.stopSpeaking();
+    _sessionGeneration++;
+    speechService.cancelListening();
+    speechService.stopSpeaking();
     _state = DisclosureState.idle;
     notifyListeners();
   }
@@ -274,8 +326,9 @@ class DisclosureController extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
-    _speechService.cancelListening();
-    _speechService.stopSpeaking();
+    _sessionGeneration++;
+    speechService.cancelListening();
+    speechService.stopSpeaking();
     super.dispose();
   }
 }

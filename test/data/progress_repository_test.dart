@@ -87,5 +87,73 @@ void main() {
       expect(resetProg.totalSimulationsCompleted, equals(0));
       expect(resetProg.completedScenarioIds, isEmpty);
     });
+
+    group('Consecutive Calendar-Day Streak Logic (calculateNewStreak)', () {
+      test('initial practice sets streak to 1', () {
+        expect(
+          ProgressRepositoryImpl.calculateNewStreak(
+            currentStreak: 0,
+            lastPracticeDateStr: null,
+            todayDate: DateTime(2026, 4, 15),
+          ),
+          equals(1),
+        );
+      });
+
+      test('same calendar day maintains current streak', () {
+        expect(
+          ProgressRepositoryImpl.calculateNewStreak(
+            currentStreak: 5,
+            lastPracticeDateStr: '2026-04-15',
+            todayDate: DateTime(2026, 4, 15, 18, 30),
+          ),
+          equals(5),
+        );
+      });
+
+      test('consecutive calendar day increments streak by 1', () {
+        expect(
+          ProgressRepositoryImpl.calculateNewStreak(
+            currentStreak: 5,
+            lastPracticeDateStr: '2026-04-15',
+            todayDate: DateTime(2026, 4, 16, 9, 0),
+          ),
+          equals(6),
+        );
+      });
+
+      test('gap of 2 or more days resets streak to 1', () {
+        expect(
+          ProgressRepositoryImpl.calculateNewStreak(
+            currentStreak: 12,
+            lastPracticeDateStr: '2026-04-15',
+            todayDate: DateTime(2026, 4, 18, 10, 0),
+          ),
+          equals(1),
+        );
+      });
+
+      test('month and leap-year boundaries calculate correctly', () {
+        // Month transition: March 31 to April 1
+        expect(
+          ProgressRepositoryImpl.calculateNewStreak(
+            currentStreak: 3,
+            lastPracticeDateStr: '2026-03-31',
+            todayDate: DateTime(2026, 4, 1),
+          ),
+          equals(4),
+        );
+
+        // Year transition: Dec 31 to Jan 1
+        expect(
+          ProgressRepositoryImpl.calculateNewStreak(
+            currentStreak: 10,
+            lastPracticeDateStr: '2026-12-31',
+            todayDate: DateTime(2027, 1, 1),
+          ),
+          equals(11),
+        );
+      });
+    });
   });
 }

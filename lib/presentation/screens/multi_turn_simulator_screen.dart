@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/di/service_locator.dart';
 import '../../domain/entities/scenario.dart';
+import '../../domain/repositories/attempt_repository.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../../core/audio/speech_service.dart';
 import '../controllers/multi_turn_controller.dart';
@@ -29,10 +30,14 @@ class _MultiTurnSimulatorScreenState extends State<MultiTurnSimulatorScreen> {
     final progressRepo = ServiceLocator.isRegistered<IProgressRepository>()
         ? ServiceLocator.get<IProgressRepository>()
         : null;
+    final attemptRepo = ServiceLocator.isRegistered<IAttemptRepository>()
+        ? ServiceLocator.get<IAttemptRepository>()
+        : null;
 
     _controller = MultiTurnController(
       speechService: speechService,
       progressRepository: progressRepo,
+      attemptRepository: attemptRepo,
     );
     _controller.addListener(_onControllerUpdate);
     _controller.startScenario(widget.scenario);

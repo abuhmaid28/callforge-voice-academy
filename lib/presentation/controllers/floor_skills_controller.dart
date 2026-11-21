@@ -39,8 +39,8 @@ class FastNumberItem {
 }
 
 class FloorSkillsController extends ChangeNotifier {
-  final ISpeechService _speechService;
-  final IProgressRepository? _progressRepository;
+  final ISpeechService speechService;
+  final IProgressRepository? progressRepository;
 
   FloorDrillType _activeDrillType = FloorDrillType.pbContrast;
   FloorDrillType get activeDrillType => _activeDrillType;
@@ -143,18 +143,27 @@ class FloorSkillsController extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  FloorSkillsController({
-    required this._speechService,
-    this._progressRepository,
-  });
+  int _sessionGeneration = 0;
+  bool _isDisposed = false;
+
+  FloorSkillsController({required this.speechService, this.progressRepository});
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
+  }
 
   void selectDrillType(FloorDrillType type) {
+    _sessionGeneration++;
     _activeDrillType = type;
     _resetDrillState();
     notifyListeners();
   }
 
   void _resetDrillState() {
+    _sessionGeneration++;
     _spokenTranscript = '';
     _inputDigits = '';
     _isCorrect = null;
@@ -162,13 +171,14 @@ class FloorSkillsController extends ChangeNotifier {
     _errorMessage = null;
     _isListening = false;
     _isPlayingAudio = false;
-    _speechService.cancelListening();
-    _speechService.stopSpeaking();
+    speechService.cancelListening();
+    speechService.stopSpeaking();
   }
 
   // --- P/B Contrast Drill Actions ---
 
   Future<void> startPbRecording() async {
+    final currentSession = ++_sessionGeneration;
     _spokenTranscript = '';
     _isCorrect = null;
     _feedbackText = '';
@@ -178,18 +188,21 @@ class FloorSkillsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _speechService.startListening(
+      await speechService.startListening(
         onResult: (text) {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _spokenTranscript = text;
           notifyListeners();
         },
         onError: (err) {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _errorMessage = err;
           _isListening = false;
           notifyListeners();
         },
       );
     } catch (e) {
+      if (_isDisposed || currentSession != _sessionGeneration) return;
       _errorMessage = 'Audio error: $e';
       _isListening = false;
       notifyListeners();
@@ -198,11 +211,12 @@ class FloorSkillsController extends ChangeNotifier {
 
   Future<void> stopPbRecordingAndEvaluate() async {
     if (!_isListening) return;
+    _sessionGeneration++;
     _isListening = false;
     notifyListeners();
 
     try {
-      await _speechService.stopListening();
+      await speechService.stopListening();
     } catch (_) {}
 
     final normalized = SpeechEvaluator.normalize(_spokenTranscript);
@@ -245,8 +259,8 @@ class FloorSkillsController extends ChangeNotifier {
           'لم يتم التقاط أي صوت. يرجى الضغط على الميكروفون والمحاولة مرة أخرى.';
     }
 
-    if (_progressRepository != null && normalized.isNotEmpty) {
-      await _progressRepository.recordDrillCompletion(
+    if (progressRepository != null && normalized.isNotEmpty) {
+      await progressRepository!.recordDrillCompletion(
         drillType: 'pb_contrast',
         score: score,
       );
@@ -263,24 +277,28 @@ class FloorSkillsController extends ChangeNotifier {
   // --- Fast Numbers Drill Actions ---
 
   Future<void> playFastNumberAudio() async {
+    final currentSession = ++_sessionGeneration;
     _isPlayingAudio = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _speechService.speakCustomerPrompt(
+      await speechService.speakCustomerPrompt(
         currentNumberItem.spokenText,
         onFinished: () {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _isPlayingAudio = false;
           notifyListeners();
         },
         onError: (err) {
+          if (_isDisposed || currentSession != _sessionGeneration) return;
           _errorMessage = 'Audio playback failed: $err';
           _isPlayingAudio = false;
           notifyListeners();
         },
       );
     } catch (e) {
+      if (_isDisposed || currentSession != _sessionGeneration) return;
       _errorMessage = 'Audio playback failed: $e';
       _isPlayingAudio = false;
       notifyListeners();
@@ -304,8 +322,8 @@ class FloorSkillsController extends ChangeNotifier {
 
     if (correct) {
       _feedbackText = 'تطابق كامل 100%! تم التقاط الأرقام بدقة وسرعة عالية.';
-      if (_progressRepository != null) {
-        _progressRepository.recordDrillCompletion(
+      if (progressRepository != null) {
+        progressRepository!.recordDrillCompletion(
           drillType: 'fast_numbers',
           score: 100.0,
         );
@@ -325,8 +343,10 @@ class FloorSkillsController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _speechService.cancelListening();
-    _speechService.stopSpeaking();
+    _isDisposed = true;
+    _sessionGeneration++;
+    speechService.cancelListening();
+    speechService.stopSpeaking();
     super.dispose();
   }
 }

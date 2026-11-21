@@ -39,6 +39,26 @@ class _MainScaffoldState extends State<MainScaffold> {
     super.dispose();
   }
 
+  Future<void> _handleDestinationSelected(int index) async {
+    if (index != _currentIndex) {
+      if (ServiceLocator.isRegistered<ISpeechService>()) {
+        try {
+          final speech = ServiceLocator.get<ISpeechService>();
+          await speech.cancelListening();
+          await speech.stopSpeaking();
+        } catch (_) {}
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+      });
+      if (index == 0 || index == 4) {
+        _progressController.loadProgress();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screens = [
@@ -53,23 +73,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          if (index != _currentIndex) {
-            try {
-              if (ServiceLocator.isRegistered<ISpeechService>()) {
-                final speech = ServiceLocator.get<ISpeechService>();
-                speech.cancelListening();
-                speech.stopSpeaking();
-              }
-            } catch (_) {}
-          }
-          setState(() {
-            _currentIndex = index;
-          });
-          if (index == 0 || index == 4) {
-            _progressController.loadProgress();
-          }
-        },
+        onDestinationSelected: _handleDestinationSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

@@ -337,7 +337,24 @@ void main() {
           await tester.tap(volumeIcon);
           await tester.pump(const Duration(milliseconds: 100));
 
-          // Simulate Agreed consent
+          // Verify consent outcome simulation is locked prior to meeting practice target
+          expect(
+            find.textContaining('Complete a successful practice read'),
+            findsOneWidget,
+          );
+
+          // Perform practice read to meet target and unlock customer consent simulation
+          mockSpeech.simulatedTranscript = 'By enrolling in AutoPay and Paperless Billing today, you will receive a ten dollar monthly discount per phone line when paying with a debit card or checking account. The discount will appear within two billing cycles. If you switch to a credit card, the discount is reduced to five dollars per line. You may update your payment method or cancel at any time in the app.';
+          final readButton = find.text('READ DISCLOSURE');
+          expect(readButton, findsOneWidget);
+          await tester.tap(readButton);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.tap(find.text('STOP & EVALUATE'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 200));
+
+          // Simulate Agreed consent (now unlocked)
           final agreedButton = find.text('AGREED');
           expect(agreedButton, findsOneWidget);
           await tester.tap(agreedButton);
@@ -424,6 +441,82 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.textContaining('تطابق كامل 100%'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'C1-05: Negative & Recovery Journey (Greeting gate, locked consent, tab navigation safety)',
+        (tester) async {
+          tester.view.physicalSize = const Size(800, 1600);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await tester.pumpWidget(
+            const CallForgeApp(home: MainScaffold(initialIndex: 1)),
+          );
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // 1. Launch scenario
+          final firstCard = find.text(
+            'First Bill Proration & Partial Month Charges',
+          );
+          await tester.tap(firstCard);
+          await tester.pumpAndSettle();
+
+          final micButton = find.byType(FloatingActionButton);
+
+          // Turn 1 Negative: Agent speaks cold greeting missing Alex / AT&T
+          mockSpeech.simulatedTranscript = 'Hello how are you doing today?';
+          await tester.tap(micButton); // start
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.tap(micButton); // stop & evaluate
+          await tester.pump(const Duration(milliseconds: 200));
+
+          // Gate B1 asserts: remains on Turn 1, customer Turn 2 is NOT played
+          expect(find.textContaining('TURN 1 OF'), findsOneWidget);
+          expect(
+            find.textContaining('COACH GUIDANCE (TURN 1)'),
+            findsOneWidget,
+          );
+
+          // Turn 1 Recovery: Agent speaks mandatory greeting with Alex & AT&T
+          mockSpeech.simulatedTranscript = TrainingConstants.standardGreeting;
+          await tester.tap(micButton); // start
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.tap(micButton); // stop & evaluate
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // Successfully advances to Turn 2
+          expect(find.textContaining('Marcus Vance'), findsWidgets);
+
+          // 2. Navigate back to Arena, then to Disclosures tab
+          final backButton = find.byType(BackButton);
+          expect(backButton, findsOneWidget);
+          await tester.tap(backButton);
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Disclosures'));
+          await tester.pumpAndSettle();
+
+          // Gate B3 asserts: Consent simulation is locked prior to practice
+          expect(
+            find.textContaining('Complete a successful practice read'),
+            findsOneWidget,
+          );
+          expect(find.text('AGREED'), findsNothing);
+
+          // 3. Tab switching safety: rapidly switch tabs
+          await tester.tap(find.text('Floor Skills'));
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.tap(find.text('Progress'));
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.tap(find.text('Today'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('CALLFORGE ACADEMY'), findsOneWidget);
         },
       );
     },

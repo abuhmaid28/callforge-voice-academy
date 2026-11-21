@@ -143,19 +143,33 @@ class MultiTurnEvaluator {
     // For conversational objection/resolution turns: 40% Keyword Anchors + 35% AERD + 25% Script Alignment
     final bool isGreetingTurn =
         turn.turnNumber == 1 && turn.speaker == TurnSpeaker.agent;
-    final double rawScore = isGreetingTurn
+    final bool hasSpokenAudio = normalized.trim().isNotEmpty;
+
+    final double rawScore = !hasSpokenAudio
+        ? 0.0
+        : isGreetingTurn
         ? (keywordRatio * 50.0) + (similarity * 50.0)
         : (keywordRatio * 40.0) + (aerdRatio * 35.0) + (similarity * 25.0);
     final double finalScore = (rawScore * 10).round() / 10;
 
-    final bool isTargetMet = isGreetingTurn
-        ? (keywordRatio >= 0.6 && similarity >= 0.70)
+    final bool isTargetMet = !hasSpokenAudio
+        ? false
+        : isGreetingTurn
+        ? (missingKeywords.isEmpty && similarity >= 0.70)
         : (keywordRatio >= 0.6 && finalScore >= 55.0);
 
     // 4. Branch Resolution
     String? nextTurnId;
-    if (turn.branches.isNotEmpty) {
-      if (isTargetMet) {
+    if (turn.branches.isNotEmpty && hasSpokenAudio) {
+      if (isGreetingTurn) {
+        // MANDATORY GREETING PROGRESSION GATE (B1):
+        // Only advance to customer response if Turn 1 greeting successfully met all anchors!
+        if (isTargetMet) {
+          nextTurnId = turn.branches.first.nextTurnId;
+        } else {
+          nextTurnId = null; // Stays on Turn 1; must retry
+        }
+      } else if (isTargetMet) {
         // Look for success/high branch or default
         final highBranch = turn.branches.firstWhere(
           (b) => b.conditionKey == 'success' || b.conditionKey == 'high_aerd',
@@ -163,16 +177,19 @@ class MultiTurnEvaluator {
         );
         nextTurnId = highBranch.nextTurnId;
       } else {
-        // Look for retry/low branch or default
-        final lowBranch = turn.branches.firstWhere(
+        // Look for retry/low branch
+        final lowBranch = turn.branches.where(
           (b) =>
               b.conditionKey == 'retry' ||
               b.conditionKey == 'low_aerd' ||
               b.conditionKey == 'objection' ||
               b.conditionKey == 'refusal',
-          orElse: () => turn.branches.first,
         );
-        nextTurnId = lowBranch.nextTurnId;
+        if (lowBranch.isNotEmpty) {
+          nextTurnId = lowBranch.first.nextTurnId;
+        } else {
+          nextTurnId = null;
+        }
       }
     }
 

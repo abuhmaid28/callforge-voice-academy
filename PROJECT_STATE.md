@@ -6,7 +6,7 @@
 **Active PR**: [#5](https://github.com/abuhmaid28/callforge-voice-academy/pull/5)  
 **Active Issue**: [#6](https://github.com/abuhmaid28/callforge-voice-academy/issues/6) (C1-R1 MEGA Recovery: Adaptive Branching, Order-Safe Alignment, & Product Journeys)  
 **Active Milestone**: C1-R1 MEGA (M2 Disclosure Studio + M3 Floor Skills Remediation)  
-**Test Suite**: 76 automated tests passing (`flutter test`) | Static Analysis: Clean (`flutter analyze`) | Dart Format: 100%  
+**Test Suite**: 87 automated tests passing (`flutter test`) | Static Analysis: Clean (`flutter analyze`) | Dart Format: 100% compliant  
 **Last Updated**: 2026-11-21
 
 ---
@@ -21,7 +21,7 @@
 | **GitHub CLI** | `VERIFIED` | Authenticated as `abuhmaid28` via git operations protocol HTTPS |
 | **Hardware Environment**| `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
 | **Verification Strategy**| `VERIFIED` | Phone-free hosted Linux CI (GitHub Actions) & Android Emulator integration tests (ADR 010) |
-| **Automated Tests** | `VERIFIED` | 76 tests passing (unit, widget, integration) |
+| **Automated Tests** | `VERIFIED` | 87 tests passing (unit, widget, integration) |
 
 ---
 
@@ -49,7 +49,15 @@
   - Added automatic audio stopping and cancellation on bottom navigation destination changes in `MainScaffold`.
 - [x] **Phase 7 — Comprehensive Product Journey Integration Tests**:
   - Created canonical `C1-01` through `C1-04` integration tests in `test/integration/app_smoke_test.dart` and `integration_test/app_test.dart` exercising the complete 5-tab user journeys.
-  - 76 total automated tests passing cleanly with 0 static analysis issues and 100% formatted Dart code.
+- [x] **Phase 8 — C1-R1 Final Acceptance Remediation (Six Findings)**:
+  - **B1**: Strict Turn 1 greeting gate enforced in `MultiTurnEvaluator` and `MultiTurnController`: missing Alex/AT&T or empty audio remains on Turn 1 in idle state and blocks customer Turn 2.
+  - **B2**: Final-turn completion gate enforced: failed final turn remains in idle state; simulation completion and progress recording only occur on successful completion, exactly once.
+  - **B3**: Disclosure consent simulation outcome buttons (`AGREED`, `QUESTIONED`, `REFUSED`) locked behind successful practice reading (`isTargetMet == true`) in UI and guarded in `DisclosureController.playCustomerResponse`.
+  - **B4**: Policy-sanitized all 30 billing scenarios in `ScenarioCatalog`, removing unauthorized fee waivers, rate locks, supervisor callback promises, and replacement guarantees; validated via Policy Guard unit test.
+  - **B5**: Versioned local practice history implemented in `AttemptRecord` (`scriptTitle`, `scriptSnapshot`, `attemptType`); consecutive calendar-day streak logic implemented in `ProgressRepositoryImpl.calculateNewStreak` (same-day maintains, next-day increments, 2+ day gap resets to 1).
+  - **B6**: Centralized awaited teardown of speech/audio on navigation destination change in `MainScaffold`; session generation token guards in all controllers preventing cross-tab audio leaks.
+  - **C1-05**: Added Negative & Recovery Journey integration test covering greeting gates, locked consent, and rapid tab switching across local smoke and hosted Android emulator suites.
+  - 87 total automated tests passing cleanly with 0 static analysis issues and 100% formatted Dart code.
 
 ---
 

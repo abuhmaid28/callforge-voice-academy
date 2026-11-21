@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/di/service_locator.dart';
 import '../../data/models/disclosure_script.dart';
+import '../../domain/repositories/attempt_repository.dart';
 import '../../domain/repositories/disclosure_repository.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../../core/audio/speech_service.dart';
@@ -27,11 +28,15 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
     final progressRepo = ServiceLocator.isRegistered<IProgressRepository>()
         ? ServiceLocator.get<IProgressRepository>()
         : null;
+    final attemptRepo = ServiceLocator.isRegistered<IAttemptRepository>()
+        ? ServiceLocator.get<IAttemptRepository>()
+        : null;
 
     _controller = DisclosureController(
       speechService: speechService,
       disclosureRepository: disclosureRepo,
       progressRepository: progressRepo,
+      attemptRepository: attemptRepo,
     );
     _controller.addListener(_onUpdate);
     _controller.initialize();
@@ -145,7 +150,7 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
                         const SizedBox(height: 16),
                       ],
 
-                      // Customer Consent Simulation Outcomes
+                      // Customer Consent Simulation Outcomes (Available only after meeting practice target)
                       if (script.customerResponses.isNotEmpty) ...[
                         Text(
                           'Simulate Customer Consent Outcome:',
@@ -155,44 +160,84 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          children: script.customerResponses.map((r) {
-                            Color color;
-                            switch (r.outcome) {
-                              case ConsentOutcome.agreed:
-                                color = Colors.green;
-                                break;
-                              case ConsentOutcome.questioned:
-                                color = Colors.amber;
-                                break;
-                              case ConsentOutcome.refused:
-                                color = Colors.red.shade400;
-                                break;
-                            }
-                            return Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4.0,
-                                ),
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: color,
-                                    side: BorderSide(color: color),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  onPressed: () =>
-                                      _controller.playCustomerResponse(r),
-                                  child: Text(
-                                    r.outcome.name.toUpperCase(),
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
+                        if (result == null || !result.isTargetMet)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade900.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.amber.shade700.withValues(
+                                  alpha: 0.4,
                                 ),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 16,
+                                  color: Colors.amber,
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Complete a successful practice read (100% Target Met) to unlock customer consent simulation.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.amber,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else ...[
+                          Row(
+                            children: script.customerResponses.map((r) {
+                              Color color;
+                              switch (r.outcome) {
+                                case ConsentOutcome.agreed:
+                                  color = Colors.green;
+                                  break;
+                                case ConsentOutcome.questioned:
+                                  color = Colors.amber;
+                                  break;
+                                case ConsentOutcome.refused:
+                                  color = Colors.red.shade400;
+                                  break;
+                              }
+                              return Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4.0,
+                                  ),
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: color,
+                                      side: BorderSide(color: color),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    onPressed: () =>
+                                        _controller.playCustomerResponse(r),
+                                    child: Text(
+                                      r.outcome.name.toUpperCase(),
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                         const SizedBox(height: 10),
 
                         // Active Customer Response Bubble

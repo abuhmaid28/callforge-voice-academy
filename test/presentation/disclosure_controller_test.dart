@@ -1,9 +1,12 @@
 import 'package:callforge/core/audio/mock_speech_service.dart';
+import 'package:callforge/data/datasources/attempt_local_datasource.dart';
 import 'package:callforge/data/datasources/disclosure_local_datasource.dart';
 import 'package:callforge/data/datasources/progress_local_datasource.dart';
 import 'package:callforge/data/models/disclosure_script.dart';
+import 'package:callforge/data/repositories/attempt_repository_impl.dart';
 import 'package:callforge/data/repositories/disclosure_repository_impl.dart';
 import 'package:callforge/data/repositories/progress_repository_impl.dart';
+import 'package:callforge/domain/repositories/attempt_repository.dart';
 import 'package:callforge/presentation/controllers/disclosure_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +16,7 @@ void main() {
     late MockSpeechService mockSpeech;
     late DisclosureRepositoryImpl disclosureRepo;
     late ProgressRepositoryImpl progressRepo;
+    late IAttemptRepository attemptRepo;
     late DisclosureController controller;
 
     setUp(() async {
@@ -24,11 +28,13 @@ void main() {
         DisclosureLocalDataSource(prefs),
       );
       progressRepo = ProgressRepositoryImpl(ProgressLocalDataSource(prefs));
+      attemptRepo = AttemptRepositoryImpl(AttemptLocalDataSource(prefs));
 
       controller = DisclosureController(
         speechService: mockSpeech,
         disclosureRepository: disclosureRepo,
         progressRepository: progressRepo,
+        attemptRepository: attemptRepo,
       );
       await controller.initialize();
     });
@@ -52,30 +58,52 @@ void main() {
       expect(controller.currentTranscript, isEmpty);
     });
 
+    test('startReading switches state to listening, captures audio, and records versioned attempt', () async {
+      mockSpeech.simulatedTranscript = controller.selectedScript!.scriptText;
+
+      await controller.startReading();
+      expect(controller.state, equals(DisclosureState.listening));
+
+      await controller.stopReadingAndEvaluate();
+      expect(controller.state, equals(DisclosureState.evaluated));
+      expect(controller.latestResult, isNotNull);
+      expect(controller.latestResult!.isVerbatimMatch, isTrue);
+
+      final attempts = await attemptRepo.getAttempts();
+      expect(attempts, isNotEmpty);
+      final last = attempts.first;
+      expect(last.scriptTitle, equals(controller.selectedScript!.title));
+      expect(
+        last.scriptSnapshot,
+        equals(controller.selectedScript!.scriptText),
+      );
+      expect(last.attemptType, equals('disclosure'));
+    });
+
     test(
-      'startReading switches state to listening and captures audio',
-      () async {
-        mockSpeech.simulatedTranscript = controller.selectedScript!.scriptText;
-
-        await controller.startReading();
-        expect(controller.state, equals(DisclosureState.listening));
-
-        await controller.stopReadingAndEvaluate();
-        expect(controller.state, equals(DisclosureState.evaluated));
-        expect(controller.latestResult, isNotNull);
-        expect(controller.latestResult!.isVerbatimMatch, isTrue);
-      },
-    );
-
-    test(
-      'playCustomerResponse triggers simulated customer speech audio',
+      'playCustomerResponse is blocked when practice target is not met',
       () async {
         final response = controller.selectedScript!.customerResponses.first;
         await controller.playCustomerResponse(response);
-        expect(controller.activeCustomerResponse, equals(response));
-        expect(controller.state, equals(DisclosureState.evaluated));
+        expect(controller.activeCustomerResponse, isNull);
+        expect(
+          controller.errorMessage,
+          contains('Complete a successful practice read'),
+        );
       },
     );
+
+    test('playCustomerResponse triggers simulated customer speech audio after target met', () async {
+      mockSpeech.simulatedTranscript = controller.selectedScript!.scriptText;
+      await controller.startReading();
+      await controller.stopReadingAndEvaluate();
+      expect(controller.latestResult!.isTargetMet, isTrue);
+
+      final response = controller.selectedScript!.customerResponses.first;
+      await controller.playCustomerResponse(response);
+      expect(controller.activeCustomerResponse, equals(response));
+      expect(controller.state, equals(DisclosureState.evaluated));
+    });
 
     test('saveCustomDraft, updateCustomDraft, and deleteCustomDraft perform full CRUD', () async {
       // 1. Create
