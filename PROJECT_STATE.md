@@ -4,6 +4,8 @@
 **Current Branch**: `feat/m1-voice-prototype` (M1 Remediation, Reliability & Hosted CI Verification)  
 **Pull Request**: [#2](https://github.com/abuhmaid28/callforge-voice-academy/pull/2) (`mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`)  
 **Active Issue**: [#3](https://github.com/abuhmaid28/callforge-voice-academy/issues/3) (TASK 005 — Phone-free CI and hosted Android Emulator acceptance)  
+**Verified CI Run**: [Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356) (`ALL JOBS PASSED`)  
+**Verified Remote HEAD**: `f2e1513e7ddee5196c34722b33b52503d37f798b`  
 **Last Updated**: 2026-11-21
 
 ---
@@ -49,12 +51,12 @@
   - [x] Removed uncalibrated WPM badge from coaching UI until calibrated audio timing is integrated.
   - [x] Fixed audio lifecycle races: `retry()` awaits `stopSpeaking()` and cancels listening; `_handleSpeechError` ignores stale errors outside listening/processing; `_deliverFinalTranscript` preserves `customerSpeaking` state.
 - [x] Task 005 Phone-Free Hosted CI & Cloud Android Emulator Acceptance (Issue #3):
-  - [x] Implemented GitHub Actions workflow `.github/workflows/ci.yml` (quality & build + hosted Android emulator integration test).
-  - [x] Implemented end-to-end integration tests in `integration_test/app_test.dart` and `test/integration/app_smoke_test.dart` exercising ST-01 through ST-11.
+  - [x] GitHub Actions workflow `.github/workflows/ci.yml` committed at `f2e1513e7ddee5196c34722b33b52503d37f798b`.
+  - [x] Automated quality & build job verified in CI ([Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356)): format, analyze, 31 tests, and debug APK build passed in 6m 4s.
+  - [x] Hosted Android Emulator job verified in CI ([Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356)): booted API 34 Pixel 6 AVD on KVM, installed APK, executed `integration_test/app_test.dart`, all tests passed in 11m 17s.
   - [x] Replaced obsolete mandatory personal phone testing with hosted CI and Android Emulator verification in `docs/QA_ACCEPTANCE.md` and `docs/ROADMAP.md`.
   - [x] Documented ADR 010 in `DECISIONS.md`.
-  - [x] Automated test suite expanded to 31 tests (100% passing).
-  - [x] Strict boundary enforced: Real physical microphone acoustics and physical offline voice packs remain designated `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
+  - [x] Strict boundary enforced: Speech test doubles simulate state transitions and text evaluation; real physical microphone acoustics and physical offline voice packs remain designated `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
 
 ---
 
@@ -77,8 +79,9 @@
 
 ## 🔍 Verification Status & Merge Recommendation
 
-1. **Testing Strategy**:
-   - Verification is powered entirely by GitHub Actions CI and hosted Android Emulators on Linux runners.
-   - User's personal phone and Windows PC hardware scans are permanently disabled per Product Owner binding directive.
+1. **Testing Status**:
+   - Verification is completed and verified green on GitHub Actions CI ([Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356)).
+   - Both `quality_and_build` and `android_emulator_integration` jobs passed.
+   - User's personal phone and local Windows PC hardware scans remain completely uninvolved.
 2. **Merge Recommendation**:
    - **DO NOT MERGE PR #2** without explicit Product Owner authorization. M2 development remains unauthorized until M1 is officially accepted.

@@ -1,6 +1,6 @@
-# QA_ACCEPTANCE.md — Quality Assurance, Governance Gates, & Smoke-Test Checklist
+# QA_ACCEPTANCE.md — Quality Assurance, Governance Gates, & Hosted CI Evidence
 
-This document defines the automated quality gates, acceptance criteria, and hosted verification protocols for CALLFORGE.
+This document defines the automated quality gates, acceptance criteria, and hosted verification evidence for CALLFORGE.
 
 ---
 
@@ -16,69 +16,64 @@ This document defines the automated quality gates, acceptance criteria, and host
 
 ---
 
-## 🚦 Automated Quality Gates
+## 🏆 Verified GitHub Actions CI Evidence
 
-Every Pull Request must satisfy all automated quality gates prior to merging:
+- **Repository**: `abuhmaid28/callforge-voice-academy`
+- **Branch**: `feat/m1-voice-prototype`
+- **Commit**: `f2e1513e7ddee5196c34722b33b52503d37f798b`
+- **CI Run URL**: https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356
+- **CI Execution Verdict**: **ALL JOBS PASSED (GREEN)**
 
-### Gate 1: Code Formatting & Static Analysis
-- `dart format --set-exit-if-changed .` must pass with 0 deviations.
-- `flutter analyze` must pass with **0 errors, 0 warnings, and 0 lints**.
+### Job 1: Flutter quality and debug APK (ID: `136948923949`)
+- **Duration**: 6m 4s on `ubuntu-latest`
+- **Gate 1 (Formatting)**: `dart format --set-exit-if-changed .` -> **PASS** (0 deviations)
+- **Gate 2 (Static Analysis)**: `flutter analyze` -> **PASS** (0 issues found)
+- **Gate 3 (Test Suite)**: `flutter test --coverage` -> **PASS** (31 / 31 unit, widget, and integration smoke tests passed)
+- **Gate 4 (APK Compilation)**: `flutter build apk --debug` -> **PASS** (Generated `build/app/outputs/flutter-apk/app-debug.apk`)
+- **Artifact Upload**: `callforge-debug-apk` archived with 3-day retention
 
-### Gate 2: Automated Unit & Domain Test Suite
-- Domain logic, scoring algorithms, and repository persistence must pass with 0 failures: `flutter test`.
-- All edge cases (empty speech, punctuation, homophones, P/B substitutions, error handling, session generation guards) must be covered.
-
-### Gate 3: Widget, UI State & App Smoke Test Suite
-- Core widgets (`MicControlButton`, `CoachingCard`, `SimulatorScreen`, `HistoryScreen`) must verify state transitions across `idle`, `listening`, `processing`, `customerSpeaking`, and `error`.
-- Scrolling, retry buttons, and history list rendering must be verified.
-- Complete application lifecycle smoke suite ([test/integration/app_smoke_test.dart](file:///C:/Users/TopOne%20MM/Documents/callforge-voice-academy/test/integration/app_smoke_test.dart)) must execute and pass in headless CI.
-
-### Gate 4: Android Build Validation
-- Headless Gradle compilation must successfully produce a debug APK:
-  ```bash
-  flutter build apk --debug
-  ```
-- Memory heap must remain within `-Xmx2048m` without Windows system thrashing.
-
-### Gate 5: Hosted Android Emulator Integration Tests
-- Executed on standard GitHub Actions `ubuntu-latest` runners with KVM hardware acceleration via `reactivecircus/android-emulator-runner@v2`.
-- End-to-end integration tests ([integration_test/app_test.dart](file:///C:/Users/TopOne%20MM/Documents/callforge-voice-academy/integration_test/app_test.dart)) exercise real APK execution on Android API 34.
+### Job 2: Android API 34 hosted emulator (mocked speech) (ID: `136948924229`)
+- **Duration**: 11m 17s on `ubuntu-latest` (KVM accelerated)
+- **Device Profile**: Pixel 6 AVD, Android API 34 (`google_apis`, `x86_64`)
+- **APK Installation**: `app-debug.apk` installed on `emulator-5554` (589ms)
+- **Test Command**: `flutter test integration_test/app_test.dart -d emulator-5554 --reporter expanded`
+- **Result**: **00:06 +4: All tests passed!**
 
 ---
 
 ## 📱 Canonical Integration & Smoke-Test Matrix (ST-01 – ST-11)
 
-The matrix below maps the required M1 voice prototype scenarios to their automated & hosted verification implementation:
+The matrix below maps the required M1 voice prototype scenarios to their verified automated & hosted execution:
 
-| Test ID | Test Scenario | Execution & Verification Mechanism | Expected Automated / Hosted Outcome | Implementation File | Verification Status |
+| Test ID | Test Scenario | Verification Mechanism & Test File | Expected Outcome | Actual Hosted CI Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ST-01** | **Cold Launch & Startup Stability** | Launch app fresh via Flutter test harness / hosted Android runner. | App opens smoothly, renders "CALLFORGE SIMULATOR", "Agent: Alex (AT&T)", and Turn 1 Inbound Opening without ANR or crash. | `test/integration/app_smoke_test.dart` & `integration_test/app_test.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-02** | **Microphone Permission Handling** | Test `shouldFailMic` simulation & runtime permission dialog flow. | Permission denial displays clear guidance banner ("Microphone permission is required to practice spoken calls"), mic resets to idle, does not crash. | `test/integration/app_smoke_test.dart` & `test/presentation/simulator_controller_test.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-03** | **Missing Anchor Rejection & Coaching** | Simulate greeting omitting mandatory alias "Alex" or carrier "AT&T". | Evaluation flags missing anchor, Egyptian Arabic guidance appears ("الافتتاحية الإلزامية"), state renders `DRILL TARGET UNMET`, Turn 2 customer response is NOT triggered. | `test/integration/app_smoke_test.dart` & `test/core/evaluation/speech_evaluator_test.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-04** | **English-US Speech Recognition** | Feed standard verbatim greeting through deterministic voice double. | Recognized words transcribe into live transcript box in real-time. | `test/integration/app_smoke_test.dart` & `integration_test/app_test.dart` | `VERIFIED (DETERMINISTIC SIMULATION)` |
-| **ST-05** | **Recognized-Text Coaching & Progression** | Evaluate verbatim greeting attempt against reference script. | Coaching card renders `VERBATIM TRANSCRIPT MATCH (100% Text Match)`, 100% similarity, 0% token error rate, and unlocks Turn 2. | `test/integration/app_smoke_test.dart` & `test/widget_test.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-06** | **Customer TTS Response Playback** | Complete Turn 1 greeting meeting target script. | State transitions to `customerSpeaking`, customer card displays synthesized speech ("David Miller"), completes cleanly to idle. | `test/integration/app_smoke_test.dart` & `test/presentation/simulator_controller_test.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-07** | **User-Initiated Stop/Cancel** | Trigger `stopListening()` or `cancelListening()` during active speech session. | Recognizer stops immediately, session generation invalidates stale callbacks, returns to idle without freezing. | `test/presentation/simulator_controller_test.dart` & `lib/core/audio/speech_service.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-08** | **Silence & Recognizer Timeout** | Simulate silence timeout via `shouldTimeoutWithSilence`. | Watchdog timer detects silence, displays informative banner ("No speech was captured..."), resets state to idle. | `test/presentation/simulator_controller_test.dart` & `lib/core/audio/speech_service.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-09** | **Offline Behavior & Guidance** | Simulate offline engine failure via `shouldFailNetwork`. | Catches recognizer error, displays explicit offline guidance banner instructing user on offline English language pack requirements. | `test/presentation/simulator_controller_test.dart` & `lib/core/audio/speech_service.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-10** | **Retry & Interruption Recovery** | Tap "Try Again" during customer speech or rapid tap during transition. | Active TTS speech halts immediately, live transcript clears, evaluation card resets, mic restores to tap-to-speak. | `test/integration/app_smoke_test.dart` & `test/presentation/simulator_controller_test.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
-| **ST-11** | **Local Persistence Across Navigation** | Execute practice drills, navigate to `HistoryScreen`, verify persistence. | Attempt records persist locally with timestamps, 100% Text Match score, and Egyptian Arabic notes; persists across screen navigation and state reloads. | `test/integration/app_smoke_test.dart` & `test/data/attempt_repository_test.dart` | `VERIFIED (AUTOMATED/EMULATOR)` |
+| **ST-01** | **Cold Launch & Startup Stability** | Hosted Android Emulator (API 34)<br>`integration_test/app_test.dart` | App launches cleanly, renders "CALLFORGE SIMULATOR", "Agent: Alex (AT&T)", Turn 1 Opening without crash. | Verified on `emulator-5554` in CI run 44938049356. | `PASS (HOSTED EMULATOR)` |
+| **ST-02** | **Microphone Permission Handling** | Deterministic simulation<br>`test/presentation/simulator_controller_test.dart` & `integration_test/app_test.dart` | Permission denial catches gracefully, shows guidance banner ("Microphone permission is required..."), mic resets to idle. | Verified on `emulator-5554` in CI run 44938049356. | `PASS (SIMULATED UI / EMULATOR)` |
+| **ST-03** | **Missing Anchor Rejection & Coaching** | Hosted Android Emulator (API 34)<br>`integration_test/app_test.dart` | Omitting "Alex" or "AT&T" triggers `DRILL TARGET UNMET`, displays missing anchor guidance, customer Turn 2 is NOT triggered. | Verified on `emulator-5554` in CI run 44938049356. | `PASS (HOSTED EMULATOR)` |
+| **ST-04** | **English-US Speech Recognition** | Deterministic voice double (`MockSpeechService`)<br>`integration_test/app_test.dart` | Simulated standard greeting transcribes into live transcript display in real-time. | Verified on `emulator-5554`. Note: Software simulation; not real acoustic microphone input. | `PASS (MOCKED / DETERMINISTIC)` |
+| **ST-05** | **Recognized-Text Coaching & Progression** | Hosted Android Emulator (API 34)<br>`integration_test/app_test.dart` | Evaluates verbatim greeting, renders `VERBATIM TRANSCRIPT MATCH (100% Text Match)`, unlocks Turn 2. | Verified on `emulator-5554` in CI run 44938049356. | `PASS (HOSTED EMULATOR)` |
+| **ST-06** | **Customer TTS Response Playback** | Deterministic TTS simulation<br>`integration_test/app_test.dart` | Transitions to `customerSpeaking`, displays customer response ("David Miller"), completes cleanly to idle. | Verified on `emulator-5554`. Note: Software simulation; not physical speaker acoustic quality. | `PASS (MOCKED TTS / EMULATOR)` |
+| **ST-07** | **User-Initiated Stop/Cancel** | Unit & Controller lifecycle test<br>`test/presentation/simulator_controller_test.dart` | Canceling listening increments session generation, discards pending callbacks, returns cleanly to idle. | Verified in CI test suite (31/31 passed). | `PASS (AUTOMATED)` |
+| **ST-08** | **Silence & Recognizer Timeout** | Unit & Controller lifecycle test<br>`test/presentation/simulator_controller_test.dart` | Watchdog detects silence, displays informative banner ("No speech was captured..."), resets state to idle. | Verified in CI test suite (31/31 passed). | `PASS (AUTOMATED)` |
+| **ST-09** | **Offline Behavior & Guidance** | Unit & Controller lifecycle test<br>`test/presentation/simulator_controller_test.dart` | Offline recognizer failure catches cleanly, displays explicit guidance banner regarding offline language pack prerequisites. | Verified in CI test suite (31/31 passed). | `PASS (AUTOMATED)` |
+| **ST-10** | **Retry & Interruption Recovery** | Hosted Android Emulator (API 34)<br>`integration_test/app_test.dart` | Tapping "Try Again" halts active audio, clears live transcript, resets evaluation card, mic restores to tap-to-speak. | Verified on `emulator-5554` in CI run 44938049356. | `PASS (HOSTED EMULATOR)` |
+| **ST-11** | **Local Persistence Across Navigation** | Hosted Android Emulator (API 34)<br>`integration_test/app_test.dart` | Practice attempts persist in `SharedPreferences` with timestamps, score %, and Arabic notes; retrieved in `HistoryScreen`. | Verified on `emulator-5554`. Note: Tests local data persistence across navigation; not an OS process kill/reboot. | `PASS (HOSTED EMULATOR)` |
 
 ---
 
 ## 🔍 Provenance & Technical Boundaries
 
-1. **Automated / Hosted Emulator Verification**:
-   - Code formatting, static analysis, 31 unit/widget/integration tests, and debug APK compilation are fully automated and verified.
-   - Hosted Android Emulator verifies Android runtime execution, widget rendering, state machines, and data persistence on Linux CI.
-2. **Untested Real Hardware Audio Behaviors**:
-   - Physical microphone hardware acoustics, ambient background noise suppression, real speaker audio quality, and vendor-specific Android offline speech recognition packs remain `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
+1. **Automated & Hosted Emulator Verification (`VERIFIED`)**:
+   - Code formatting, static analysis, 31 unit/widget/integration tests, and debug APK compilation are fully automated, reproducible, and passing in GitHub Actions.
+   - Hosted Android Emulator (API 34) verifies real Android APK installation, runtime rendering, navigation, and state machines on standard Linux runners.
+2. **Untested Real Hardware Audio Behaviors (`NOT TESTED / UNVERIFIED`)**:
+   - Physical microphone hardware acoustics, room ambient noise suppression, real physical speaker audio fidelity, and vendor-specific Android offline speech recognition packs remain `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
    - The application does not claim native acoustic pronunciation scoring or employer QA certification.
 
 ---
 
 ## 📋 M1 Acceptance Verdict Criteria
 
-- **Automated Gates**: PASS (Format, Analyze, 31 Unit/Widget/Integration Tests, APK Build).
-- **Hosted Emulator Gate**: Configured in `.github/workflows/ci.yml`.
+- **Automated Gates**: **PASS** (Format, Analyze, 31 Tests, APK Build).
+- **Hosted Android Emulator Gate**: **PASS** (CI Run 44938049356, 4/4 integration scenarios passed on API 34).
 - **Merge Recommendation**: **DO NOT MERGE PR #2** without explicit Product Owner authorization. M2 development remains unauthorized until M1 is officially accepted.
