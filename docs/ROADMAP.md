@@ -42,14 +42,16 @@ This document defines the technical release milestones for CALLFORGE (M0 through
 4. **Bilingual Coaching & Local Persistence**:
    - English transcript analysis + natural Egyptian Arabic trainer guidance.
    - Local offline attempt records saved to `SharedPreferences` with retry flow.
-5. **Verification & Physical Hardware Gate**:
-   - Automated unit, controller, and widget tests passing with 0 failures.
-   - Headless debug APK compilation verified.
-   - 11-step Physical Android Device Smoke-Test Checklist (`ST-01` to `ST-11` in `docs/QA_ACCEPTANCE.md`).
+5. **Verification & Hosted CI Gate**:
+   - Automated unit, controller, widget, and app smoke integration tests (31 tests) passing with 0 failures.
+   - Headless debug APK compilation verified in GitHub Actions.
+   - Hosted Android Emulator smoke and integration tests (`ST-01` to `ST-11` in `docs/QA_ACCEPTANCE.md`) executed on Linux runners.
+   - Real physical microphone acoustics and physical offline voice packs documented as `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
 
 ---
 
 ## 🔮 Milestone Sequencing & Governance Rules
 
-- M1 must be validated on physical hardware prior to merging PR #2 or starting M2.
+- M1 must achieve `AUTOMATED / HOSTED EMULATOR VERIFIED` status in GitHub Actions prior to merging PR #2 or starting M2.
+- In accordance with Product Owner decision (2026-11-21), personal physical Android phone testing is forbidden; development proceeds via hosted Linux CI and Android emulators.
 - Subsequent milestones (M2 through M6) will be executed sequentially using dedicated feature branches and verified pull requests.

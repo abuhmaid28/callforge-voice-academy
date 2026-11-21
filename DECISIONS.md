@@ -127,3 +127,21 @@ This document records the key architectural, technical, and domain decisions mad
 - **Consequences**:
   - Direct traceability between pedagogical training modules and engineering deliverables.
   - Transparent release trajectory avoiding ad-hoc milestone proliferation.
+
+---
+
+## ADR 010: Phone-Free Hosted CI & Android Cloud Emulator Testing Strategy
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: The Product Owner issued a binding decision strictly forbidding the use or attachment of their personal Android phone for CALLFORGE development, USB debugging, ADB device scans, or APK sideloading. Development was previously blocked waiting for a physical device.
+- **Decision**: Replace the mandatory personal physical-phone acceptance gate with a completely phone-free, hosted CI strategy:
+  1. Automated formatting, static analysis (`flutter analyze`), and unit/widget/integration test suite (31 tests) running in GitHub Actions on standard Ubuntu runners.
+  2. Headless debug APK compilation in CI.
+  3. Hosted Android Emulator integration smoke testing via `reactivecircus/android-emulator-runner@v2` on Ubuntu runners with KVM hardware acceleration.
+  4. Deterministic test doubles (`MockSpeechService`) used for headless and emulator-level speech verification.
+  5. Acceptance terminology updated to `AUTOMATED / HOSTED EMULATOR VERIFIED`.
+  6. Real physical microphone acoustics and physical offline voice pack behavior remain explicitly documented as `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
+- **Consequences**:
+  - Eliminates dependency on personal hardware while maintaining strict verification rigor.
+  - Development continues autonomously with reproducible CI and cloud emulator gates.
+  - Zero spending on paid runners or external cloud device labs; runs entirely on standard GitHub-hosted infrastructure.

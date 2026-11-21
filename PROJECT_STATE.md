@@ -1,8 +1,9 @@
 # PROJECT_STATE.md — Current Project Status
 
 **Repository**: `https://github.com/abuhmaid28/callforge-voice-academy`  
-**Current Branch**: `feat/m1-voice-prototype` (M1 Remediation, Reliability & Truth Audit)  
+**Current Branch**: `feat/m1-voice-prototype` (M1 Remediation, Reliability & Hosted CI Verification)  
 **Pull Request**: [#2](https://github.com/abuhmaid28/callforge-voice-academy/pull/2) (`mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`)  
+**Active Issue**: [#3](https://github.com/abuhmaid28/callforge-voice-academy/issues/3) (TASK 005 — Phone-free CI and hosted Android Emulator acceptance)  
 **Last Updated**: 2026-11-21
 
 ---
@@ -16,8 +17,8 @@
 | **Java JDK** | `VERIFIED` | OpenJDK 25.0.2 at `C:\Program Files\Android\Android Studio\jbr` |
 | **Android Licenses**| `VERIFIED` | All Android licenses accepted |
 | **GitHub CLI** | `VERIFIED` | Authenticated as `abuhmaid28` via git operations protocol HTTPS |
-| **Hardware** | `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
-| **Connected Device**| `PENDING USB` | 0 physical Android devices currently attached via ADB; Windows/Chrome desktop active |
+| **Hardware Environment**| `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
+| **Verification Strategy**| `VERIFIED` | Phone-free hosted Linux CI (GitHub Actions) & Android Emulator integration tests (ADR 010) |
 | **PR Mergeability**| `CLEAN` | Verified via GitHub API (`mergeable: MERGEABLE`, zero git merge conflicts) |
 
 ---
@@ -47,13 +48,13 @@
   - [x] Renamed verbatim banner to `VERBATIM TRANSCRIPT MATCH (100% Text Match)` to avoid misrepresenting transcript match as acoustic pronunciation.
   - [x] Removed uncalibrated WPM badge from coaching UI until calibrated audio timing is integrated.
   - [x] Fixed audio lifecycle races: `retry()` awaits `stopSpeaking()` and cancels listening; `_handleSpeechError` ignores stale errors outside listening/processing; `_deliverFinalTranscript` preserves `customerSpeaking` state.
-  - [x] Rebuilt and fingerprinted debug APK at verified HEAD:
-    - Path: `build/app/outputs/flutter-apk/app-debug.apk`
-    - Size: 171,416,911 bytes
-    - SHA-256: `C516B51EDAF0E88BC1D3B2C620872332DE8D1CAC63F3994D50330CBA98193D01`
-    - Timestamp: 2026-11-21 06:52:04
-  - [x] Automated test suite: 27 / 27 unit & widget tests passing (100%).
-  - [x] ADB device status: 0 physical devices attached via ADB. Smoke-test matrix ST-01 through ST-11 is `PENDING HARDWARE`.
+- [x] Task 005 Phone-Free Hosted CI & Cloud Android Emulator Acceptance (Issue #3):
+  - [x] Implemented GitHub Actions workflow `.github/workflows/ci.yml` (quality & build + hosted Android emulator integration test).
+  - [x] Implemented end-to-end integration tests in `integration_test/app_test.dart` and `test/integration/app_smoke_test.dart` exercising ST-01 through ST-11.
+  - [x] Replaced obsolete mandatory personal phone testing with hosted CI and Android Emulator verification in `docs/QA_ACCEPTANCE.md` and `docs/ROADMAP.md`.
+  - [x] Documented ADR 010 in `DECISIONS.md`.
+  - [x] Automated test suite expanded to 31 tests (100% passing).
+  - [x] Strict boundary enforced: Real physical microphone acoustics and physical offline voice packs remain designated `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
 
 ---
 
@@ -74,11 +75,10 @@
 
 ---
 
-## 🔍 Known Blockers & Physical Testing Gate
+## 🔍 Verification Status & Merge Recommendation
 
-1. **Physical Device Pending**:
-   - `adb devices -l` reports 0 connected devices (`List of devices attached` empty).
-   - Automated checks pass: 27/27 tests passing, `flutter analyze` 0 issues, debug APK compiled and fingerprinted.
-   - Physical smoke test matrix ST-01 through ST-11 in `docs/QA_ACCEPTANCE.md` remains `PENDING HARDWARE` until an authorized physical Android device is attached via USB debugging.
+1. **Testing Strategy**:
+   - Verification is powered entirely by GitHub Actions CI and hosted Android Emulators on Linux runners.
+   - User's personal phone and Windows PC hardware scans are permanently disabled per Product Owner binding directive.
 2. **Merge Recommendation**:
-   - **DO NOT MERGE PR #2** until physical Android smoke-test checklist is validated on attached hardware.
+   - **DO NOT MERGE PR #2** without explicit Product Owner authorization. M2 development remains unauthorized until M1 is officially accepted.
