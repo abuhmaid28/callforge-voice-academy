@@ -43,6 +43,7 @@
   - [x] Reconciled M0–M6 technical roadmap with product requirements and all 10 curriculum modules in `docs/ROADMAP.md`.
 - [x] Task 004 Physical Android Voice Acceptance & Review Hardening:
   - [x] Unified canonical ST-01 through ST-11 checklist in `docs/QA_ACCEPTANCE.md`.
+  - [x] Corrected ADB launch command package ID in `docs/QA_ACCEPTANCE.md` from `com.callforge.voice_academy` to `com.callforge.callforge`.
   - [x] Renamed verbatim banner to `VERBATIM TRANSCRIPT MATCH (100% Text Match)` to avoid misrepresenting transcript match as acoustic pronunciation.
   - [x] Removed uncalibrated WPM badge from coaching UI until calibrated audio timing is integrated.
   - [x] Fixed audio lifecycle races: `retry()` awaits `stopSpeaking()` and cancels listening; `_handleSpeechError` ignores stale errors outside listening/processing; `_deliverFinalTranscript` preserves `customerSpeaking` state.
