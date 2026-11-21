@@ -287,5 +287,63 @@ class DisclosureCatalog {
         notes: 'Crucial for practicing optional/mandatory distinction and deductibles.',
       ),
     ),
+
+    // 6. Customer Account Privacy & CPNI Authentication (Fictional Simulation)
+    const DisclosureScript(
+      id: 'disc-cpni-06',
+      title: 'Customer Account Privacy & CPNI Consent (Simulation)',
+      category: 'Privacy & Security',
+      scriptText: 'To protect your account security and comply with federal privacy rules regarding Customer Proprietary Network Information, I need your permission to access your call detail and service records for this session. You have the right to approve or deny access without affecting your current service. May I have your permission to access your account details?',
+      criticalTerms: [
+        CriticalTerm(
+          term: 'protect your account security',
+          category: 'obligation',
+        ),
+        CriticalTerm(
+          term: 'customer proprietary network information',
+          category: 'condition',
+        ),
+        CriticalTerm(term: 'access your call detail', category: 'condition'),
+        CriticalTerm(
+          term: 'without affecting your current service',
+          category: 'condition',
+        ),
+        CriticalTerm(
+          term: 'may i have your permission',
+          category: 'obligation',
+        ),
+      ],
+      customerResponses: [
+        SimulatedCustomerResponse(
+          outcome: ConsentOutcome.agreed,
+          spokenText:
+              'Yes, Alex, you have my permission to access my account records.',
+          trainerGuidanceArabic: 'العميل منح الموافقة بوضوح. اشكره وافتح سجلات المكالمات لمساعدته.',
+          expectedAgentAction:
+              'Acknowledge authorization and proceed with account review.',
+        ),
+        SimulatedCustomerResponse(
+          outcome: ConsentOutcome.questioned,
+          spokenText: 'Wait, what exactly is customer proprietary network information? Are you reading my private text messages?',
+          trainerGuidanceArabic: 'العميل متخوف من خصوصية رسائله. طمنه فوراً إن CPNI تخص تفاصيل المكالمات وفواتير الشبكة ولا يمكن لأي موظف قراءة محتوى الرسائل أو البيانات الشخصية.',
+          expectedAgentAction:
+              'Clarify billing/network metadata vs private message content.',
+        ),
+        SimulatedCustomerResponse(
+          outcome: ConsentOutcome.refused,
+          spokenText: 'No, I do not feel comfortable giving permission to look into my call history today.',
+          trainerGuidanceArabic: 'العميل رفض منح الإذن. احترم قراره والتزم بتقديم المساعدة العامة التي لا تتطلب الاطلاع على سجلات الـ CPNI.',
+          expectedAgentAction:
+              'Respect refusal and provide generalized non-CPNI support.',
+        ),
+      ],
+      metadata: ContentMetadata(
+        provenance: ProvenanceTier.fictionalSimulation,
+        version: '1.0.0',
+        lastReviewed: '2026-11-21',
+        authorOrSource: 'CALLFORGE Fictional Practice Suite',
+        notes: 'Fictional privacy and CPNI consent simulation drill. Does not reflect confidential employer policy.',
+      ),
+    ),
   ];
 }

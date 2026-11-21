@@ -156,8 +156,8 @@ class MultiTurnController extends ChangeNotifier {
     _state = MultiTurnState.turnCompleted;
     notifyListeners();
 
-    // Move to next turn automatically if target met and branch resolved
-    if (eval.isTargetMet && eval.nextTurnId != null) {
+    // Advance along the chosen branch (success or low_aerd/objection)
+    if (eval.nextTurnId != null) {
       final nextTurn = _findTurnById(eval.nextTurnId!);
       if (nextTurn != null) {
         _advanceToTurn(nextTurn);

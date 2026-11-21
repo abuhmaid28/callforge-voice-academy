@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/audio/speech_service.dart';
 import '../../core/di/service_locator.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../controllers/progress_controller.dart';
@@ -53,6 +54,15 @@ class _MainScaffoldState extends State<MainScaffold> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
+          if (index != _currentIndex) {
+            try {
+              if (ServiceLocator.isRegistered<ISpeechService>()) {
+                final speech = ServiceLocator.get<ISpeechService>();
+                speech.cancelListening();
+                speech.stopSpeaking();
+              }
+            } catch (_) {}
+          }
           setState(() {
             _currentIndex = index;
           });

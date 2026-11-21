@@ -312,6 +312,7 @@ class _MultiTurnSimulatorScreenState extends State<MultiTurnSimulatorScreen> {
                 // Microphone Push-to-Talk Button
                 if (!isCompleted)
                   FloatingActionButton.extended(
+                    heroTag: null,
                     onPressed: isCustomerSpeaking
                         ? null
                         : () {

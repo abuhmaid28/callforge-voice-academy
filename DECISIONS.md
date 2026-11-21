@@ -164,3 +164,30 @@ This document records the key architectural, technical, and domain decisions mad
   - Delivers complete end-to-end training experience covering greeting, disclosures, de-escalation, and floor drills in one cohesive application.
   - Maintains 100% backward compatibility with M1 tests and legacy entrypoints.
   - Fully verified with 67 automated tests and clean static analysis.
+
+---
+
+## ADR 012: C1-R1 Adaptive Scenario Branching, Sequence-Aware Alignment, and Full Product Journeys
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: Independent PR review and Issue #6 identified critical gaps in the initial C1 foundation:
+  1. 120 scenario turns used placeholder `default` branches instead of genuine adaptive branching.
+  2. `DisclosureEvaluator` used unordered bag-of-words matching, permitting scrambled words and missing altered negation words (`not`, `never`, `cannot`).
+  3. Disclosure Studio lacked custom draft CRUD (edit/delete) and reference audio playback.
+  4. Misleading WPM performance grading and "compliance" claims remained in disclosure UI.
+  5. Substring keyword matching in `MultiTurnEvaluator` caused false positives (e.g. `att` matching inside `matter`).
+  6. Bilabial P/B contrast drills always awarded 100% regardless of spoken transcript accuracy.
+  7. Lack of end-to-end integration tests exercising 5-tab user journeys.
+- **Decision**:
+  1. **Dynamic Programming Sequence Alignment**: Upgraded `DisclosureEvaluator` to sequence-aware Needleman-Wunsch / Levenshtein alignment with explicit match, substitution, omission (deletion), and insertion (`TokenMatchStatus.inserted`) tracking.
+  2. **Negation Alteration Safety**: Enforced strict negation word tracking (`{'not', 'no', 'never', 'without', 'only', 'unless', 'cannot', 'cant', 'wont', 'dont'}`). Any omitted or substituted negation immediately invalidates `isTargetMet = false`.
+  3. **Full 6-Turn Adaptive Scenario Trees**: Converted all 30 scenarios in `ScenarioCatalog` into genuine 6-turn adaptive dialogue trees with two distinct reachable branches: Turn 4A/5A (high-AERD resolution) vs Turn 4B/5B (low-AERD objection/recovery), each with tailored customer TTS and non-empty Egyptian Arabic coaching. Supervisor callbacks are explicitly noted as unavailable.
+  4. **Disclosure Draft CRUD & Reference Audio**: Completed local draft update and delete actions with confirmation dialogs, backed by `SharedPreferences` persistence and reference audio playback.
+  5. **Honest Labeling**: Replaced all unvalidated compliance/WPM badges with honest transcript match indicators (`RECOGNIZED TRANSCRIPT MATCH`, `PRACTICE TARGET MET/UNMET`).
+  6. **Token-Aware Regex Keyword Matching**: Enforced word-boundary regex (`\b(att|at and t|at t)\b`) eliminating substring false positives.
+  7. **Spoken P/B Transcript Evaluation**: Updated `FloorSkillsController` to evaluate recognized spoken transcript against target vs contrast words, alerting on bilabial confusion.
+  8. **Full Product Journey Integration Tests**: Created `C1-01` through `C1-04` tests in `test/integration/app_smoke_test.dart` and `integration_test/app_test.dart` exercising the complete 5-tab app.
+- **Consequences**:
+  - Eliminates all default branching placeholders and guarantees pedagogically rich, responsive multi-turn simulations.
+  - Guarantees strict verbatim legal disclosure evaluation that rejects out-of-order and negation-altered speech.
+  - Fully verified across 76 automated unit, widget, and integration tests with zero static analysis issues and 100% Dart formatting.

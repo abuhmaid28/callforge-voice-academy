@@ -2,10 +2,11 @@
 
 **Repository**: `https://github.com/abuhmaid28/callforge-voice-academy`  
 **Base Commit**: `40f2c0438c415b53b961d353a7c67b62494266a0` (Approved M1 Squash Merge on `main`)  
-**Current Branch**: `feat/c1-mega-disclosure-floor-skills` (C1-MEGA Autonomous Campaign)  
-**Active Issue**: [#4](https://github.com/abuhmaid28/callforge-voice-academy/issues/4) (C1-MEGA — M2 Disclosure Studio + M3 Floor Skills & 30-scenario Voice Arena)  
-**Active Milestone**: C1-MEGA (M2 + M3 Integration)  
-**Test Suite**: 67 automated tests passing (`flutter test`) | Static Analysis: Clean (`flutter analyze`)  
+**Current Branch**: `feat/c1-mega-disclosure-floor-skills` (C1-R1 MEGA Autonomous Recovery Campaign)  
+**Active PR**: [#5](https://github.com/abuhmaid28/callforge-voice-academy/pull/5)  
+**Active Issue**: [#6](https://github.com/abuhmaid28/callforge-voice-academy/issues/6) (C1-R1 MEGA Recovery: Adaptive Branching, Order-Safe Alignment, & Product Journeys)  
+**Active Milestone**: C1-R1 MEGA (M2 Disclosure Studio + M3 Floor Skills Remediation)  
+**Test Suite**: 76 automated tests passing (`flutter test`) | Static Analysis: Clean (`flutter analyze`) | Dart Format: 100%  
 **Last Updated**: 2026-11-21
 
 ---
@@ -20,39 +21,35 @@
 | **GitHub CLI** | `VERIFIED` | Authenticated as `abuhmaid28` via git operations protocol HTTPS |
 | **Hardware Environment**| `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
 | **Verification Strategy**| `VERIFIED` | Phone-free hosted Linux CI (GitHub Actions) & Android Emulator integration tests (ADR 010) |
-| **Automated Tests** | `VERIFIED` | 67 tests passing (unit, widget, integration) |
+| **Automated Tests** | `VERIFIED` | 76 tests passing (unit, widget, integration) |
 
 ---
 
-## 🎯 Active Milestone: C1-MEGA (M2 Disclosure Studio + M3 Floor Skills)
+## 🎯 Active Milestone: C1-R1 MEGA Remediation & Completion
 
-- [x] **Phase A — Governance & Typed Provenance**:
-  - Established typed 6-tier provenance system in `lib/core/models/provenance.dart` (`ProvenanceTier` enum).
-  - Attached explicit source provenance metadata to all scenarios, disclosures, and progress models.
-- [x] **Phase B — 30-Scenario Voice Arena & Multi-Turn Engine**:
-  - Implemented `ScenarioCatalog` containing all 30 distinct fictional multi-turn customer care scenarios across 5 categories.
-  - Authored branching dialogue trees with agent and customer turns, required keywords, and Egyptian Arabic coaching cards.
-  - Implemented `MultiTurnEvaluator` combining token-aware keyword matching, AT&T transcription variants, AERD (Acknowledge, Empathy, Reassure, Defuse) scoring, and branch resolution.
-- [x] **Phase C — M2 Disclosure Studio**:
-  - Created 5 self-contained fictional legal disclosure scripts in `DisclosureCatalog` (`[Fictional / Simulation Only]`).
-  - Implemented `DisclosureEvaluator` with token-by-token alignment, Levenshtein similarity, WER, critical terms extraction, and P/B phonemic alerts.
-  - Implemented `DisclosureKaraokeView` with dynamic color-coded word highlights and critical terms badge checklist.
-  - Simulated customer consent outcomes (agreed, questioned, refused) with TTS playback and Egyptian Arabic trainer next-step coaching.
-  - Local user draft creation and offline persistence via `SharedPreferences`.
-- [x] **Phase D — M3 Floor Skills & Drills**:
-  - P/B Bilabial contrast drills with minimal pairs (`payment/bayment`, `plan/blan`, `paperless/baperless`, `problem/broblem`, `postpaid/bostpaid`) and phonemic coaching.
-  - Fast numbers & active listening dictation drills with audio dictation, digit precision validation, and instant feedback.
-- [x] **Phase E — Learning Progress & Daily Coach**:
-  - Tracked daily streaks, completed simulations, disclosure attempts, and floor drill scores.
-  - Dynamic skill mastery radar calculating moving average mastery per skill tag.
-  - Deterministic rule-based Daily Coach ("Today's Workout") recommending targeted scenarios and drills based on weakest skill tag.
-- [x] **Phase F — Feature-First Main Navigation & UX Polish**:
-  - Built `MainScaffold` connecting 5 bottom navigation destinations (Today, Arena, Disclosures, Floor Skills, Progress).
-  - Wired lightweight `ServiceLocator` dependency injection.
-  - High-contrast, dark/light theme, accessible typography, and synthetic waveform activity indicator.
-- [x] **Phase G — Comprehensive Automated Test Suite**:
-  - 67 tests passing across unit, widget, and integration suites.
-  - 100% backward-compatible with M1 greeting tests.
+- [x] **Phase 1 — Genuine Adaptive Branching Across All 30 Scenarios**:
+  - Replaced all 120 default-branching placeholders across 30 scenarios with complete 6-turn adaptive dialogue trees.
+  - Structured every scenario with two reachable, distinct branches: Turn 4A / 5A (high-AERD resolution) and Turn 4B / 5B (low-AERD objection/recovery).
+  - Tailored customer TTS responses and rich Egyptian Arabic trainer coaching for every turn; supervisor callbacks explicitly documented as absent.
+- [x] **Phase 2 — Sequence-Aware Dynamic Programming Disclosure Alignment**:
+  - Replaced unordered token matching in `DisclosureEvaluator` with sequence-aware Needleman-Wunsch / Levenshtein alignment.
+  - Added explicit token tracking: matched, substituted, missing (deleted), and inserted (`TokenMatchStatus.inserted`).
+  - Added strict negation word tracking (`not`, `no`, `never`, `without`, `only`, `unless`, `cannot`, etc.); any omitted or substituted negation immediately invalidates target met.
+  - Added 6th fictional script `disc-cpni-06` (`Customer Account Privacy & CPNI Authentication`) in `DisclosureCatalog`.
+- [x] **Phase 3 — Disclosure Studio Local Draft Management & Reference Audio**:
+  - Added custom draft editing bottom sheet and delete confirmation dialogs in `DisclosureStudioScreen`.
+  - Added reference audio playback (`playReferenceAudio`, `stopReferenceAudio`) in `DisclosureController` and screen header.
+  - Replaced misleading WPM/compliance labels with honest indicators: `RECOGNIZED TRANSCRIPT MATCH`, `PRACTICE TARGET MET/UNMET`.
+- [x] **Phase 4 — Hardened Multi-Turn Dialogue & Keyword Matching**:
+  - Enforced word-boundary regex (`\b(att|at and t|at t)\b`) in `MultiTurnEvaluator` to eliminate substring false positives like `matter`.
+  - Added `retryCurrentTurn()` in `MultiTurnController` to reset failed turns cleanly without history pollution.
+- [x] **Phase 5 — Spoken Floor Skills Evaluation**:
+  - Evaluated recognized speech against target vs contrast words in `FloorSkillsController`, detecting bilabial confusion instead of hardcoding 100%.
+- [x] **Phase 6 — Cross-Tab Audio Safety**:
+  - Added automatic audio stopping and cancellation on bottom navigation destination changes in `MainScaffold`.
+- [x] **Phase 7 — Comprehensive Product Journey Integration Tests**:
+  - Created canonical `C1-01` through `C1-04` integration tests in `test/integration/app_smoke_test.dart` and `integration_test/app_test.dart` exercising the complete 5-tab user journeys.
+  - 76 total automated tests passing cleanly with 0 static analysis issues and 100% formatted Dart code.
 
 ---
 

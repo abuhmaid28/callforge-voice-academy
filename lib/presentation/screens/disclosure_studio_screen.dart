@@ -54,13 +54,39 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
     final script = _controller.selectedScript;
     final isListening = _controller.state == DisclosureState.listening;
     final isPlaying =
-        _controller.state == DisclosureState.playingCustomerResponse;
+        _controller.state == DisclosureState.playingCustomerResponse ||
+        _controller.state == DisclosureState.playingReference;
+    final isPlayingRef = _controller.state == DisclosureState.playingReference;
     final result = _controller.latestResult;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('M2 Disclosure Studio'),
         actions: [
+          if (script != null) ...[
+            IconButton(
+              icon: Icon(
+                isPlayingRef
+                    ? Icons.stop_circle_outlined
+                    : Icons.volume_up_rounded,
+                color: isPlayingRef ? Colors.amber : null,
+              ),
+              tooltip: isPlayingRef ? 'Stop Audio' : 'Play Reference Audio',
+              onPressed: () => _controller.playReferenceAudio(),
+            ),
+            if (script.isCustomUserDraft) ...[
+              IconButton(
+                icon: const Icon(Icons.edit_rounded),
+                tooltip: 'Edit Custom Draft',
+                onPressed: () => _showEditDraftSheet(context, script),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded),
+                tooltip: 'Delete Draft',
+                onPressed: () => _confirmDeleteDraft(context, script),
+              ),
+            ],
+          ],
           IconButton(
             icon: const Icon(Icons.add_rounded),
             tooltip: 'Add Custom Draft',
@@ -88,7 +114,11 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
                       final item = _controller.scripts[i];
                       final isSelected = item.id == script.id;
                       return ChoiceChip(
-                        label: Text(item.title),
+                        label: Text(
+                          item.isCustomUserDraft
+                              ? '✏️ ${item.title}'
+                              : item.title,
+                        ),
                         selected: isSelected,
                         onSelected: (_) => _controller.selectScript(item),
                       );
@@ -207,6 +237,7 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
                       ),
                       const SizedBox(width: 16),
                       FloatingActionButton.extended(
+                        heroTag: null,
                         onPressed: () {
                           if (isListening) {
                             _controller.stopReadingAndEvaluate();
@@ -241,7 +272,6 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
     final isTargetMet = result.isTargetMet as bool;
     final isVerbatim = result.isVerbatimMatch as bool;
     final simScore = (result.similarityScore * 100).round();
-    final wpm = result.estimatedWpm as int;
     final arabicCoaching = result.arabicCoaching as String;
 
     return Container(
@@ -269,19 +299,22 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
                 color: isTargetMet ? Colors.greenAccent : Colors.redAccent,
               ),
               const SizedBox(width: 8),
-              Text(
-                isVerbatim
-                    ? '100% VERBATIM SCRIPT MATCH'
-                    : (isTargetMet ? 'DISCLOSURE PASSED' : 'TARGET NOT MET'),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: isTargetMet ? Colors.greenAccent : Colors.redAccent,
+              Expanded(
+                child: Text(
+                  isVerbatim
+                      ? 'RECOGNIZED TRANSCRIPT MATCH (100% Target)'
+                      : (isTargetMet
+                            ? 'PRACTICE TARGET MET'
+                            : 'PRACTICE TARGET UNMET'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isTargetMet ? Colors.greenAccent : Colors.redAccent,
+                  ),
                 ),
               ),
-              const Spacer(),
               Text(
-                '$simScore% Match • $wpm WPM',
+                '$simScore% Transcript Match',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
@@ -302,6 +335,15 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Practice evaluation based on recognized speech transcript text. Does not certify official legal compliance or native acoustic accent scoring.',
+            style: TextStyle(
+              fontSize: 10,
+              fontStyle: FontStyle.italic,
+              color: Colors.grey.shade500,
+            ),
+          ),
         ],
       ),
     );
@@ -311,39 +353,62 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
     BuildContext context,
     SimulatedCustomerResponse response,
   ) {
+    Color badgeColor;
+    switch (response.outcome) {
+      case ConsentOutcome.agreed:
+        badgeColor = Colors.green;
+        break;
+      case ConsentOutcome.questioned:
+        badgeColor = Colors.amber;
+        break;
+      case ConsentOutcome.refused:
+        badgeColor = Colors.red.shade400;
+        break;
+    }
+
     return Container(
-      margin: const EdgeInsets.only(top: 8.0),
       padding: const EdgeInsets.all(14.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.amber.shade700.withValues(alpha: 0.4)),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.record_voice_over_rounded,
-                size: 16,
-                color: Colors.amber,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Customer Spoke (${response.outcome.name.toUpperCase()}):',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(4),
                 ),
+                child: Text(
+                  response.outcome.displayName,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.replay_rounded, size: 18),
+                tooltip: 'Replay Customer Audio',
+                onPressed: () => _controller.playCustomerResponse(response),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             '"${response.spokenText}"',
-            style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 13),
+            style: const TextStyle(
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 10),
           const Text(
@@ -386,48 +451,140 @@ class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
           right: 16,
           top: 16,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Add Custom Disclosure Draft',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Draft Title',
-                hintText: 'e.g. Fiber Cancellation Window',
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Add Custom Disclosure Draft',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: textController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Disclosure Spoken Copy',
-                hintText: 'Enter complete verbatim copy to practice...',
+              const SizedBox(height: 12),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Draft Title',
+                  hintText: 'e.g. Fiber Cancellation Window',
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty &&
-                    textController.text.isNotEmpty) {
-                  _controller.saveCustomDraft(
-                    title: titleController.text.trim(),
-                    category: category,
-                    scriptText: textController.text.trim(),
-                  );
-                  Navigator.pop(ctx);
-                }
-              },
-              child: const Text('Save and Practice Draft'),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: textController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Disclosure Spoken Copy',
+                  hintText: 'Enter complete verbatim copy to practice...',
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () {
+                  if (titleController.text.isNotEmpty &&
+                      textController.text.isNotEmpty) {
+                    _controller.saveCustomDraft(
+                      title: titleController.text.trim(),
+                      category: category,
+                      scriptText: textController.text.trim(),
+                    );
+                    Navigator.pop(ctx);
+                  }
+                },
+                child: const Text('Save and Practice Draft'),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  void _showEditDraftSheet(BuildContext context, DisclosureScript script) {
+    final titleController = TextEditingController(text: script.title);
+    final textController = TextEditingController(text: script.scriptText);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Edit Custom Disclosure Draft',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Draft Title'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: textController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Disclosure Spoken Copy',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        if (titleController.text.isNotEmpty &&
+                            textController.text.isNotEmpty) {
+                          final updated = script.copyWith(
+                            title: titleController.text.trim(),
+                            scriptText: textController.text.trim(),
+                          );
+                          _controller.updateCustomDraft(updated);
+                          Navigator.pop(ctx);
+                        }
+                      },
+                      child: const Text('Update Draft'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteDraft(BuildContext context, DisclosureScript script) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Custom Draft?'),
+        content: Text(
+          'Are you sure you want to remove "${script.title}" from your local drafts?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () {
+              _controller.deleteCustomDraft(script.id);
+              Navigator.pop(ctx);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

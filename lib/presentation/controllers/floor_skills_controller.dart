@@ -207,21 +207,49 @@ class FloorSkillsController extends ChangeNotifier {
 
     final normalized = SpeechEvaluator.normalize(_spokenTranscript);
     final pbErrors = SpeechEvaluator.detectPbErrors(normalized);
+    final targetWord = currentPbItem.wordP.toLowerCase();
+    final contrastWord = currentPbItem.wordB.toLowerCase();
 
-    final bool passed = pbErrors.isEmpty && normalized.isNotEmpty;
+    final hasTarget = RegExp(
+      r'\b' + RegExp.escape(targetWord) + r'\b',
+      caseSensitive: false,
+    ).hasMatch(normalized);
+    final hasContrast = RegExp(
+      r'\b' + RegExp.escape(contrastWord) + r'\b',
+      caseSensitive: false,
+    ).hasMatch(normalized);
+
+    final bool passed = hasTarget && !hasContrast && pbErrors.isEmpty;
     _isCorrect = passed;
 
+    double score;
     if (passed) {
-      _feedbackText = 'ممتاز! نطق سليم لصوت الـ P بدون أي تبديل مع B.';
-      if (_progressRepository != null) {
-        await _progressRepository.recordDrillCompletion(
-          drillType: 'pb_contrast',
-          score: 100.0,
-        );
-      }
-    } else {
+      score = 95.0;
       _feedbackText =
-          'تم رصد تبديل صوتي: ${pbErrors.join(', ')}. ${currentPbItem.phoneticTipArabic}';
+          'ممتاز! نطق سليم: تم التعرف على الكلمة المستهدفة ($targetWord) بنجاح في النص المنطوق بدون أي تبديل مع ($contrastWord). (تقييم تدريبي قائم على النص المتعرف عليه)';
+    } else if (hasContrast || pbErrors.isNotEmpty) {
+      score = 40.0;
+      _feedbackText =
+          'تم رصد تبديل صوتي في النص المتعرف عليه ($contrastWord بدلاً من $targetWord). ${currentPbItem.phoneticTipArabic}';
+    } else if (normalized.isNotEmpty) {
+      final similarity = SpeechEvaluator.computeSimilarity(
+        currentPbItem.practiceSentence,
+        _spokenTranscript,
+      );
+      score = (similarity * 80.0).clamp(20.0, 75.0);
+      _feedbackText =
+          'لم يتم التعرف على الكلمة المستهدفة بدقة في النص. حاول قراءة الجملة بوضوح: "${currentPbItem.practiceSentence}"';
+    } else {
+      score = 0.0;
+      _feedbackText =
+          'لم يتم التقاط أي صوت. يرجى الضغط على الميكروفون والمحاولة مرة أخرى.';
+    }
+
+    if (_progressRepository != null && normalized.isNotEmpty) {
+      await _progressRepository.recordDrillCompletion(
+        drillType: 'pb_contrast',
+        score: score,
+      );
     }
     notifyListeners();
   }

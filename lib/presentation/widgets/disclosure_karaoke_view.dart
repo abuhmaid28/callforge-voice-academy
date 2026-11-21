@@ -121,6 +121,10 @@ class DisclosureKaraokeView extends StatelessWidget {
                     tokenColor = Colors.red.shade400;
                     decoration = TextDecoration.lineThrough;
                     break;
+                  case TokenMatchStatus.inserted:
+                    tokenColor = Colors.purple.shade300;
+                    weight = FontWeight.w500;
+                    break;
                   case TokenMatchStatus.pending:
                     tokenColor =
                         theme.textTheme.bodyMedium?.color ?? Colors.grey;
@@ -147,7 +151,9 @@ class DisclosureKaraokeView extends StatelessWidget {
                         )
                       : null,
                   child: Text(
-                    token.expectedWord,
+                    token.status == TokenMatchStatus.inserted
+                        ? '[+${token.spokenWord}]'
+                        : token.expectedWord,
                     style: TextStyle(
                       color: tokenColor,
                       fontWeight: weight,

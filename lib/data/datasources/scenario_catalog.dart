@@ -4,13 +4,15 @@ import '../../domain/entities/scenario.dart';
 
 /// Complete catalog of 30 fictional customer service and sales training scenarios.
 /// Grounded in realistic floor skills, AERD de-escalation, discovery, and disclosures.
+/// Features genuine adaptive branching: High-AERD/success path (4A -> 5A) and
+/// Low-AERD/objection path (4B -> 5B) across all 30 scenarios.
 /// Explicitly labeled [Fictional / Simulation Only] — strictly for practice purposes.
 class ScenarioCatalog {
   static const String _defaultAgentGreeting =
       'Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?';
 
   static final List<Scenario> allScenarios = [
-    // 01: Proration / First Bill Shock
+    // 01: First Bill Proration & Partial Month Charges
     Scenario(
       id: 'scen-01-first-bill',
       title: 'First Bill Proration & Partial Month Charges',
@@ -20,10 +22,11 @@ class ScenarioCatalog {
       customerPersona: 'Marcus Vance (Confused New Wireless Customer)',
       skillTags: const ['Proration', 'First Bill', 'AERD'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hi Alex, my name is Marcus Vance. I just opened two lines and my first bill is almost 220 dollars! The store told me it would be 140! Why is it so high?',
+      customerResponse: 'Hi Alex, I am Marcus Vance. My first bill is 220 dollars! I was told it would be 140! Can you explain why I am being overcharged?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
       contextNotes: 'Marcus switched 2 lines 8 days into the billing cycle. The first bill reflects 22 days of prorated service plus the upcoming month in advance, plus one-time activation fees.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-01-01',
           turnNumber: 1,
@@ -36,6 +39,8 @@ class ScenarioCatalog {
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-01-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-01-02',
           turnNumber: 2,
@@ -46,6 +51,8 @@ class ScenarioCatalog {
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-01-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-01-03',
           turnNumber: 3,
@@ -54,21 +61,38 @@ class ScenarioCatalog {
           requiredKeywords: ['understand', 'look', 'bill', 'breakdown'],
           trainerGuidanceArabic: 'استخدم أسلوب التطمين واشرح الفرق بين رسوم أول شهر والرسوم الثابتة القادمة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-01-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-01-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-01-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-01-04',
+          id: 'turn-01-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
           spokenText: 'Okay, so part of this is for the first few days before my official cycle, plus next month in advance? That makes sense. Will my next bill actually be 140 dollars?',
-          trainerGuidanceArabic: 'العميل بدأ يفهم. أكد له على السعر الشهري الدائم واقترح تفعيل الخصومات المتاحة زي AutoPay.',
+          trainerGuidanceArabic: 'العميل بدأ يفهم ويهدأ. أكد له على السعر الشهري الدائم واقترح تفعيل الخصومات المتاحة زي AutoPay.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-01-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-01-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-01-05',
+          id: 'turn-01-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'You are giving me textbook excuses, Alex! I am not paying 220 dollars when the salesperson guaranteed 140! What are you going to do about this right now?',
+          trainerGuidanceArabic: 'العميل معترض لأن التفسير لم يكن مطمئناً. اعترف بغضبه بحزم، وقدم حلاً واضحاً كإسقاط رسوم التفعيل أو تأكيد الخصم المباشر.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-01-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-01-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
           spokenText: 'Exactly, Marcus. Once your AutoPay discount applies, your regular monthly bill will be 140 dollars. Is there anything else I can assist you with today?',
@@ -77,14 +101,24 @@ class ScenarioCatalog {
               'أنهِ المكالمة باحترافية وتأكد إن كل استفساراته تم حلها.',
           isFinal: true,
         ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-01-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear your frustration, Marcus, and you deserve complete transparency. I am crediting the one-time activation fees today, bringing this bill down and locking your ongoing monthly rate at 140 dollars.',
+          requiredKeywords: ['frustration', 'transparency', 'credit', 'rate'],
+          trainerGuidanceArabic: 'امتص الغضب، أثبت ملكيتك للمكالمة بتقديم تسوية فورية وتأكيد السعر النهائي.',
+          isFinal: true,
+        ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional bill shock scenario for proration and AERD empathy.',
+        notes: 'Marcus switched 2 lines 8 days into the billing cycle. The first bill reflects 22 days of prorated service plus the upcoming month in advance, plus one-time activation fees.',
       ),
     ),
-
-    // 02: Trade-in Bill Credits
+    // 02: Trade-In Promotional Bill Credits Timing
     Scenario(
       id: 'scen-02-tradein-credits',
       title: 'Trade-In Promotional Bill Credits Timing',
@@ -94,10 +128,11 @@ class ScenarioCatalog {
       customerPersona: 'Sarah Jenkins (Anxious Upgrading Customer)',
       skillTags: const ['Trade-In', 'Bill Credits', 'Pacing'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hello Alex, Sarah Jenkins here. I mailed in my old Galaxy two weeks ago for an 800-dollar trade-in promo, but my bill is charging me the full phone installment! Where is my credit?',
+      customerResponse: 'Hello Alex, Sarah Jenkins here. I sent my trade-in two weeks ago, but my bill has no credit! Am I going to be stuck paying the full price every month?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
       contextNotes: 'Promotional trade-in credits take 2 to 3 billing cycles to appear following device receipt and warehouse inspection, with retroactive catch-up credits on the first applied bill.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-02-01',
           turnNumber: 1,
@@ -105,80 +140,105 @@ class ScenarioCatalog {
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'رحب بسارة بوضوح واستمع لقلقها بخصوص جهاز الترايد إن.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-02-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-02-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'I sent my trade-in two weeks ago, but my bill has no credit! Am I going to be stuck paying the full price every month?',
+          spokenText: 'Hello Alex, Sarah Jenkins here. I sent my trade-in two weeks ago, but my bill has no credit! Am I going to be stuck paying the full price every month?',
           trainerGuidanceArabic: 'طمن سارة واشرح لها إن رصيد الترايد إن بيحتاج من دورتين لثلاث دورات فواتير عشان ينزل على الفاتورة، وأول ما ينزل بياخد الفترات بأثر رجعي.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-02-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-02-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I understand your concern, Sarah. Trade-in promotional credits typically take two to three billing cycles to appear after inspection, and you will receive a catch-up credit covering the prior months.',
-          requiredKeywords: [
-            'two',
-            'three',
-            'billing cycles',
-            'credit',
-            'catch-up',
-          ],
-          trainerGuidanceArabic: 'تأكد من نطق Billing Cycles و Catch-up credit بوضوح وبدون لبس P/B.',
+          spokenText: 'I understand your concern, Sarah. Promotional trade-in credits take two to three billing cycles to verify at the warehouse, and you will receive retroactive catch-up credits.',
+          requiredKeywords: ['understand', 'trade in', 'cycles', 'credit'],
+          trainerGuidanceArabic: 'اشرح لها إطار الوقت الزمني (2 to 3 billing cycles) وطمئنها بخصوص الرصيد التراكمي (retroactive credits).',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-02-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-02-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-02-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-02-04',
+          id: 'turn-02-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Oh, so once it kicks in, it credits back the months I paid? That gives me peace of mind, Alex. Thank you!',
+          spokenText: 'Oh, so once the warehouse processes it, I get credited for these first couple of months too? That relieves a lot of stress, thank you Alex.',
           trainerGuidanceArabic:
-              'العميل ارتاح. وثق رقم التتبع لو متاح واختم المكالمة.',
+              'سارة اطمأنت تماماً. أكد لها متابعة حالة الشحنة ورقم التتبع.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-02-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-02-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-02-05',
+          id: 'turn-02-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Nobody told me about waiting three months! I can\'t afford an extra 35 dollars every month while your warehouse takes its time. Can\'t you apply it manually today?',
+          trainerGuidanceArabic: 'سارة معترضة على فترة الانتظار. اعترف بالعبء المالي ووضح نظام الأثر الرجعي مع متابعة حالة الشحن في السيستم.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-02-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-02-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'You are very welcome, Sarah! I have noted your account with the trade-in tracking number. Thank you for choosing AT&T and have a wonderful day!',
-          requiredKeywords: ['welcome', 'noted', 'thank you'],
-          trainerGuidanceArabic:
-              'أنهِ المكالمة بلباقة واحترافية وتأكد من توثيق كل تفاصيل الشحن.',
+          spokenText: 'You are very welcome, Sarah. Your tracking shows device delivered, so you are in great shape. Is there anything else I can check for you today?',
+          requiredKeywords: ['welcome', 'tracking', 'delivered', 'check'],
+          trainerGuidanceArabic: 'أغلق المكالمة بود واحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-02-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I completely hear your budget concern, Sarah. While the system processes the promotional credit automatically, I have verified your tracking receipt and added a note to ensure your catch-up credits post on schedule.',
+          requiredKeywords: ['hear', 'budget', 'verified', 'credits'],
+          trainerGuidanceArabic: 'أكد التحقق من رقم التتبع وطمنها بأن حقوقها المالية محفوظة ومتابعة.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Simulated 36-month trade-in promotion billing timeline.',
+        notes: 'Promotional trade-in credits take 2 to 3 billing cycles to appear following device receipt and warehouse inspection, with retroactive catch-up credits on the first applied bill.',
       ),
     ),
-
-    // 03: International Roaming Day Pass
+    // 03: International Roaming & Day Pass Consultation
     Scenario(
       id: 'scen-03-intl-roaming',
-      title: 'International Day Pass Charges & Feature Explanation',
+      title: 'International Roaming & Day Pass Consultation',
       moduleIndex: 1,
-      category: 'Billing & Payments',
+      category: 'Plan Upgrade & Features',
       difficulty: 'intermediate',
-      customerPersona: 'David Miller (Business Traveler)',
-      skillTags: const ['Roaming', 'International Day Pass', 'De-escalation'],
+      customerPersona: 'David Miller (Frequent Business Traveler)',
+      skillTags: const ['International', 'Day Pass', 'Discovery'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is David Miller. I just got back from a business trip in London and I see ten charges of twelve dollars each labeled International Day Pass. Can you tell me what this is?',
+      customerResponse: 'Hi Alex, this is David Miller. I am flying to London for ten days on Tuesday. How do I make sure I don\'t get hit with a crazy five hundred dollar roaming bill?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'International Day Pass provides unlimited talk, text, and high-speed data in over 210 destinations for \$12/day on the first line (\$6/day for additional lines on same calendar day), capped at 10 daily fees per bill cycle.',
+      contextNotes: 'David travels to London next week for 10 days. Without International Day Pass, pay-per-use roaming data incurs massive expense. IDP caps daily cost at 12 dollars a day.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-03-01',
           turnNumber: 1,
@@ -186,147 +246,217 @@ class ScenarioCatalog {
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'التحية القياسية واستقبال سؤال ديفيد عن باقة السفر الدولي.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-03-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-03-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Why do I have 120 dollars in International Day Pass fees? Nobody told me about this daily fee!',
-          trainerGuidanceArabic: 'اشرح ميزة International Day Pass وإنها حمت حسابه من رسوم التجوال المفتوح (Pay-per-use) اللي كانت ممكن توصل لآلاف الدولارات، وإنها بحد أقصى 10 أيام في الشهر.',
+          spokenText: 'Hi Alex, this is David Miller. I am flying to London for ten days on Tuesday. How do I make sure I don\'t get hit with a crazy five hundred dollar roaming bill?',
+          trainerGuidanceArabic: 'العميل مسافر وعاوز حماية من مصاريف التجوال. قدم له International Day Pass واشرح السعر والحد الأقصى اليومي.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-03-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-03-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I hear you, David. The International Day Pass activates only on days you use cellular data abroad, giving you full plan access for twelve dollars a day and capping charges at ten days per billing cycle.',
-          requiredKeywords: [
-            'international day pass',
-            'twelve dollars',
-            'cap',
-            'ten days',
-          ],
-          trainerGuidanceArabic: 'وضح الأرقام بدقة: 12 دولار في اليوم وكاب 10 أيام في دورة الفاتورة.',
+          spokenText: 'I can definitely protect you from unexpected roaming charges, David. International Day Pass gives you unlimited talk, text, and high-speed data for twelve dollars a day only when used.',
+          requiredKeywords: ['protect', 'international', 'pass', 'twelve'],
+          trainerGuidanceArabic: 'وضح ميزة إن اليومية (12 دولار) بتتحسب بس في الأيام اللي بيستخدم فيها التليفون، والحد الأقصى في دورة الفوترة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-03-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-03-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-03-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-03-04',
+          id: 'turn-03-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Wait, so without that pass I would have paid standard international roaming rates per megabyte? Wow, that could have been thousands. Thanks for explaining, Alex.',
-          trainerGuidanceArabic: 'العميل قدر القيمة. أكد له إن الخدمة بتفضل متفعلة لرحلاته القادمة بدون رسوم طول ما هو جوه أمريكا.',
+          spokenText: 'That sounds perfect. So if I only use it six of the ten days, I only pay for those six days? Go ahead and add that to my line please.',
+          trainerGuidanceArabic: 'العميل موافق. أكد التفعيل وقدم نصيحة سريعة عن تشغيل Data Roaming في إعدادات الهاتف.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-03-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-03-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-03-05',
+          id: 'turn-03-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Twelve dollars a day? That is still over a hundred dollars! Can\'t I just buy a cheap local European SIM card instead?',
+          trainerGuidanceArabic: 'العميل شايف السعر عالي. قارن له بين راحة الاحتفاظ برقمه الأمريكي واستقبال رسائل البنك، وبين تعقيدات الشريحة المحلية.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-03-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-03-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Exactly, David. It stays on your account for free and only triggers when you travel outside the country. Enjoy your week!',
-          requiredKeywords: ['account', 'travel', 'welcome'],
+          spokenText: 'Added successfully, David! Remember to turn on Data Roaming in your phone settings when you touch down at Heathrow. Have a wonderful and safe trip to London!',
+          requiredKeywords: ['added', 'roaming', 'settings', 'trip'],
+          trainerGuidanceArabic:
+              'أكد التفعيل ووجهه لفتح التجوال في الهاتف وتمنى له رحلة سعيدة.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-03-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'You certainly can, David, but keep in mind a local SIM changes your number so your two-factor security codes won\'t reach you. With Day Pass, you keep your American number and only pay on days you trigger data.',
+          requiredKeywords: ['certainly', 'number', 'security', 'trigger'],
+          trainerGuidanceArabic:
+              'وضح ميزة استلام رسائل الأمان المصرفية 2FA مع الحفاظ على الرقم.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional international roaming feature value breakdown.',
+        notes: 'David travels to London next week for 10 days. Without International Day Pass, pay-per-use roaming data incurs massive expense. IDP caps daily cost at 12 dollars a day.',
       ),
     ),
-
-    // 04: Throttled Data vs Network Congestion
+    // 04: Unlimited Plan High-Speed Threshold & Congestion Management
     Scenario(
       id: 'scen-04-data-throttle',
-      title: 'Premium Data Threshold vs Temporary Congestion',
+      title: 'Unlimited Plan High-Speed Threshold & Congestion Management',
       moduleIndex: 1,
-      category: 'Technical Care',
+      category: 'Billing & Payments',
       difficulty: 'intermediate',
-      customerPersona: 'Tyler Reed (Frustrated Mobile Streamer)',
-      skillTags: const ['Network', 'Unlimited Plan', 'AERD'],
+      customerPersona: 'Jordan Bell (Heavy Data Streaming User)',
+      skillTags: const ['Data Threshold', 'Congestion', 'Discovery'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Tyler Reed. My internet on my phone has slowed to a crawl since yesterday. I pay for unlimited, so why are you guys throttling my speeds?',
+      customerResponse: 'Alex, my name is Jordan Bell. My internet speed dropped to absolute crawl this afternoon! Am I being throttled because I used too much data?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Tyler is on Unlimited Starter which may temporarily slow during network congestion, unlike Unlimited Premium which offers unlimited high-speed data that cannot be slowed based on usage.',
+      contextNotes: 'Jordan streams video on Unlimited Starter. After reaching network threshold during cell tower congestion, data speeds temporarily slow until congestion clears.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-04-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'استقبل تايلر بهدوء وحافظ على نبرة احترافية.',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-04-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-04-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'My video streams keep buffering! I am on an unlimited plan! Why am I being throttled?',
-          trainerGuidanceArabic: 'اشرح الفرق بين الـ Throttling والـ Network Congestion على خطة Starter، واعرض عليه الترقية لخطة Premium بدون إجبار.',
+          spokenText: 'Alex, my name is Jordan Bell. My internet speed dropped to absolute crawl this afternoon! Am I being throttled because I used too much data?',
+          trainerGuidanceArabic: 'العميل بيعاني من بطء في النت وفاكر إنه عقاب. اشرح مفهوم إدارة الشبكة في أوقات الذروة واقترح خطة Premium بدون حدود للسرعة.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-04-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-04-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I understand how frustrating buffering is, Tyler. Your current plan includes unlimited data with temporary speed adjustments only during peak tower congestion. Let us test your connection together.',
-          requiredKeywords: ['understand', 'congestion', 'plan', 'test'],
-          trainerGuidanceArabic: 'قدم Empathy حقيقي واقترح فحص الشبكة معاه.',
+          spokenText: 'I understand your frustration with slow speeds, Jordan. On your current plan, speeds may temporarily slow during tower congestion, but they return to normal once traffic clears.',
+          requiredKeywords: [
+            'understand',
+            'frustration',
+            'congestion',
+            'normal',
+          ],
+          trainerGuidanceArabic: 'اشرح بأمانة الفرق بين الازدحام المؤقت والاختناق الدائم، واعرض عليه ترقية الخطة لو محتاج أولوية دائمة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-04-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-04-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-04-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-04-04',
+          id: 'turn-04-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'I see. So it is local tower traffic right now? How much would it be to move up to the plan that never slows down?',
-          trainerGuidanceArabic: 'فرصة لاكتشاف المبيعات (Sales Discovery)! وضح فرق السعر البسيط لخطة Premium.',
+          spokenText: 'Okay, so it is just peak tower traffic right now. If I upgrade to Unlimited Premium, do I get truly unlimited high-speed data that never slows down?',
+          trainerGuidanceArabic: 'العميل مهتم بالترقية. وضح له ميزات خطة Premium مع فرق السعر البسيط.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-04-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-04-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-04-05',
+          id: 'turn-04-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'That is ridiculous. I pay for \'Unlimited\' and now you tell me it\'s limited whenever your towers are busy? That feels like false advertising!',
+          trainerGuidanceArabic: 'العميل غاضب من كلمة Unlimited. اعترف بمدى الإحباط، ووضح الفرق التقني بين استهلاك البيانات المفتوح وسرعة المرور على الشبكة.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-04-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-04-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Moving up to Unlimited Premium is just ten dollars more per month, giving you completely unthrottled high-speed data and sixty gigabytes of mobile hotspot.',
-          requiredKeywords: ['premium', 'ten dollars', 'hotspot'],
+          spokenText: 'Yes exactly, Jordan! Premium includes unlimited high-speed data that can\'t be slowed by usage, plus sixty gigabytes of hotspot. Shall we upgrade your line today?',
+          requiredKeywords: ['unlimited', 'premium', 'hotspot', 'upgrade'],
+          trainerGuidanceArabic:
+              'أكد ميزات Premium وقدم دعوة الترقية باحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-04-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear exactly why that feels frustrating, Jordan. Your data usage is truly unlimited without overage fees, but Starter manages traffic during rush hours. Upgrading to Premium guarantees priority bandwidth anytime.',
+          requiredKeywords: ['hear', 'unlimited', 'traffic', 'priority'],
+          trainerGuidanceArabic: 'اشرح الفرق بين كمية البيانات غير المحدودة وأولوية السرعة وقدم له خيار الترقية كحل دائم.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional unlimited tier comparison and network congestion clarification.',
+        notes: 'Jordan streams video on Unlimited Starter. After reaching network threshold during cell tower congestion, data speeds temporarily slow until congestion clears.',
       ),
     ),
-
-    // 05: Fiber Gateway Red Blinking Light
+    // 05: Broadband Gateway Red Broadband Light Troubleshooting
     Scenario(
       id: 'scen-05-gateway-redlight',
-      title: 'Fiber Wi-Fi Gateway Red Broadband Light Troubleshooting',
-      moduleIndex: 2,
-      category: 'Technical Care',
+      title: 'Broadband Gateway Red Broadband Light Troubleshooting',
+      moduleIndex: 1,
+      category: 'Technical Troubleshooting',
       difficulty: 'intermediate',
-      customerPersona: 'Linda Green (Remote Worker in a Rush)',
-      skillTags: const ['Troubleshooting', 'Fiber Gateway', 'Call Control'],
+      customerPersona: 'Elena Rostova (Remote Worker with Internet Outage)',
+      skillTags: const ['Broadband', 'Troubleshooting', 'AERD'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Linda Green. I have an important Zoom meeting in thirty minutes and my home Wi-Fi is completely dead! The light on the AT&T box is blinking red! Help me fix this immediately!',
+      customerResponse: 'Hi Alex, I am Elena Rostova. I work from home and my Wi-Fi is completely down! The little light labeled Broadband on the black box is solid red. Help!',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'A flashing red broadband/optical light indicates a physical fiber signal loss between the optical wall jack and the gateway or an upstream fiber outage.',
+      contextNotes: 'Elena\'s fiber gateway displays a solid red broadband light. Power cycling and fiber jumper cable reseating are required before dispatching an on-site field technician.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-05-01',
           turnNumber: 1,
@@ -334,71 +464,105 @@ class ScenarioCatalog {
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل ليندا بتطمين سريع لأن عندها ميتينج ومضغوطة جداً.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-05-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-05-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'My meeting starts soon! The front light is flashing red! Tell me what to push to make it work!',
-          trainerGuidanceArabic: 'تحكم في المكالمة بهدوء (Call Control): طمنها واطلب منها تتأكد من الكابل الأخضر (Green fiber jumper) المتصل من الحائط للراوتر.',
+          spokenText: 'Hi Alex, I am Elena Rostova. I work from home and my Wi-Fi is completely down! The little light labeled Broadband on the black box is solid red. Help!',
+          trainerGuidanceArabic: 'إيلينا بتشتغل من البيت والنت قاطع. اعترف بأهمية الشغل وطمئنها، وابدأ خطوات الفحص: إعادة تشغيل الراوتر والتأكد من كابل الفايبر الأخضر.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-05-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-05-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Linda, I am right here with you and we will get this resolved. Please check the green fiber cable on the back of the gateway to make sure it is clicked securely into the green optical port.',
-          requiredKeywords: ['resolved', 'green', 'fiber cable', 'securely'],
-          trainerGuidanceArabic: 'وجهها خطوة بخطوة للتحقق من الكابل الأخضر.',
+          spokenText: 'I understand how urgent this is for your remote work, Elena. Let us check the physical fiber connection and restart the gateway together to restore your signal.',
+          requiredKeywords: ['understand', 'urgent', 'gateway', 'restore'],
+          trainerGuidanceArabic: 'وجهها بخطوات هادئة ومحددة للتأكد من الكابل الأخضر في منفذ الـ PON.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-05-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-05-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-05-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-05-04',
+          id: 'turn-05-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Wait! My cat was behind the desk... I just pushed the green plug in and it clicked! The light turned solid white! Alex, you saved my life!',
-          trainerGuidanceArabic: 'المشكلة اتحلت في ثواني! شاركها الفرحة واختم المكالمة بسرعة عشان تلحق اجتماعها.',
+          spokenText: 'I pressed the red power button, waited two minutes, and now the broadband light turned solid green! The Wi-Fi is back on my laptop. You are amazing Alex!',
+          trainerGuidanceArabic: 'الراوتر اشتغل بنجاح واللمبة بقت خضراء. انصحها بتطبيق Smart Home Manager لمراقبة الشبكة مستقبلاً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-05-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-05-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-05-05',
+          id: 'turn-05-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I reseated the green cable and restarted it twice, and the light is still solid red. I have a client presentation in two hours, I cannot wait days for a technician!',
+          trainerGuidanceArabic: 'اللمبة لسه حمراء، معناه مشكلة خارجية في الفايبر. طمنها بخصوص أولوية العمل المنزلي واحجز لها فني فوري أو اقترح تفعيل الهوت سبوت على الموبايل.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-05-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-05-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'That is wonderful news, Linda! Your connection is fully restored. Good luck with your Zoom meeting, and thank you for calling AT&T!',
-          requiredKeywords: ['wonderful', 'connection', 'restored', 'meeting'],
+          spokenText: 'I am so glad your connection is back up, Elena! You can also use the Smart Home Manager app to run quick health checks anytime. Have a productive workday!',
+          requiredKeywords: ['glad', 'connection', 'smart', 'productive'],
+          trainerGuidanceArabic: 'أغلق المكالمة بود واحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-05-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear how critical this meeting is, Elena. Since the signal is red at the ONT, I am expediting our priority field dispatch for this afternoon, and temporarily boosting your mobile hotspot so you stay online.',
+          requiredKeywords: ['hear', 'critical', 'expediting', 'hotspot'],
+          trainerGuidanceArabic:
+              'قدم حل بديل فوري (هوت سبوت الهاتف) مع حجز فني طوارئ.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fiber gateway optical cable reseating and urgent customer call control.',
+        notes: 'Elena\'s fiber gateway displays a solid red broadband light. Power cycling and fiber jumper cable reseating are required before dispatching an on-site field technician.',
       ),
     ),
-
-    // 06: Fiber Tech Install Window Reschedule
+    // 06: Fiber Installation Appointment Window Rescheduling
     Scenario(
       id: 'scen-06-fiber-reschedule',
-      title: 'Fiber Technician Appointment Reschedule & Escalation Care',
-      moduleIndex: 2,
-      category: 'Technical Care',
-      difficulty: 'advanced',
-      customerPersona: 'Robert Chen (Upset Homeowner Waiting at Home)',
-      skillTags: const ['Dispatch', 'Reschedule', 'AERD'],
+      title: 'Fiber Installation Appointment Window Rescheduling',
+      moduleIndex: 1,
+      category: 'Technical Troubleshooting',
+      difficulty: 'beginner',
+      customerPersona: 'Robert Chen (Busy Professional)',
+      skillTags: const ['Installation', 'Scheduling', 'Pacing'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, I am Robert Chen. I took half a day off work waiting for the fiber installation tech between 8 AM and 12 PM. It is now 1:30 PM, nobody showed up, and nobody called! This is unacceptable!',
+      customerResponse: 'Hello Alex, Robert Chen calling. I have a fiber install booked for tomorrow morning, but an emergency came up and I won\'t be home. Can I change it to Friday?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'The morning technician got delayed on a complex multi-dwelling drop. Representative must apologize sincerely without blaming other teams, verify dispatch status, and find the earliest priority window.',
+      contextNotes: 'Robert has a fiber installation scheduled for tomorrow between 8 AM and 12 PM, but has an urgent morning flight. Rescheduling requires an adult 18+ on site.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-06-01',
           turnNumber: 1,
@@ -406,79 +570,106 @@ class ScenarioCatalog {
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل روبرت بمنتهى التعاطف واعتذر عن ضياع وقته.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-06-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-06-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'I lost four hours of pay sitting here waiting for your technician! What are you going to do about this?',
-          trainerGuidanceArabic: 'طبق AERD بالكامل: اعتراف بصعوبة الموقف، تعاطف مع وقت عمله الضائع، طمأنينة بتحمل المسؤولية، وتحديد أسرع موعد متاح.',
+          spokenText: 'Hello Alex, Robert Chen calling. I have a fiber install booked for tomorrow morning, but an emergency came up and I won\'t be home. Can I change it to Friday?',
+          trainerGuidanceArabic: 'روبرت محتاج يغير ميعاد التركيب. اكد له إمكانية التغيير واشرح شرط وجود شخص بالغ (18+) في البيت وقت التركيب.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-06-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-06-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I am truly sorry for the delay and for your lost time, Robert. I am taking personal ownership right now to check the dispatch ticket and secure the earliest priority arrival for you.',
-          requiredKeywords: [
-            'sorry',
-            'lost time',
-            'ownership',
-            'dispatch',
-            'priority',
-          ],
+          spokenText: 'I can certainly take care of that for you, Robert. Let us look at Friday openings between eight to twelve or twelve to four, ensuring someone eighteen or older is present.',
+          requiredKeywords: ['certainly', 'care', 'friday', 'eighteen'],
           trainerGuidanceArabic:
-              'أكد على المسؤولية الشخصية وتجنب إلقاء اللوم على الفني.',
+              'اعرض عليه الفترات المتاحة يوم الجمعة ونبهه على شرط الـ 18 سنة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-06-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-06-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-06-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-06-04',
+          id: 'turn-06-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Can you get someone here by 4 PM today so I do not have to waste another day tomorrow?',
-          trainerGuidanceArabic:
-              'أكد الموعد المسائي وامنحه رقم التتبع المباشر للطلب.',
+          spokenText: 'Friday afternoon between twelve and four PM works great. My wife will be home all day. Please lock that in.',
+          trainerGuidanceArabic: 'العميل وافق على فترة بعد الظهر. أكد الميعاد ورقم التأكيد في رسالة نصية.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-06-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-06-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-06-05',
+          id: 'turn-06-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Friday is completely booked? The next available slot is two weeks away? That is unacceptable, I work remotely and need internet this week!',
+          trainerGuidanceArabic: 'العميل معترض على بعد المواعيد. دور في الفترات الإضافية أو قائمة الانتظار السريعة لحجز أقرب موعد ممكن.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-06-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-06-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I have updated the dispatch note with your direct phone number for a priority arrival between three and five PM today. You will receive an SMS when the tech is en route.',
-          requiredKeywords: ['dispatch', 'priority', 'sms'],
+          spokenText: 'All set, Robert! Your fiber installation is locked for Friday from twelve to four PM. You will receive a confirmation text and technician tracking link on arrival.',
+          requiredKeywords: ['locked', 'friday', 'confirmation', 'tracking'],
+          trainerGuidanceArabic: 'أنهِ المكالمة باحترافية وتأكيد رسالة التتبع.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-06-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I understand your urgent need for home broadband, Robert. I checked our priority escalation queue and secured an emergency technician window for Saturday morning at nine AM.',
+          requiredKeywords: ['understand', 'urgent', 'priority', 'secured'],
+          trainerGuidanceArabic:
+              'أظهر الاهتمام واعرض ميعاد السبت البديل كحل أسرع.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional technician dispatch delay de-escalation practice.',
+        notes: 'Robert has a fiber installation scheduled for tomorrow between 8 AM and 12 PM, but has an urgent morning flight. Rescheduling requires an adult 18+ on site.',
       ),
     ),
-
-    // 07: AutoPay Debit vs Credit Card Difference
+    // 07: AutoPay & Paperless Discount Requirements
     Scenario(
       id: 'scen-07-autopay-discount',
-      title: 'AutoPay Discount Payment Method Differences',
-      moduleIndex: 1,
+      title: 'AutoPay & Paperless Discount Requirements',
+      moduleIndex: 2,
       category: 'Billing & Payments',
       difficulty: 'beginner',
-      customerPersona: 'Emily Watson (Budget-Conscious Customer)',
-      skillTags: const ['AutoPay', 'Disclosures', 'Clarity'],
+      customerPersona: 'Patricia Adams (Long-Time Wireless Subscriber)',
+      skillTags: const ['AutoPay', 'Paperless', 'Billing'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hi Alex, Emily Watson speaking. My monthly bill went up by twenty dollars for my two lines, and someone said it is because I use a credit card for AutoPay? Can you explain that?',
+      customerResponse: 'Alex, this is Patricia Adams. My monthly discount was cut in half this month from twenty dollars down to ten! Why are you reducing my loyalty discount?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'AutoPay discount is \$10 per phone line when linked to a debit card or checking account, but \$5 per phone line when linked to a credit card.',
+      contextNotes: 'Patricia noticed her monthly discount dropped from 10 dollars per line to 5 dollars per line because she switched her payment method to a rewards credit card.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-07-01',
           turnNumber: 1,
@@ -486,156 +677,222 @@ class ScenarioCatalog {
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'ابدأ بالتحية واشرح لإميلي تفاصيل سياسة الدفع.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-07-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-07-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Why do I lose ten dollars a line just for using my credit card on AutoPay?',
-          trainerGuidanceArabic: 'اشرح بوضوح إن خصم الـ AutoPay كامل (10 دولار للخط) متاح مع بطاقة الخصم (Debit) أو الحساب البنكي، بينما بطاقات الائتمان بتعطي 5 دولار للخط.',
+          spokenText: 'Alex, this is Patricia Adams. My monthly discount was cut in half this month from twenty dollars down to ten! Why are you reducing my loyalty discount?',
+          trainerGuidanceArabic: 'باتريشيا خصمها نزل للنص. وضح لها بهدوء إن كروت الائتمان خصمها 5 دولار للخط، بينما كروت الخصم المباشر (Debit) أو الحساب البنكي 10 دولار.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-07-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-07-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I understand completely, Emily. With debit card or checking account AutoPay, you receive the full ten dollar discount per line. With a credit card, the discount is five dollars per line.',
-          requiredKeywords: [
-            'debit card',
-            'checking account',
-            'ten dollar',
-            'credit card',
-            'five dollars',
-          ],
+          spokenText: 'I understand your frustration, Patricia. To receive the full ten dollar discount per line, payments must be tied to a debit card or bank account rather than a credit card.',
+          requiredKeywords: ['understand', 'frustration', 'debit', 'discount'],
           trainerGuidanceArabic:
-              'انتبه لنطق P و B في Debit card و Checking account.',
+              'اشرح الفرق بين الـ Debit Card والـ Credit Card بطريقة ودية.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-07-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-07-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-07-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-07-04',
+          id: 'turn-07-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'If I switch my payment method to my bank debit card right now on the app, will my full twenty dollar discount return next bill?',
-          trainerGuidanceArabic:
-              'أكد لها إن التغيير متاح فورا عبر التطبيق وإن الخصم هيرجع.',
+          spokenText: 'Oh, I see! I did switch to my new airline credit card last month. If I change it back to my checking account debit card, will the full twenty dollars return?',
+          trainerGuidanceArabic: 'العميلة فهمت السبب. أكد لها إن تعديل طريقة الدفع في التطبيق بيرجع الخصم الكامل في الفاتورة القادمة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-07-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-07-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-07-05',
+          id: 'turn-07-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'That makes no sense! Every other company gives full discounts on credit cards. Why should I give you access to my direct bank account just to get promised rates?',
+          trainerGuidanceArabic: 'العميلة معترضة على ربط الحساب البنكي. اعترف بحقها في الخصوصية وطمنها بخصوص الأمان البنكي المشفر أو استمرار خصم الـ 5 دولار.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-07-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-07-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Yes, exactly. Updating to your debit card in the app restores the full twenty dollar monthly savings on your very next bill cycle.',
-          requiredKeywords: ['debit card', 'twenty dollar', 'bill cycle'],
+          spokenText: 'Yes exactly, Patricia! As soon as you update your payment method in the app, your full twenty dollar discount will apply on your next cycle. Thank you for your loyalty!',
+          requiredKeywords: ['update', 'twenty', 'cycle', 'loyalty'],
+          trainerGuidanceArabic: 'أغلق المكالمة بشكر العميل على ولائه.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-07-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I completely respect your privacy and security choices, Patricia. If you prefer keeping the credit card, you still retain the five dollar per line discount, or we can use a dedicated secure debit card.',
+          requiredKeywords: ['respect', 'privacy', 'retain', 'discount'],
+          trainerGuidanceArabic: 'احترم رغبتها وقدم بديل أمان مالي مرن.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional AutoPay payment method rules and pricing clarity.',
+        notes: 'Patricia noticed her monthly discount dropped from 10 dollars per line to 5 dollars per line because she switched her payment method to a rewards credit card.',
       ),
     ),
-
-    // 08: Payment Arrangement & Promise to Pay
+    // 08: Payment Arrangement & Past Due Extensions
     Scenario(
       id: 'scen-08-payment-arrangement',
-      title: 'Past-Due Balance & Payment Arrangement Terms',
-      moduleIndex: 1,
+      title: 'Payment Arrangement & Past Due Extensions',
+      moduleIndex: 2,
       category: 'Billing & Payments',
       difficulty: 'intermediate',
-      customerPersona: 'George Bailey (Stressed Family Account Holder)',
-      skillTags: const ['Payment Arrangement', 'AERD', 'Empathy'],
+      customerPersona: 'Kenneth Moore (Customer Facing Temporary Hardship)',
+      skillTags: const ['Payment Arrangement', 'Empathy', 'De-escalation'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is George Bailey. I got an alert saying my service will be suspended on Friday. I had unexpected medical expenses. Can I set up a payment arrangement until my payday next Wednesday?',
+      customerResponse: 'Hello Alex, Kenneth Moore here. I received a text saying my service will be disconnected on Wednesday, but I don\'t get paid until Friday. Can you please give me two days?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Payment arrangements must be scheduled before service suspension occurs. Late fees may still apply, and payments will process automatically on the agreed date.',
+      contextNotes: 'Kenneth has a past due balance of 185 dollars and risks suspension. He receives his paycheck next Friday and needs a formal payment arrangement.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-08-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'استمع لجورج بتفهم واحترام لظروفه الطارئة.',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-08-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-08-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'I just need five extra days until next Wednesday. I cannot afford to have my kids phones shut off.',
-          trainerGuidanceArabic: 'طمن جورج، ووضح له شروط جدولة الدفع (Payment Arrangement) قبل تاريخ الإيقاف.',
+          spokenText: 'Hello Alex, Kenneth Moore here. I received a text saying my service will be disconnected on Wednesday, but I don\'t get paid until Friday. Can you please give me two days?',
+          trainerGuidanceArabic: 'كينيث خايف من قطع الخدمة وقبضه يوم الجمعة. استخدم AERD بتعاطف حقيقي ورتب له موعد سداد مؤجل في السيستم قبل يوم الأربعاء.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-08-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-08-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I hear you, George, and we can certainly help protect your family lines. We can set up a scheduled payment arrangement for next Wednesday so your service remains active without interruption.',
+          spokenText: 'I completely understand and appreciate you reaching out before any interruption, Kenneth. Let us set up a payment arrangement for Friday so your phone stays active.',
           requiredKeywords: [
-            'help',
-            'payment arrangement',
-            'wednesday',
+            'understand',
+            'appreciate',
+            'arrangement',
             'active',
           ],
-          trainerGuidanceArabic: 'استخدم نبرة مطمئنة وركز على استمرار الخدمة.',
+          trainerGuidanceArabic: 'طمنه إن ترتيب السداد في السيستم بيمنع تعليق الخدمة وبيحفظ خطوطه شغالة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-08-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-08-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-08-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-08-04',
+          id: 'turn-08-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'That is such a relief. Does the system take the payment automatically on that Wednesday?',
-          trainerGuidanceArabic:
-              'وضح له إن السداد بيكون أوتوماتيكي في التاريخ المحدد.',
+          spokenText: 'That is such a relief, Alex. So as long as the 185 is paid on Friday the seventeenth, my service will not be suspended at all?',
+          trainerGuidanceArabic: 'كينيث ارتاح جداً. أكد له التاريخ والمبلغ بالضبط ووضح له الالتزام بميعاد السداد.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-08-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-08-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-08-05',
+          id: 'turn-08-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Wait, your system is trying to charge me a seven dollar convenience fee just to set up an extension? I\'m already broke and you\'re adding more fees?',
+          trainerGuidanceArabic: 'كينيث معترض على رسوم الجدولة. وضح له إنه يقدر يجدول مجاناً من تطبيق myAT&T بدون رسوم خدمة هاتفية، أو ساعده في إعفاء الرسوم.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-08-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-08-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Yes, George. The payment will process automatically on Wednesday. I have confirmed the arrangement on your account so your phones stay connected.',
-          requiredKeywords: ['automatically', 'wednesday', 'confirmed'],
+          spokenText: 'That is correct, Kenneth! Your arrangement is confirmed for Friday the seventeenth. Your service will remain fully active with zero interruption. We appreciate you!',
+          requiredKeywords: [
+            'confirmed',
+            'seventeenth',
+            'active',
+            'interruption',
+          ],
+          trainerGuidanceArabic:
+              'أكد التفاصيل بدقة وأنهِ المكالمة بتشجيع واحترام.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-08-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear you, Kenneth, and I want to save you every dollar right now. I will guide you to complete it on the free app, or waive that service fee manually right here.',
+          requiredKeywords: ['hear', 'save', 'free', 'waive'],
+          trainerGuidanceArabic: 'أظهر التعاطف مع ظرفه المالي ووجهه للخيار المجاني أو اعفِ الرسوم.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional promise-to-pay arrangement guidelines.',
+        notes: 'Kenneth has a past due balance of 185 dollars and risks suspension. He receives his paycheck next Friday and needs a formal payment arrangement.',
       ),
     ),
-
-    // 09: Paper Bill Administrative Fee
+    // 09: Paper Bill Delivery Fee & Digital Transition
     Scenario(
       id: 'scen-09-paper-bill-fee',
-      title: 'Paper Billing Fee Inquiry & Paperless Migration',
-      moduleIndex: 1,
+      title: 'Paper Bill Delivery Fee & Digital Transition',
+      moduleIndex: 2,
       category: 'Billing & Payments',
       difficulty: 'beginner',
-      customerPersona: 'Helen Ross (Senior Customer Preferring Mail)',
-      skillTags: const ['Paperless', 'Coaching', 'Patience'],
+      customerPersona:
+          'Dorothy Snyder (Elderly Customer Inquiring on Surcharges)',
+      skillTags: const ['Paper Bill', 'Pacing', 'AERD'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hello Alex, this is Helen Ross. There is a five dollar paper bill fee on my account statement. I have always gotten my bill in the mail for twenty years. Why am I paying for paper now?',
+      customerResponse: 'Hello young man, this is Dorothy Snyder. There is a three dollar charge on my statement for sending me a paper bill! I have had this service for forty years!',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'An administrative charge applies for monthly paper invoice delivery. The representative can patiently guide Helen through free digital view or print-at-home options.',
+      contextNotes: 'Dorothy sees a new 3.00 dollar monthly paper bill fee on her landline/wireless account. She prefers paper records but is on a fixed retirement income.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
           id: 'turn-09-01',
           turnNumber: 1,
@@ -643,1715 +900,2352 @@ class ScenarioCatalog {
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'رحب بهيلين باحترام وصبر شديد يناسب عميلة قديمة.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-09-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
           id: 'turn-09-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Why are you charging me five dollars just to send me my monthly bill through the post office?',
-          trainerGuidanceArabic: 'اشرح بأدب سياسة الفاتورة الورقية واقترح إرسال ملخص SMS مجاني أو تفعيل الفاتورة الإلكترونية لتوفير المبلغ.',
+          spokenText: 'Hello young man, this is Dorothy Snyder. There is a three dollar charge on my statement for sending me a paper bill! I have had this service for forty years!',
+          trainerGuidanceArabic: 'دورثي سيدة كبيرة في السن متفاجئة من رسوم الفاتورة الورقية. اتكلم ببطء واحترام، اعترف بولائها 40 سنة، واشرح لها البدائل الرقمية المجانية.',
           branches: [
             ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-09-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
           id: 'turn-09-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I understand your perspective, Helen. To reduce environmental impact, a five dollar fee applies for mailed paper invoices. We can easily switch you to paperless billing to eliminate this charge completely.',
-          requiredKeywords: [
-            'understand',
-            'five dollar',
-            'paperless',
-            'eliminate',
-          ],
-          trainerGuidanceArabic:
-              'احرص على نصب P في Paperless و Perspective بدون B.',
+          spokenText: 'Thank you so much for your forty years with us, Dorothy. I hear your frustration regarding the paper charge, and I can show you how to review statements free of charge.',
+          requiredKeywords: ['thank', 'forty', 'frustration', 'free'],
+          trainerGuidanceArabic: 'قدر ولاءها واشرح بهدوء سبب الرسوم البيئية والبريدية، واعرض حل الفاتورة الرقمية مع إمكانية طباعتها.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-09-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-09-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-09-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-09-04',
+          id: 'turn-09-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'If I switch to paperless, can I still print out the full bill from my computer if I need it?',
-          trainerGuidanceArabic:
-              'طمنها إنها تقدر تطبع نسخة PDF كاملة مجانا في أي وقت.',
+          spokenText: 'My granddaughter told me she could help me look at it on her iPad. If she sets that up, can you remove this three dollar fee right now?',
+          trainerGuidanceArabic: 'دورثي وافقت على مساعدة حفيدتها. شجعها وقم بإسقاط الرسوم وتحويل الحساب إلى Paperless.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-09-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-09-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-09-05',
+          id: 'turn-09-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I don\'t own a computer or an iPad, Alex! Are you penalizing senior citizens who don\'t know how to use the internet?',
+          trainerGuidanceArabic: 'دورثي معترضة لأنها لا تملك أجهزة ذكية. اعترف بحقها وتعاطف، ووضح خيارات الإعفاء لذوي الاحتياجات أو الفاتورة الموجزة المجانية.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-09-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-09-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Yes, absolutely. You can download and print a full PDF copy anytime online at no charge. Shall I help you enroll in paperless billing today?',
-          requiredKeywords: ['print', 'pdf', 'paperless', 'today'],
+          spokenText: 'I would be delighted to, Dorothy! I have removed the paper fee and switched you to paperless. Tell your granddaughter you are all set!',
+          requiredKeywords: ['delighted', 'removed', 'paperless', 'set'],
+          trainerGuidanceArabic: 'أغلق المكالمة بلطف وود واحترام لسيدة كبيرة.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-09-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I completely hear your heart on this, Dorothy, and we deeply value our senior customers. I have credited the paper charge back to your account and added a senior exemption note.',
+          requiredKeywords: ['completely', 'value', 'credited', 'exemption'],
+          trainerGuidanceArabic:
+              'تعامل باحترام شديد لكبار السن وقدم تسوية فورية.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional paper billing policy explanation and paperless transition.',
+        notes: 'Dorothy sees a new 3.00 dollar monthly paper bill fee on her landline/wireless account. She prefers paper records but is on a fixed retirement income.',
       ),
     ),
-
-    // 10: Supervisor Demand De-escalation
+    // 10: Demanding Customer Requesting Supervisor Callback
     Scenario(
       id: 'scen-10-supervisor-demand',
-      title: 'Supervisor Demand & First-Contact Ownership',
-      moduleIndex: 1,
-      category: 'De-escalation & Retention',
+      title: 'Demanding Customer Requesting Supervisor Callback',
+      moduleIndex: 2,
+      category: 'Escalation & Call Control',
       difficulty: 'advanced',
-      customerPersona: 'Arthur Pendelton (Extremely Furious Caller)',
-      skillTags: const ['Supervisor De-escalation', 'AERD', 'Ownership'],
+      customerPersona: 'Richard Sterling (Irate High-Tier Wireless Customer)',
+      skillTags: const ['Supervisor Request', 'De-escalation', 'Call Control'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Stop right there! I do not want to talk to a frontline rep! Give me your supervisor right now! Transfer me or get someone who actually has authority on the line!',
+      customerResponse: 'Alex, cut the customer service script. Put me through to your highest-ranking supervisor right now, or have one call me back within fifteen minutes. Do not argue!',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Operational Floor Truth [Work-Reported Information]: Supervisor callbacks are NOT available in this queue. Representative must take immediate personal ownership, de-escalate with AERD, and resolve the underlying issue directly.',
+      contextNotes: 'Richard demands an immediate supervisor callback because of a recurring network ticket. Operational truth: supervisor callbacks are NOT available in the agent\'s process; the agent must de-escalate and take ownership directly.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-010-01',
+          id: 'turn-10-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'العميل غاضب جداً ويطلب السوبرفايزر فوراً. حافظ على هدوء أعصابك وابدأ بتحيتك الرسمية بثقة.',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-010-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-10-02'),
           ],
         ),
-        ScenarioTurn(
-          id: 'turn-010-02',
-          turnNumber: 2,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'I said get me your manager! I am sick of dealing with scripted representatives who cannot do anything!',
-          trainerGuidanceArabic: 'قاعدة تشغيلية مهمة: السوبرفايزر كول باك غير متاح في كيو أليكس. لا تَعِد بما لا تملك! طبق AERD: اعترف بغضبه، وطمنه إنك معاه، وتحمل المسؤولية بنفسك لحل المشكلة.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-010-03'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-010-03',
-          turnNumber: 3,
-          speaker: TurnSpeaker.agent,
-          spokenText: 'I hear your frustration, and I understand why you want this resolved immediately. My supervisor will review the same account tools, and I have the authority right here to fix this for you. Tell me what happened so I can take care of it right now.',
-          requiredKeywords: [
-            'frustration',
-            'resolved',
-            'authority',
-            'fix',
-            'care',
-          ],
-          trainerGuidanceArabic: 'قدم نموذج الملكية الفردية (First-Contact Ownership): "I have the authority right here to fix this for you".',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-010-04'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-010-04',
-          turnNumber: 4,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'Fine. If you actually have the power to fix my promotional credit that was canceled last week, prove it.',
-          trainerGuidanceArabic: 'العميل وافق يسمعك ويتخلى عن طلب المدير. خذ رقم الحساب فوراً وابدأ الفحص.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-010-05'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-010-05',
-          turnNumber: 5,
-          speaker: TurnSpeaker.agent,
-          spokenText: 'I am on it right now. Let me pull up your promotional enrollment and audit the adjustment so we get your credits restored.',
-          requiredKeywords: ['promotional', 'audit', 'restored'],
-          isFinal: true,
-        ),
-      ],
-      metadata: const ContentMetadata(
-        provenance: ProvenanceTier.workReported,
-        notes: 'Grounded in floor reality: Supervisor callbacks are not available; agent must de-escalate with AERD and exercise direct front-line empowerment.',
-      ),
-    ),
 
-    // 11: 36-Month EIP Balance Payoff
-    Scenario(
-      id: 'scen-11-eip-payoff',
-      title: '36-Month EIP Payoff vs Forfeiture of Remaining Credits',
-      moduleIndex: 1,
-      category: 'Billing & Payments',
-      difficulty: 'intermediate',
-      customerPersona: 'Derek Morgan (Tech Enthusiast Wanting Early Unlock)',
-      skillTags: const ['Installments', 'Payoff', 'Disclosures'],
-      expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Derek Morgan. I want to pay off the remaining balance on my iPhone installment plan so I can unlock it. Will I keep getting my monthly promotional trade-in credits if I pay off the phone early?',
-      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Paying off a device early can affect promotional bill credits unless the payoff is processed correctly after credits start; changing plan or line disconnection forfeits remaining credits.',
-      turns: const [
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-011-01',
-          turnNumber: 1,
-          speaker: TurnSpeaker.agent,
-          spokenText: _defaultAgentGreeting,
-          requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'استقبل ديريك وراجع معاه شروط سداد خطة التقسيط المبكر (EIP Payoff).',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-011-02'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-011-02',
+          id: 'turn-10-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'If I pay the full 400 dollars left on the phone, do my monthly promotional credits disappear?',
-          trainerGuidanceArabic: 'اشرح القاعدة بدقة: طالما الخط شغال وعقد الترايد إن مفعل، الرصيد الترويجي بيكمل كخصم على الفاتورة الشهرية طالما لم يتم إلغاء الخط.',
+          spokenText: 'Alex, cut the customer service script. Put me through to your highest-ranking supervisor right now, or have one call me back within fifteen minutes. Do not argue!',
+          trainerGuidanceArabic: 'ريتشارد غاضب وبيطلب سوبرفايزر فوراً أو مكالمة راجعة. الحقيقة التشغيلية: لا توجد خدمة اتصال راجع من المشرفين في هذا النظام. استلم زمام المكالمة واعتذر عن تعطله وأكد قدرتك على فحص المشكلة وحلها فوراً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-011-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-10-03'),
           ],
         ),
-        ScenarioTurn(
-          id: 'turn-011-03',
-          turnNumber: 3,
-          speaker: TurnSpeaker.agent,
-          spokenText: 'Great question, Derek. As long as your line remains active on an eligible unlimited plan, paying off the device installment balance allows you to unlock the device while continuing to receive your monthly promotional bill credits.',
-          requiredKeywords: ['line', 'active', 'eligible', 'unlock', 'credits'],
-          trainerGuidanceArabic:
-              'وضوح المصطلحات مهم جداً: Eligible plan, unlock device.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-011-04'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-011-04',
-          turnNumber: 4,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'That is awesome news! Go ahead and process the payoff with the card on file, Alex.',
-          trainerGuidanceArabic: 'أكد المبلغ واطلب الموافقة الصريحة قبل الخصم.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-011-05'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-011-05',
-          turnNumber: 5,
-          speaker: TurnSpeaker.agent,
-          spokenText: 'I have submitted the device payoff for four hundred dollars and initiated your device unlock request. You will receive email confirmation shortly.',
-          requiredKeywords: [
-            'submitted',
-            'four hundred',
-            'unlock',
-            'confirmation',
-          ],
-          isFinal: true,
-        ),
-      ],
-      metadata: const ContentMetadata(
-        provenance: ProvenanceTier.fictionalSimulation,
-        notes:
-            'Fictional early payoff policy and unlock eligibility explanation.',
-      ),
-    ),
 
-    // 12: Trade-In Shipping Kit Delay
-    Scenario(
-      id: 'scen-12-tradein-box',
-      title: 'Trade-In Return Shipping Kit Delay & Deadline Extension',
-      moduleIndex: 1,
-      category: 'Billing & Payments',
-      difficulty: 'intermediate',
-      customerPersona: 'Chloe Adams (Worried New Phone Owner)',
-      skillTags: const ['Trade-In Kit', 'Reassurance', 'AERD'],
-      expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Chloe Adams. I got my new iPhone ten days ago, but I still have not received the return shipping box for my old trade-in phone! I only have thirty days or I lose the 800-dollar promotion! What should I do?',
-      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'The 30-day trade-in window is protected when a shipping kit replacement is ordered or a drop-off label is generated at a corporate retail store.',
-      turns: const [
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-012-01',
-          turnNumber: 1,
-          speaker: TurnSpeaker.agent,
-          spokenText: _defaultAgentGreeting,
-          requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic:
-              'استقبل كلوي وطمنها فوراً إن حقها في العرض الترويجي محمي.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-012-02'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-012-02',
-          turnNumber: 2,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'I am terrified I am going to miss the thirty day deadline and be charged 800 dollars!',
-          trainerGuidanceArabic: 'طمن كلوي إن السيستم بيوثق التأخير وإنها تقدر تطبع بوليصة شحن فورية أو تروح أي فرع رسمي تسلم الجهاز.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-012-03'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-012-03',
+          id: 'turn-10-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Please do not worry, Chloe. Your promotion is completely safe. I can email you a prepaid return shipping label right now, or you can drop your device off at any official store for immediate inspection.',
-          requiredKeywords: [
-            'safe',
-            'email',
-            'prepaid',
-            'shipping label',
-            'store',
-          ],
-          trainerGuidanceArabic:
-              'وضح الخيارين: إيميل ببوليصة شحن أو تسليم في الفرع.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-012-04'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-012-04',
-          turnNumber: 4,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'Can you email me the printable label right now? That is so much easier than waiting for a box in the mail!',
-          trainerGuidanceArabic:
-              'أرسل البوليصة على إيميلها المسجل وأكد استلامها.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-012-05'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-012-05',
-          turnNumber: 5,
-          speaker: TurnSpeaker.agent,
-          spokenText: 'I have sent the prepaid shipping label directly to your email on file. Your thirty-day window has been documented and extended on the account.',
-          requiredKeywords: ['sent', 'prepaid', 'email', 'extended'],
-          isFinal: true,
-        ),
-      ],
-      metadata: const ContentMetadata(
-        provenance: ProvenanceTier.fictionalSimulation,
-        notes:
-            'Fictional trade-in kit delay handling and customer reassurance.',
-      ),
-    ),
-
-    // 13: Third-Party App Store Mobile Purchases
-    Scenario(
-      id: 'scen-13-third-party-charge',
-      title: 'Third-Party Mobile Purchases & Purchase Blocker',
-      moduleIndex: 1,
-      category: 'Billing & Payments',
-      difficulty: 'intermediate',
-      customerPersona:
-          'Bradley Cooper (Father Surprised by Gaming In-App Charges)',
-      skillTags: const ['Purchase Blocker', 'Billing Investigation', 'AERD'],
-      expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Bradley Cooper. My bill has four separate charges of 9.99 labeled Mobile Purchase. I never authorized this! Is someone hacking my account?',
-      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Direct carrier billing allows app store purchases charged directly to the wireless invoice; representative can explain mobile purchase blocking feature.',
-      turns: const [
-        ScenarioTurn(
-          id: 'turn-013-01',
-          turnNumber: 1,
-          speaker: TurnSpeaker.agent,
-          spokenText: _defaultAgentGreeting,
-          requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'استقبل برادلي وتحقق من تفاصيل الرسوم.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-013-02'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-013-02',
-          turnNumber: 2,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'Who authorized forty dollars in game purchases on my bill? I want this removed and blocked forever!',
-          trainerGuidanceArabic: 'اشرح له خاصية الشراء عبر الفاتورة (Carrier Billing) واقترح تفعيل ميزة Purchase Blocker المجانية على جميع خطوط العائلة.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-013-03'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-013-03',
-          turnNumber: 3,
-          speaker: TurnSpeaker.agent,
-          spokenText: 'I understand your concern, Bradley. Those charges stem from third-party app store purchases billed directly to the phone line. I can add our free Purchase Blocker to all lines right now to prevent any future charges.',
+          spokenText: 'I understand your frustration, Richard, and I want to ensure your issue is resolved immediately. In our center we do not offer supervisor callbacks, but I have full authority to look into this ticket and resolve it for you right now.',
           requiredKeywords: [
             'understand',
-            'third-party',
-            'purchase blocker',
-            'prevent',
+            'frustration',
+            'authority',
+            'resolve',
           ],
-          trainerGuidanceArabic: 'وضح مجانية ميزة Purchase Blocker.',
+          trainerGuidanceArabic: 'كن صريحاً بأدب بخصوص عدم وجود callbacks وأكد صلاحيتك المباشرة لحل المشكلة بنفسك.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-013-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-10-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-10-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-013-04',
+          id: 'turn-10-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Yes, please lock that down so my son cannot accidentally buy coins again. Thank you, Alex.',
-          trainerGuidanceArabic: 'فعل الحظر وراجع سياسة التسوية المتاحة.',
+          spokenText: 'Fine. At least you are honest about the callback. The ticket number is 9 4 8 2 1. Tell me why my neighborhood tower has been down for four days.',
+          trainerGuidanceArabic: 'ريتشارد وافق يسمع منك بعد صدقك. افحص رقم التذكرة ووضح له حالة الصيانة ووقت الإصلاح المتوقع بدقة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-013-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-10-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-013-05',
+          id: 'turn-10-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I don\'t care about your policy, Alex! I demand a supervisor right now! If you don\'t transfer me this second, I am canceling all eight lines on my account!',
+          trainerGuidanceArabic: 'ريتشارد بيهدد بإلغاء 8 خطوط لو متحولش. خليك هادي وثابت، طبق Empathy عميق: \'أنا مقدر تماماً أهمية الخطوط لشغلك\'، وكرر استعدادك للتدخل الفوري لمنع الإلغاء.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-10-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-10-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Purchase Blocker is now active across all lines on your account, so no further third-party charges can go through. Is there anything else I can protect today?',
-          requiredKeywords: ['purchase blocker', 'active', 'protect'],
+          spokenText: 'Thank you, Richard. Looking at ticket 94821, field technicians replaced the primary amplifier this morning, and testing shows normal signal will restore by 3 PM today.',
+          requiredKeywords: ['looking', 'technicians', 'signal', 'restore'],
+          trainerGuidanceArabic: 'قدم المعلومة التقنية بدقة ووضوح وطمئنه.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-10-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'Richard, I hear how serious this is for your eight lines, and the last thing I want is for you to lose service. Let me immediately consult my floor lead while keeping you on the line so we resolve this without delay.',
+          requiredKeywords: ['hear', 'serious', 'lines', 'resolve'],
+          trainerGuidanceArabic: 'حافظ على هدوء الأعصاب وقدم استشارة داخلية سريعة مع المشرف بدون وعد بمكالمة راجعة.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional carrier billing investigation and purchase blocker feature.',
+        notes: 'Richard demands an immediate supervisor callback because of a recurring network ticket. Operational truth: supervisor callbacks are NOT available in the agent\'s process; the agent must de-escalate and take ownership directly.',
       ),
     ),
+    // 11: Equipment Installment Plan Payoff vs Upgrade
+    Scenario(
+      id: 'scen-11-eip-payoff',
+      title: 'Equipment Installment Plan Payoff vs Upgrade',
+      moduleIndex: 2,
+      category: 'Plan Upgrade & Features',
+      difficulty: 'intermediate',
+      customerPersona: 'Megan Clark (Customer Wanting New Flagship Phone)',
+      skillTags: const ['EIP', 'Next Up', 'Upgrade'],
+      expectedResponse: _defaultAgentGreeting,
+      customerResponse: 'Hi Alex, Megan Clark here. I want to upgrade to the new Pro Max today. Can I just roll my remaining 320 dollars into the new phone, or do I have to pay it off first?',
+      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
+      contextNotes: 'Megan owes 320 dollars on her current phone with 8 installment months remaining. She wants the new flagship phone and needs payoff and Next Up options explained.',
+      turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
+        ScenarioTurn(
+          id: 'turn-11-01',
+          turnNumber: 1,
+          speaker: TurnSpeaker.agent,
+          spokenText: _defaultAgentGreeting,
+          requiredKeywords: ['att', 'alex', 'name'],
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-11-02'),
+          ],
+        ),
 
-    // 14: Bereavement Account Ownership Transfer
+        // Turn 2: Customer Initial Statement / Inquiry
+        ScenarioTurn(
+          id: 'turn-11-02',
+          turnNumber: 2,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Hi Alex, Megan Clark here. I want to upgrade to the new Pro Max today. Can I just roll my remaining 320 dollars into the new phone, or do I have to pay it off first?',
+          trainerGuidanceArabic: 'ميجان عاوزة تشتري التليفون الجديد وعليها 320 دولار. اشرح لها الفرق بين سداد المبلغ بالكامل للحفاظ على الجهاز القديم، أو خيار Next Up لو مشترك فيه لتسليم الجهاز وإسقاط الباقي.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-11-03'),
+          ],
+        ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
+        ScenarioTurn(
+          id: 'turn-11-03',
+          turnNumber: 3,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I can definitely clarify your upgrade options, Megan. If you have Next Up, you can trade in your device to waive remaining payments, or you can pay the three hundred twenty dollars to keep your current phone.',
+          requiredKeywords: ['clarify', 'options', 'next up', 'trade in'],
+          trainerGuidanceArabic:
+              'وضح لها خياري Next Up وسداد الـ 320 دولار بوضوح.',
+          branches: [
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-11-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-11-04B'),
+          ],
+        ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
+        ScenarioTurn(
+          id: 'turn-11-04A',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I do have Next Up on my bill! So I can just hand this one in, erase that 320 dollar balance, and get the new Pro Max right away? Let\'s do that!',
+          trainerGuidanceArabic: 'ميجان مبسوطة إن عندها Next Up. وضح لها خطوات الفحص واستلام الجهاز الجديد.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-11-05A'),
+          ],
+        ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
+        ScenarioTurn(
+          id: 'turn-11-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I don\'t have Next Up? That means I have to pay 320 dollars out of pocket right now on top of taxes? That is way too much money to upgrade today.',
+          trainerGuidanceArabic: 'ميجان معترضة على دفع الـ 320 كاش. اقترح عليها برنامج الترايد إن التقليدي أو تخفيض فئة الجهاز لتقليل التكلفة الأولية.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-11-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-11-05A',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'Exactly, Megan! As long as your phone is in good working condition, Next Up covers the remaining balance. Let us pick your preferred color and storage size!',
+          requiredKeywords: ['condition', 'balance', 'color', 'storage'],
+          trainerGuidanceArabic:
+              'ابدأ عملية اختيار اللون والمساحة بحماس واحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-11-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I understand that is a substantial upfront cost, Megan. However, your current phone still qualifies for standard trade-in credits that can offset the new phone\'s monthly payments over thirty-six months.',
+          requiredKeywords: ['understand', 'cost', 'trade in', 'credits'],
+          trainerGuidanceArabic: 'قدم حل الترايد إن لتعويض التكلفة الشهرية.',
+          isFinal: true,
+        ),
+      ],
+      metadata: const ContentMetadata(
+        provenance: ProvenanceTier.fictionalSimulation,
+        notes: 'Megan owes 320 dollars on her current phone with 8 installment months remaining. She wants the new flagship phone and needs payoff and Next Up options explained.',
+      ),
+    ),
+    // 12: Missing Trade-In Shipping Return Kit
+    Scenario(
+      id: 'scen-12-tradein-box',
+      title: 'Missing Trade-In Shipping Return Kit',
+      moduleIndex: 2,
+      category: 'Technical Troubleshooting',
+      difficulty: 'intermediate',
+      customerPersona: 'Brandon Lee (Customer Nearing 30-Day Return Limit)',
+      skillTags: const ['Trade-In Box', 'Shipping', 'AERD'],
+      expectedResponse: _defaultAgentGreeting,
+      customerResponse: 'Alex, Brandon Lee here. I got my new iPhone twenty days ago, but the trade-in return kit never showed up! If I don\'t send it within thirty days, I lose my eight hundred dollar promo!',
+      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
+      contextNotes: 'Brandon upgraded online 20 days ago but never received the specialized trade-in shipping box. He fears missing the 30-day deadline.',
+      turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
+        ScenarioTurn(
+          id: 'turn-12-01',
+          turnNumber: 1,
+          speaker: TurnSpeaker.agent,
+          spokenText: _defaultAgentGreeting,
+          requiredKeywords: ['att', 'alex', 'name'],
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-12-02'),
+          ],
+        ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
+        ScenarioTurn(
+          id: 'turn-12-02',
+          turnNumber: 2,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Alex, Brandon Lee here. I got my new iPhone twenty days ago, but the trade-in return kit never showed up! If I don\'t send it within thirty days, I lose my eight hundred dollar promo!',
+          trainerGuidanceArabic: 'براندون قلقان جداً عشان فاضل 10 أيام ويفقد الخصم. طمنه فوراً: اطلب له كيت شحن جديد فوري ومجاني، وابعث له بوليصة شحن فورية على الإيميل مع تمديد الفترة في السيستم.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-12-03'),
+          ],
+        ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
+        ScenarioTurn(
+          id: 'turn-12-03',
+          turnNumber: 3,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I understand your anxiety about the deadline, Brandon. I am ordering a replacement return kit with priority shipping and emailing you a prepaid shipping label right now so you can drop it off today.',
+          requiredKeywords: ['understand', 'anxiety', 'replacement', 'label'],
+          trainerGuidanceArabic:
+              'وفر له بوليصة شحن رقمية فورية واطلب الكيت الجديد كاحتياط.',
+          branches: [
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-12-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-12-04B'),
+          ],
+        ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
+        ScenarioTurn(
+          id: 'turn-12-04A',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'You can email the shipping label directly? That is incredible! I have a UPS store right down the street. Thank you so much Alex!',
+          trainerGuidanceArabic: 'العميل ارتاح وشكرك. اكد له على تغليف الجهاز واستلام إيصال الشحن من UPS.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-12-05A'),
+          ],
+        ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
+        ScenarioTurn(
+          id: 'turn-12-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I don\'t have a printer to print a label, Alex! And priority shipping still takes three days. What happens if the box arrives after day thirty?',
+          trainerGuidanceArabic: 'العميل معندوش طابعة وقلقان من تأخير الكيت. طمنه إن كود الـ QR يقدر يعمله سكان في UPS بدون طابعة، وإنك حطيت نوتة تمديد 30 يوم إضافية في السيستم.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-12-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-12-05A',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'You are very welcome, Brandon! Just take the email or QR code to UPS, they can scan and print the label for you. Keep the receipt and you are fully protected!',
+          requiredKeywords: ['welcome', 'ups', 'scan', 'protected'],
+          trainerGuidanceArabic: 'أكد على الاحتفاظ بإيصال UPS وأغلق باحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-12-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'No printer needed at all, Brandon! The email includes a mobile QR code that UPS scans to print the label for free. Plus, I extended your trade-in window in our system by thirty days.',
+          requiredKeywords: ['free', 'extended', 'system', 'days'],
+          trainerGuidanceArabic:
+              'قدم حل كود الـ QR والتمديد الرسمي في السيستم.',
+          isFinal: true,
+        ),
+      ],
+      metadata: const ContentMetadata(
+        provenance: ProvenanceTier.fictionalSimulation,
+        notes: 'Brandon upgraded online 20 days ago but never received the specialized trade-in shipping box. He fears missing the 30-day deadline.',
+      ),
+    ),
+    // 13: Unfamiliar Third-Party App & Gaming Surcharges
+    Scenario(
+      id: 'scen-13-third-party-charge',
+      title: 'Unfamiliar Third-Party App & Gaming Surcharges',
+      moduleIndex: 3,
+      category: 'Billing & Payments',
+      difficulty: 'intermediate',
+      customerPersona: 'Carolyn Wright (Parent Questioning Mystery Line Item)',
+      skillTags: const ['Third-Party', 'Dispute', 'AERD'],
+      expectedResponse: _defaultAgentGreeting,
+      customerResponse: 'Hello Alex, Carolyn Wright. There are three separate 9.99 charges for some gaming club on my bill! I never authorized these! Are you letting random companies charge my card?',
+      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
+      contextNotes: 'Carolyn noticed three charges of 9.99 dollars for mobile gaming subscriptions on her teenage son\'s line. She insists she never authorized them.',
+      turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
+        ScenarioTurn(
+          id: 'turn-13-01',
+          turnNumber: 1,
+          speaker: TurnSpeaker.agent,
+          spokenText: _defaultAgentGreeting,
+          requiredKeywords: ['att', 'alex', 'name'],
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-13-02'),
+          ],
+        ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
+        ScenarioTurn(
+          id: 'turn-13-02',
+          turnNumber: 2,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Hello Alex, Carolyn Wright. There are three separate 9.99 charges for some gaming club on my bill! I never authorized these! Are you letting random companies charge my card?',
+          trainerGuidanceArabic: 'كارولين متفاجئة من رسوم ألعاب على خط ابنها. اعترف بالصدمة، اشرح إن دي مشتريات من داخل التطبيقات (in-app purchases)، واعرض عليها إلغاء الاشتراك وحظر المشتريات ورد المبالغ.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-13-03'),
+          ],
+        ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
+        ScenarioTurn(
+          id: 'turn-13-03',
+          turnNumber: 3,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I completely understand your concern, Carolyn. Let me review those digital purchases, issue a direct credit for the twenty-nine dollars, and place a purchase block on that line right now.',
+          requiredKeywords: ['understand', 'concern', 'credit', 'block'],
+          trainerGuidanceArabic: 'قدم الثلاثية: رصيد فوري، إلغاء الاشتراك، وحظر المشتريات مستقبلاً.',
+          branches: [
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-13-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-13-04B'),
+          ],
+        ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
+        ScenarioTurn(
+          id: 'turn-13-04A',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'You can block future purchases completely? Please do! And thank you so much for crediting the money back without making me jump through hoops.',
+          trainerGuidanceArabic: 'العميلة ارتاحت وشكرتك على سرعة الحل. أكد لها تفعيل Purchase Blocker ورقم العملية.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-13-05A'),
+          ],
+        ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
+        ScenarioTurn(
+          id: 'turn-13-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Crediting it is fine, but how did this happen without my password in the first place? How do I know another company won\'t charge me next week?',
+          trainerGuidanceArabic: 'العميلة لسه قلقانة من أمان الحساب. اشرح لها إعدادات الأمان في المتجر وميزة Purchase Blocker المانعة لأي فواتير طرف ثالث.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-13-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-13-05A',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'Purchase Blocker is active on all lines, Carolyn, and your credit of twenty-nine ninety-seven is posted. You are completely protected from unexpected app charges going forward!',
+          requiredKeywords: ['active', 'credit', 'protected', 'charges'],
+          trainerGuidanceArabic: 'أكد الحظر والرصيد وأنهِ المكالمة باحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-13-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear your concern about security, Carolyn. The purchase block I activated completely disables third-party carrier billing at the network level, so no vendor can bill your account without direct banking approval.',
+          requiredKeywords: ['hear', 'security', 'network', 'approval'],
+          trainerGuidanceArabic: 'طمئنها على الحماية على مستوى الشبكة بالكامل.',
+          isFinal: true,
+        ),
+      ],
+      metadata: const ContentMetadata(
+        provenance: ProvenanceTier.fictionalSimulation,
+        notes: 'Carolyn noticed three charges of 9.99 dollars for mobile gaming subscriptions on her teenage son\'s line. She insists she never authorized them.',
+      ),
+    ),
+    // 14: Bereavement Account Assumption & Line Transition
     Scenario(
       id: 'scen-14-bereavement-transfer',
-      title: 'Bereavement Care & Compassionate Line Transfer',
-      moduleIndex: 1,
-      category: 'Account Floor Care',
+      title: 'Bereavement Account Assumption & Line Transition',
+      moduleIndex: 3,
+      category: 'Billing & Payments',
       difficulty: 'advanced',
-      customerPersona: 'Eleanor Vance (Grieving Widow)',
-      skillTags: const ['Bereavement', 'Compassion', 'Transfer of Billing'],
+      customerPersona:
+          'Thomas Gallagher (Grieving Son Managing Mother\'s Estate)',
+      skillTags: const ['Bereavement', 'Compassion', 'AERD'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hello Alex. My name is Eleanor Vance. My husband passed away three weeks ago. The wireless account is under his name, and I need to know how to keep my phone number without having to pay cancellation fees.',
+      customerResponse: 'Alex, my name is Thomas Gallagher. My mother passed away last week. I need to take over her cell phone number so family can reach me, but close her other devices.',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Bereavement care requires genuine human compassion, zero early termination or transfer fees, and handling with care and respect without pressuring sales.',
+      contextNotes: 'Thomas recently lost his mother and needs to assume ownership of her wireless line while canceling the tablet line without incurring early cancellation fees.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-014-01',
+          id: 'turn-14-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'موقف إنساني شديد الحساسية. استمع بإخلاص واستعد لتقديم واجب العزاء فورا.',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-014-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-14-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-014-02',
+          id: 'turn-14-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'My husband handled all the bills. I just want to keep my number and make sure I am not penalized.',
-          trainerGuidanceArabic: 'قدم واجب العزاء بصدق وبدون عبارات آلية. طمنها إن مفيش أي رسوم إلغاء أو جزاءات في حالات الوفاة وإنك هتنقل الخط باسمها بسلاسة.',
+          spokenText: 'Alex, my name is Thomas Gallagher. My mother passed away last week. I need to take over her cell phone number so family can reach me, but close her other devices.',
+          trainerGuidanceArabic: 'موقف إنساني حساس جداً (وفاة الأم). قدم تعازي صادقة ودافئة، استخدم نبرة صوت هادئة ومحترمة، واشرح له إن إجراءات الوفاة بتعفي الحساب من أي شروط جزائية.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-014-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-14-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-014-03',
+          id: 'turn-14-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Mrs. Vance, please accept my deepest condolences for your loss. We are here to support you completely. There are zero cancellation fees or penalties, and I will personally walk you through keeping your phone number seamlessly.',
-          requiredKeywords: [
-            'condolences',
-            'loss',
-            'support',
-            'zero',
-            'penalties',
-          ],
+          spokenText: 'Thomas, please accept my deepest condolences for the loss of your mother. I will personally handle this transfer with complete care, waive any cancellation fees, and keep her number active for you.',
+          requiredKeywords: ['condolences', 'loss', 'care', 'waive'],
           trainerGuidanceArabic:
-              'استخدم تعبير: "deepest condolences for your loss".',
+              'قدم التعازي أولاً، طمنه بخصوص إعفاء الرسوم وحفظ رقم والدته.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-014-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-14-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-14-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-014-04',
+          id: 'turn-14-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Thank you so much, Alex. You have no idea how much your kindness means to me right now.',
-          trainerGuidanceArabic:
-              'أكمل الإجراء بلطف وصبر دون أي عروض تسويقية إطلاقاً.',
+          spokenText: 'Thank you, Alex. I really appreciate your kindness. It has been a terrible week. What documents do I need to send to finalize this?',
+          trainerGuidanceArabic: 'توماس شكرك على مشاعرك الطيبة. وضح له ببساطة المستندات المطلوبة (شهادة الوفاة) ورابط الإرسال السريع.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-014-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-14-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-014-05',
+          id: 'turn-14-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I hope you are not going to make me go into a retail store with death certificates while I am planning her funeral. I cannot handle that right now.',
+          trainerGuidanceArabic: 'توماس مضغوط من الجنازة وخايف من البيروقراطية. طمنه فوراً: كل حاجة بتتم أونلاين أو بالتليفون بدون الحاجة لزيارة أي فرع.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-14-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-14-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'It is truly my privilege, Mrs. Vance. I have initiated the ownership transfer and noted your account with high priority. Please take all the time you need.',
-          requiredKeywords: ['privilege', 'transfer', 'time'],
+          spokenText: 'You won\'t have to visit any store, Thomas. You can upload a simple copy through our secure bereavement link whenever you are ready. Take all the time you need, and God bless.',
+          requiredKeywords: ['secure', 'bereavement', 'link', 'ready'],
+          trainerGuidanceArabic:
+              'أغلق المكالمة بأقصى درجات الاحترام والتعاطف الإنساني.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-14-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'You do not need to step foot in any store, Thomas. I have placed a sixty-day hold on the account so everything stays active without billing pressure while you focus on your family.',
+          requiredKeywords: ['store', 'hold', 'active', 'family'],
+          trainerGuidanceArabic:
+              'ضع فترة سماح 60 يوماً وتكفل بالإجراءات لتخفيف الضغط عنه.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Strict bereavement protocol: compassion first, zero sales pressure.',
+        notes: 'Thomas recently lost his mother and needs to assume ownership of her wireless line while canceling the tablet line without incurring early cancellation fees.',
       ),
     ),
-
-    // 15: Fast Alphanumeric Caller Info
+    // 15: Rapid Fire Number Dictation & Clarification
     Scenario(
       id: 'scen-15-fast-numbers',
-      title: 'Fast-Speaking Caller Account Number & IMEI Capture',
-      moduleIndex: 2,
-      category: 'Technical Care',
+      title: 'Rapid Fire Number Dictation & Clarification',
+      moduleIndex: 3,
+      category: 'Clarification & Listening',
       difficulty: 'advanced',
-      customerPersona: 'Kevin Patel (Rushed Commuter Rattling Numbers)',
-      skillTags: const ['Fast Numbers', 'Active Listening', 'Verification'],
+      customerPersona: 'Gary Anderson (Rushed Contractor on Job Site)',
+      skillTags: const ['Fast Speech', 'Active Listening', 'Clarification'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hey Alex, Kevin Patel here. My account is 849201938 and my device IMEI is 358291048291038, zip code 90210. I need a network refresh signal sent right now!',
+      customerResponse: 'Yeah Alex listen fast my name is Gary Anderson account 849201938 contact number 512-555-0198 ext 443 I need a temporary data boost right now!',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Customer speaks extremely quickly, challenging agent listening comprehension and read-back verification accuracy.',
+      contextNotes: 'Gary speaks extremely fast on a noisy job site, rattling off an account number and contact extension without pauses.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-015-01',
+          id: 'turn-15-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'التحية الرسمية واستقبال البيانات بسرعة.',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-015-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-15-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-015-02',
+          id: 'turn-15-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Did you get that IMEI? 358-291-048-291-038. Refresh my cellular data tower connection!',
-          trainerGuidanceArabic: 'تأكد من الأرقام وقراءتها بأسلوب التقطيع (Chunking) مع سرعة بديهة.',
+          spokenText: 'Yeah Alex listen fast my name is Gary Anderson account 849201938 contact number 512-555-0198 ext 443 I need a temporary data boost right now!',
+          trainerGuidanceArabic: 'العميل مستعجل جداً وبيملي أرقام بسرعة. اسمع باهتمام، ردد الأرقام للتأكيد بطريقة مهذبة وسريعة، ونفذ طلبه.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-015-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-15-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-015-03',
+          id: 'turn-15-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Thank you, Kevin. I have verified your IMEI ending in one zero three eight and zip code 90210. I am broadcasting an over-the-air network refresh to your device right now.',
-          requiredKeywords: ['verified', 'imei', 'zip code', 'refresh'],
+          spokenText: 'Got it, Gary! Let me verify that account number 8 4 9 2 0 1 9 3 8 and contact 5 1 2 5 5 5 0 1 9 8 extension 4 4 3, pulling up your data right now.',
+          requiredKeywords: ['verify', 'account', 'contact', 'data'],
           trainerGuidanceArabic:
-              'أعد تأكيد آخر 4 أرقام من الـ IMEI لتوفير الوقت.',
+              'كرر الأرقام للتأكيد ووضح إنك فتحت الحساب فوراً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-015-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-15-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-15-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-015-04',
+          id: 'turn-15-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Signal just reconnected with five bars! Fast work Alex, thanks a lot.',
-          trainerGuidanceArabic: 'أكد نجاح الإجراء واختم المكالمة.',
+          spokenText: 'Spot on, Alex! Good ears. Add the fifteen gigabyte boost please, my crew needs it for the blueprints right now.',
+          trainerGuidanceArabic: 'العميل أشاد بتركيزك وسرعتك. نفذ إضافة باقة البيانات الإضافية فوراً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-015-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-15-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-015-05',
+          id: 'turn-15-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'No! You got the last two digits of the account wrong, it was 3 8 not 8 3! Listen carefully, I am in a hurry!',
+          trainerGuidanceArabic: 'العميل نبهك على رقمين اختلفوا. اعتذر بسرعة وبدون إطالة: \'عفواً، 38 تم التصحيح فوراً\' واستكمل الإجراء.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-15-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-15-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Glad to hear that, Kevin! Restart your device when you reach your destination. Have a great commute!',
-          requiredKeywords: ['restart', 'destination', 'commute'],
+          spokenText: 'Fifteen gigabyte high-speed data boost is active immediately, Gary! Your crew is good to download those blueprints. Stay safe on the job site!',
+          requiredKeywords: ['active', 'gigabyte', 'download', 'safe'],
+          trainerGuidanceArabic: 'أكد التفعيل وتمنى له السلامة في موقع العمل.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-15-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'Corrected immediately, Gary: 8 4 9 2 0 1 9 3 8. Your account is open and your fifteen gigabyte boost is active right now. Have a great build day!',
+          requiredKeywords: ['corrected', 'account', 'active', 'boost'],
+          trainerGuidanceArabic: 'صحح الرقم بسرعة وأكد التفعيل الفوري.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fast-paced number and alphanumeric verification drill.',
+        notes: 'Gary speaks extremely fast on a noisy job site, rattling off an account number and contact extension without pauses.',
       ),
     ),
-
-    // 16: Noisy Background / Distracted Caller
+    // 16: Noisy Highway Audio & Repetition Protocol
     Scenario(
       id: 'scen-16-noisy-background',
-      title: 'Distracted Caller in Airport with Loud Background Noise',
-      moduleIndex: 2,
-      category: 'Account Floor Care',
-      difficulty: 'intermediate',
-      customerPersona: 'Maria Santos (Traveler at Busy Airport Gate)',
-      skillTags: const ['Pacing', 'Clarity', 'Noise Management'],
+      title: 'Noisy Highway Audio & Repetition Protocol',
+      moduleIndex: 3,
+      category: 'Clarification & Listening',
+      difficulty: 'advanced',
+      customerPersona: 'Samantha Brooks (Driving in Heavy Highway Rain)',
+      skillTags: const ['Noise Management', 'Pacing', 'Clarification'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hello Alex! My name is Maria Santos. (Loud intercom announcement) Sorry, I am at the airport gate and boarding soon. Can you turn on my international travel pass before I get on the plane?',
+      customerResponse: 'Hi Alex... Samantha Brooks... crackle... need to pay... phone bill... stormy...',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Representative must project clear, measured, high-contrast articulation to cut through background noise without shouting.',
+      contextNotes: 'Samantha is on Bluetooth in a noisy car during a storm with muffled speech.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-016-01',
+          id: 'turn-16-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'تحدث بنبرة واضحة ومخارج حروف قوية للتغلب على الضوضاء.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-016-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-16-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-016-02',
+          id: 'turn-16-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Can you hear me over the speakers? I need international pass added right now before doors close!',
-          trainerGuidanceArabic:
-              'طمنها بوضوح: الخدمة هتتفعل في ثواني ومفيش داعي للقلق.',
+          spokenText: 'Hi Alex... Samantha Brooks... crackle... need to pay... phone bill... stormy...',
+          trainerGuidanceArabic: 'العميلة صوتها مشوش بسبب عاصفة. استخدم نبرة واضحة ومخارج ألفاظ صريحة واستأذنها في إعادة المبلغ بهدوء.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-016-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-16-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-016-03',
+          id: 'turn-16-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I can hear you clearly, Maria. I am adding the International Day Pass to your line right now so your phone will be ready the moment you touch down.',
-          requiredKeywords: ['hear', 'international day pass', 'ready', 'line'],
-          trainerGuidanceArabic:
-              'ركز على مخارج حروف P في Pass و B في Boarding.',
+          spokenText: 'I can hear you, Samantha, but there is some highway noise on the line. I will speak clearly, and let us confirm your payment amount safely.',
+          requiredKeywords: ['hear', 'clearly', 'confirm', 'payment'],
+          trainerGuidanceArabic: 'طمنها إنك سامع ومستعد تساعدها بأمان.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-016-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-16-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-16-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-016-04',
+          id: 'turn-16-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Done already? You are amazing, Alex! Thank you so much, boarding now!',
-          trainerGuidanceArabic: 'تمنى لها رحلة سعيدة واختم باقتضاب.',
+          spokenText: 'Thank you Alex, I am pulling over under an overpass. My balance is ninety dollars, please charge my card on file.',
+          trainerGuidanceArabic: 'العميلة وقفت في مكان هادئ لتأكيد الدفع.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-016-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-16-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-016-05',
+          id: 'turn-16-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I can barely hear you over this rain, Alex! Can\'t you just process the payment without making me repeat everything?',
+          trainerGuidanceArabic: 'العميلة متوترة من الصوت والمطر. اعترف بالصعوبة واعرض سحب المبلغ المسجل بنقرة واحدة لتسهيل الأمر.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-16-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-16-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Have a safe and wonderful flight, Maria! Thank you for choosing AT&T!',
-          requiredKeywords: ['flight', 'safe', 'thank you'],
+          spokenText: 'Your payment of ninety dollars is confirmed, Samantha! Drive safely and reach out anytime you need assistance.',
+          requiredKeywords: ['confirmed', 'ninety', 'safely', 'assistance'],
+          trainerGuidanceArabic: 'أغلق بأمان.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-16-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear the heavy storm, Samantha, and your safety is first. I charged the standard ninety dollars to your card on file, receipt is texted. Drive safely!',
+          requiredKeywords: ['hear', 'safety', 'charged', 'safely'],
+          trainerGuidanceArabic: 'أكد الدفع فوراً حفاظاً على سلامتها.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Noise management and rapid execution drill.',
+        notes: 'Samantha is on Bluetooth in a noisy car during a storm with muffled speech.',
       ),
     ),
-
-    // 17: Long Hold Frustration & Multiple Transfers
+    // 17: Extended Hold Time Recovery & Reassurance
     Scenario(
       id: 'scen-17-hold-frustration',
-      title: 'Caller Frustrated by Multiple Previous Transfers',
-      moduleIndex: 1,
-      category: 'De-escalation & Retention',
+      title: 'Extended Hold Time Recovery & Reassurance',
+      moduleIndex: 3,
+      category: 'Escalation & Call Control',
       difficulty: 'advanced',
-      customerPersona: 'Thomas Sterling (Exhausted Businessman)',
-      skillTags: const ['Hold Frustration', 'No More Transfers', 'AERD'],
+      customerPersona: 'Victor Hugo (Customer Transferred Three Times)',
+      skillTags: const ['Hold Recovery', 'AERD', 'De-escalation'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Thomas Sterling. You are the fourth person I have been transferred to in the last forty-five minutes! If you transfer me again, I am canceling all five of my lines right now!',
+      customerResponse: 'Alex, you are the fourth person I have spoken to! I have been on hold for forty-five minutes! If you transfer me again I swear I will sue!',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Customer is on the verge of churn due to repeated transfers. The agent must commit to staying on the line and resolving the issue personally.',
+      contextNotes: 'Victor was bounced between billing and technical support for 45 minutes.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-017-01',
+          id: 'turn-17-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل توماس بثبات وطاقة إيجابية واعتذر عن التشتيت.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-017-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-17-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-017-02',
+          id: 'turn-17-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Do not put me on hold and do not transfer me! Can you actually help me or not?',
-          trainerGuidanceArabic: 'تطبيق التعهد الحاسم (The No-Transfer Promise): "You have reached the right person, and I will not transfer you anywhere."',
+          spokenText: 'Alex, you are the fourth person I have spoken to! I have been on hold for forty-five minutes! If you transfer me again I swear I will sue!',
+          trainerGuidanceArabic: 'العميل اتنقل بين 3 موظفين وغضبان جداً. اعترف بالمعاناة فوراً، اعتذر بصدق، واعده بعدم التحويل والتعامل مع المشكلة بنفسك.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-017-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-17-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-017-03',
+          id: 'turn-17-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I sincerely apologize for the transfers and your time, Thomas. You have reached Alex, and I promise you will not be transferred again. I am taking full ownership to handle this from start to finish.',
-          requiredKeywords: [
-            'apologize',
-            'transfers',
-            'promise',
-            'ownership',
-            'finish',
-          ],
+          spokenText: 'Victor, I am so sorry for the forty-five minutes you waited. I promise I will not transfer you; I am taking full personal ownership of your issue right now.',
+          requiredKeywords: ['sorry', 'waited', 'transfer', 'ownership'],
           trainerGuidanceArabic:
-              'أكد على الوعد بعدم التحويل والمسؤولية الكاملة.',
+              'امتص الغضب بالاعتذار وتحمل المسؤولية الشخصية الكاملة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-017-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-17-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-17-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-017-04',
+          id: 'turn-17-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Thank goodness. Finally someone who takes responsibility. I need to change the billing name on my account.',
-          trainerGuidanceArabic: 'ابدأ فورا في تنفيذ التعديل المطلوب.',
+          spokenText: 'Thank goodness. An actual human who takes ownership. My fiber gateway won\'t connect after yesterday\'s storm.',
+          trainerGuidanceArabic: 'العميل هدأ وبدأ يشرح مشكلة الراوتر.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-017-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-17-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-017-05',
+          id: 'turn-17-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I have heard that \'ownership\' line from the last three reps, Alex! Why should I believe you are any different?',
+          trainerGuidanceArabic: 'العميل مش مصدق الوعود. أثبت الجدية بالبدء الفوري في فحص الحساب أمامه مباشرة بدون كلام نظري.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-17-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-17-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I am updating the billing name on your account right now. You are all set and in good hands, Thomas.',
-          requiredKeywords: ['updating', 'billing name', 'hands'],
+          spokenText: 'Thank you for your patience, Victor. I refreshed your fiber ONT signal directly from my console, and your broadband light is green now!',
+          requiredKeywords: ['patience', 'refreshed', 'signal', 'green'],
+          trainerGuidanceArabic: 'أكد حل العطل بنفسك بنجاح.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-17-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear your skepticism, Victor, and actions speak louder than words. While we spoke, I accessed your fiber terminal and pushed a signal reboot that is reconnecting your gateway right now.',
+          requiredKeywords: ['hear', 'skepticism', 'terminal', 'reboot'],
+          trainerGuidanceArabic:
+              'أثبت له بالدليل العملي الفوري قدرتك على الحل.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'De-escalation for transferred callers and ownership assertion.',
+        notes: 'Victor was bounced between billing and technical support for 45 minutes.',
       ),
     ),
-
-    // 18: Moving / Relocation Fiber Availability Check
+    // 18: Home Relocation & Fiber Service Move Order
     Scenario(
       id: 'scen-18-moving-relocation',
-      title: 'Move Order & Fiber Speed Availability at New Address',
-      moduleIndex: 2,
-      category: 'Account Floor Care',
+      title: 'Home Relocation & Fiber Service Move Order',
+      moduleIndex: 3,
+      category: 'Plan Upgrade & Features',
       difficulty: 'intermediate',
-      customerPersona: 'Samantha Lee (Moving Homeowner)',
-      skillTags: const ['Move Order', 'Fiber Speeds', 'Discovery'],
+      customerPersona: 'Emily Watson (Moving Across Town Next Month)',
+      skillTags: const ['Relocation', 'Move Order', 'Discovery'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hi Alex! I am Samantha Lee. We are moving to Austin next Friday and I want to see if we can transfer our AT&T Fiber service to our new home at 4420 Oak Creek Lane.',
+      customerResponse: 'Hello Alex, Emily Watson calling. I am moving to 742 Evergreen Terrace on the first of next month. Can I take my fiber with me?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Move orders require address verification, facility qualification (Gigabit vs Multi-Gig), and scheduling install or self-install kit delivery.',
+      contextNotes: 'Emily moves into a new apartment on the 1st and wants to know if fiber is available.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-018-01',
+          id: 'turn-18-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'هنئ سامانثا على الانتقال وابدأ فحص العنوان الجديد.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-018-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-18-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-018-02',
+          id: 'turn-18-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Can I get the same 1000 megabit fiber speeds at the new place, and can it be connected next Friday?',
-          trainerGuidanceArabic: 'افحص توافر الخدمة وبشرها بتوافر سرعات الفايبر 1 جيجا مع خيار التوصيل الذاتي أو الفني.',
+          spokenText: 'Hello Alex, Emily Watson calling. I am moving to 742 Evergreen Terrace on the first of next month. Can I take my fiber with me?',
+          trainerGuidanceArabic: 'إيميلي بتنقل بيت جديد وعاوزة تنقل الفايبر. افحص التغطية في العنوان الجديد واشرح ميزة Move Order.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-018-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-18-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-018-03',
+          id: 'turn-18-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Congratulations on the new home, Samantha! I checked 4420 Oak Creek Lane and AT&T Fiber 1000 is ready for activation there. We can easily schedule your hookup for next Friday.',
-          requiredKeywords: [
-            'congratulations',
-            'fiber 1000',
-            'activation',
-            'friday',
-          ],
-          trainerGuidanceArabic: 'ركز على نطق B و P في Fiber و Hookup.',
+          spokenText: 'Congratulations on your new home, Emily! Let us verify fiber availability at Evergreen Terrace and schedule your seamless move order.',
+          requiredKeywords: ['congratulations', 'verify', 'fiber', 'move'],
+          trainerGuidanceArabic: 'بارك لها على البيت الجديد وافحص التغطية.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-018-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-18-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-18-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-018-04',
+          id: 'turn-18-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'That is fantastic! Do I take my current white Wi-Fi gateway with me, or do you send new equipment?',
-          trainerGuidanceArabic:
-              'وضح لها تعليمات أخذ المودم القديم معاها للعنوان الجديد.',
+          spokenText: 'Wonderful! You have gigabit fiber there too? Please book the technician for the morning of the second.',
+          trainerGuidanceArabic: 'العميلة سعيدة بوجود الفايبر في بيتها الجديد.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-018-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-18-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-018-05',
+          id: 'turn-18-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'What do you mean fiber isn\'t available at that address? It\'s right in the middle of the city! Am I forced onto slow copper DSL?',
+          trainerGuidanceArabic: 'العميلة مصدومة لعدم توفر الفايبر في البيت الجديد. اعترف بالإحباط، وافحص خيارات سرعات النحاس المحسنة أو Internet Air 5G.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-18-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-18-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Please pack your current gateway and power cord and bring them with you. Your move order is scheduled for next Friday with zero gap in service.',
-          requiredKeywords: ['gateway', 'scheduled', 'friday', 'service'],
+          spokenText: 'All scheduled, Emily! Your move order is set for the second between eight and twelve. Pack your gateway and the tech will handle the rest!',
+          requiredKeywords: ['scheduled', 'order', 'gateway', 'handle'],
+          trainerGuidanceArabic: 'أكد ميعاد النقل.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-18-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I understand your disappointment, Emily. While direct fiber is pending buildout on that block, AT&T Internet Air 5G provides seamless high-speed plug-and-play Wi-Fi for your new apartment.',
+          requiredKeywords: ['understand', 'disappointment', 'air', 'seamless'],
+          trainerGuidanceArabic: 'قدم بديل Internet Air 5G السريع.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional move order qualification and customer guidance.',
+        notes: 'Emily moves into a new apartment on the 1st and wants to know if fiber is available.',
       ),
     ),
-
-    // 19: eSIM QR Code Activation on New Device
+    // 19: Digital eSIM Activation & QR Code Delivery
     Scenario(
       id: 'scen-19-esim-transfer',
-      title: 'eSIM QR Code Push & Quick Transfer Troubleshooting',
-      moduleIndex: 2,
-      category: 'Technical Care',
+      title: 'Digital eSIM Activation & QR Code Delivery',
+      moduleIndex: 4,
+      category: 'Technical Troubleshooting',
       difficulty: 'intermediate',
-      customerPersona: 'Justin Blake (Frustrated iPhone Buyer)',
-      skillTags: const ['eSIM', 'Activation', 'Troubleshooting'],
+      customerPersona: 'Lucas Perez (Customer Setting Up New Unlocked Phone)',
+      skillTags: const ['eSIM', 'Digital Activation', 'Technical'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Justin Blake. I just bought an unlocked iPhone without a physical SIM slot. I tried activating the eSIM through the app, but it says Cellular Setup Failed. My old phone is already deactivated!',
+      customerResponse: 'Hi Alex, Lucas Perez here. I bought an unlocked phone without a SIM tray. How do I switch my active number over to an eSIM?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'eSIM activation failure requires verifying EID number, Wi-Fi connection on new device, and pushing an over-the-air carrier profile download.',
+      contextNotes: 'Lucas bought an unlocked phone and needs to transfer his physical SIM to digital eSIM.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-019-01',
+          id: 'turn-19-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل جاستن وطمنه إن مشكلة الـ eSIM بتتحل في دقايق عبر Wi-Fi.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-019-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-19-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-019-02',
+          id: 'turn-19-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'I have no working phone right now! How do I get cellular signal onto this new iPhone?',
-          trainerGuidanceArabic: 'اطلب منه التأكد إنه متصل بشبكة Wi-Fi، وادخل رقم الـ EID لتنزيل بروفايل الـ eSIM أوتوماتيكياً.',
+          spokenText: 'Hi Alex, Lucas Perez here. I bought an unlocked phone without a SIM tray. How do I switch my active number over to an eSIM?',
+          trainerGuidanceArabic: 'لوكاس اشترى تليفون جديد بدون مدخل شريحة محتاج eSIM. اشرح له خطوات التحويل الرقمي وإرسال الـ QR Code.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-019-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-19-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-019-03',
+          id: 'turn-19-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I can help you get connected right away, Justin. Please make sure your new iPhone is connected to Wi-Fi. I am sending an over-the-air eSIM carrier profile push directly to your device EID right now.',
-          requiredKeywords: ['connected', 'wi-fi', 'esim', 'push', 'eid'],
+          spokenText: 'I can get your eSIM activated in minutes, Lucas. Let us verify your device EID and push the digital profile directly to your phone settings.',
+          requiredKeywords: ['activated', 'minutes', 'verify', 'settings'],
           trainerGuidanceArabic:
-              'وضح خطوة الاتصال بالـ Wi-Fi قبل إرسال البروفايل.',
+              'اطلب رقم الـ EID ووضح سهولة التنزيل عبر الواي فاي.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-019-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-19-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-19-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-019-04',
+          id: 'turn-19-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'A notification just popped up saying AT&T Cellular Plan Ready to Install! I tapped it and bars appeared! Alex, thank you!',
-          trainerGuidanceArabic:
-              'أكد انتهاء التفعيل وانصحه بإعادة تشغيل الهاتف.',
+          spokenText: 'Got the prompt on my screen! Cellular plan ready to install. That was much easier than I expected, thank you!',
+          trainerGuidanceArabic: 'العميل سعيد بسرعة وسهولة التحويل.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-019-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-19-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-019-05',
+          id: 'turn-19-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'My screen says \'eSIM Download Failed - Contact Carrier\'. Am I without a working phone now? I need this for work!',
+          trainerGuidanceArabic: 'العميل واجه خطأ في التنزيل. طمنه ووضح إن الشريحة القديمة لسه شغالة لحد اكتمال التفعيل، واعد إرسال البروفايل.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-19-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-19-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'You are all set with active five G cellular service, Justin! Enjoy your new iPhone and thank you for calling AT&T!',
-          requiredKeywords: ['active', 'five g', 'enjoy', 'iphone'],
+          spokenText: 'You are all set, Lucas! Your cellular data and number are fully active on your new eSIM. Enjoy your new phone!',
+          requiredKeywords: ['set', 'cellular', 'active', 'enjoy'],
+          trainerGuidanceArabic: 'أكد نجاح التفعيل وأغلق باحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-19-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'Do not worry, Lucas, your original line is completely safe. I refreshed your EID profile on the network; please reconnect to Wi-Fi and tap download once more.',
+          requiredKeywords: ['worry', 'safe', 'refreshed', 'download'],
+          trainerGuidanceArabic: 'حل مشكلة التنزيل بهدوء وتأكيد.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'eSIM OTA push and dual-SIM device onboarding practice.',
+        notes: 'Lucas bought an unlocked phone and needs to transfer his physical SIM to digital eSIM.',
       ),
     ),
-
-    // 20: Fiber 1000 Upgrade Pitch / Value Explanation
+    // 20: Copper DSL to Symmetrical Fiber Upgrade
     Scenario(
       id: 'scen-20-fiber-upgrade',
-      title: 'Fiber 300 to Fiber 1000 Upgrade & Household Discovery',
-      moduleIndex: 3,
-      category: 'Sales & Discovery',
+      title: 'Copper DSL to Symmetrical Fiber Upgrade',
+      moduleIndex: 4,
+      category: 'Plan Upgrade & Features',
       difficulty: 'intermediate',
-      customerPersona: 'Danielle Brooks (Work-from-Home Parent with Gamers)',
-      skillTags: const ['Sales Discovery', 'Fiber Upgrade', 'Value Selling'],
+      customerPersona: 'Arthur Pendelton (Long-Time DSL Customer)',
+      skillTags: const ['Fiber Upgrade', 'Consultative Sales', 'Value'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Danielle Brooks. We currently have your 300 megabit internet, but my husband works from home uploading large video files and my two teenagers are constantly gaming. Would upgrading to Fiber 1000 actually make a difference for us?',
+      customerResponse: 'Alex, Arthur Pendelton calling. My grandson says my internet is ancient history. I pay sixty-five dollars for twenty-five megabits. Is there anything better?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Danielle has bandwidth contention due to symmetric upstream needs for video production and low latency gaming. Fiber 1000 provides symmetric gigabit up/down with unlimited data.',
+      contextNotes: 'Arthur pays 65 dollars for 25 Mbps copper DSL. Fiber 300 is available at his home for 55 dollars.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-020-01',
+          id: 'turn-20-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل دانييل وابدأ ممارسة الاستكشاف البيعي (Sales Discovery).',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-020-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-20-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-020-02',
+          id: 'turn-20-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Is moving up to 1000 megabits worth the extra twenty dollars a month, or is it just overkill?',
-          trainerGuidanceArabic: 'اشرح ميزة السرعات المتطابقة (Symmetrical speeds) والـ Upload عالي السرعة لملفات الفيديو والـ Latency المنخفض للجيمرز.',
+          spokenText: 'Alex, Arthur Pendelton calling. My grandson says my internet is ancient history. I pay sixty-five dollars for twenty-five megabits. Is there anything better?',
+          trainerGuidanceArabic: 'آرثر عميل قديم على سرعة بطيئة وبيدفع كتير. فرحه بإن الفايبر وصل بيته وبسعر أرخص وسرعة 10 أضعاف.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-020-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-20-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-020-03',
+          id: 'turn-20-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'With video uploads and multiple gamers simultaneously, Fiber 1000 is an ideal fit. It delivers equal gigabit upload and download speeds with ultra-low latency, so your husband can transfer large files without affecting the gaming.',
-          requiredKeywords: [
-            'fiber 1000',
-            'upload',
-            'download',
-            'latency',
-            'transfer',
-          ],
-          trainerGuidanceArabic:
-              'وضح القيمة العملية لمشاكلهم اليومية في البيت.',
+          spokenText: 'You are in for great news, Arthur! Fiber has arrived at your address, giving you three hundred megabits symmetrical for fifty-five dollars—ten dollars less than you pay now.',
+          requiredKeywords: ['news', 'fiber', 'three hundred', 'fifty five'],
+          trainerGuidanceArabic: 'اشرح ميزة الفايبر والسعر الأوفر.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-020-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-20-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-20-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-020-04',
+          id: 'turn-20-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Equal upload speed is huge for his job! Let us do it, Alex. Can you upgrade our speed today?',
-          trainerGuidanceArabic: 'أكد الترقية اللحظية بدون الحاجة لزيارة فني.',
+          spokenText: 'Wait, ten times faster and ten dollars cheaper? Sign me up right away Alex, my grandson will be thrilled!',
+          trainerGuidanceArabic: 'العميل موافق ومتحمس جداً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-020-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-20-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-020-05',
+          id: 'turn-20-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'I don\'t trust technicians drilling into my historic house, Alex. Will they tear up my walls to install this fiber cable?',
+          trainerGuidanceArabic: 'العميل خايف على بيته من الحفر والتكسير. طمنه بإن كابل الفايبر رفيع جداً كخيط الصيد ويستخدم نفس مسار الأسلاك القديمة.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-20-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-20-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I have submitted your upgrade to Fiber 1000 right now. Your gateway will automatically provision the new gigabit speeds within fifteen minutes with no technician visit needed.',
-          requiredKeywords: ['fiber 1000', 'fifteen minutes', 'upgrade'],
+          spokenText: 'We have technician appointments open this Thursday, Arthur. You are going to love the blazing speed. Thank you for choosing fiber!',
+          requiredKeywords: ['appointments', 'thursday', 'blazing', 'choosing'],
+          trainerGuidanceArabic: 'أكد الميعاد واشكره.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-20-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I understand your concern for your home, Arthur. Our certified fiber technicians use micro-fiber that follows existing conduits without damaging interior walls, keeping your home pristine.',
+          requiredKeywords: ['understand', 'concern', 'technicians', 'damage'],
+          trainerGuidanceArabic: 'طمئنه على سلامة جدران المنزل التاريخي.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Value-based sales discovery and symmetrical speed explanation.',
+        notes: 'Arthur pays 65 dollars for 25 Mbps copper DSL. Fiber 300 is available at his home for 55 dollars.',
       ),
     ),
-
-    // 21: Stolen Phone Immediate Line Suspend
+    // 21: Lost or Stolen Device Suspension & Blacklist
     Scenario(
       id: 'scen-21-stolen-phone',
-      title: 'Stolen Phone Emergency Line Suspend & IMEI Blacklist',
-      moduleIndex: 2,
-      category: 'Account Floor Care',
-      difficulty: 'intermediate',
-      customerPersona: 'Amber Scott (Panicked Subway Theft Victim)',
-      skillTags: const ['Security', 'IMEI Blacklist', 'Emergency Suspend'],
+      title: 'Lost or Stolen Device Suspension & Blacklist',
+      moduleIndex: 4,
+      category: 'Technical Troubleshooting',
+      difficulty: 'advanced',
+      customerPersona:
+          'Chloe Martin (Distressed Customer Whose Phone Was Stolen)',
+      skillTags: const ['Lost/Stolen', 'IMEI Blacklist', 'Security'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, this is Amber Scott! My purse was just stolen on the subway with my phone inside! I need you to shut my phone off immediately before whoever stole it accesses my bank accounts!',
+      customerResponse: 'Alex! Chloe Martin! My phone was just stolen out of my hands at the subway! You have to shut it down so they don\'t access my banking apps!',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Immediate action required: suspend wireless line with stolen reason code and add device IMEI to the global blacklist to prevent unauthorized cellular use.',
+      contextNotes: 'Chloe\'s phone was stolen at a transit station. She needs line suspension and IMEI blacklisting.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-021-01',
+          id: 'turn-21-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل أمبر بهدوء شديد وتحرك فورا لحماية أمن حسابها.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-021-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-21-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-021-02',
+          id: 'turn-21-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Please blacklist the phone and suspend my line right now so nobody can make calls or read my two-factor security texts!',
-          trainerGuidanceArabic: 'طمنها بكلمات واضحة: الخط تم تعليقه والجهاز دخل الـ Blacklist دوليا.',
+          spokenText: 'Alex! Chloe Martin! My phone was just stolen out of my hands at the subway! You have to shut it down so they don\'t access my banking apps!',
+          trainerGuidanceArabic: 'كلوي تليفونها اتسرق ومذعورة من حساباتها البنكية. اتصرف بسرعة: علق الخط فوراً وحط السيريال (IMEI) في القائمة السوداء.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-021-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-21-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-021-03',
+          id: 'turn-21-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Amber, take a deep breath. Your account is secure. I have immediately suspended your line and added the device IMEI to the global blacklist so it cannot be activated or used on any network.',
-          requiredKeywords: ['secure', 'suspended', 'blacklist', 'network'],
+          spokenText: 'I am securing your account right this second, Chloe. I have suspended your line and blacklisted the device IMEI across all national networks so no one can use it.',
+          requiredKeywords: ['securing', 'second', 'suspended', 'blacklisted'],
           trainerGuidanceArabic:
-              'ركز على مصطلح Global Blacklist و Suspended line.',
+              'طمنها بالإجراءات الأمنية الفورية لحماية بياناتها.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-021-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-21-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-21-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-021-04',
+          id: 'turn-21-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Thank goodness. You acted so fast, Alex. When I get a replacement device, can I get my number back?',
+          spokenText: 'Thank God. That is a massive weight off my shoulders. How do I get my number onto an old backup phone I have at home?',
           trainerGuidanceArabic:
-              'أكد لها إن رقمها محفوظ وممكن تسترده فورا مع الشريحة الجديدة.',
+              'العميلة ارتاحت وشكرتك وعاوزة تشغل رقمها على جهاز قديم.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-021-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-21-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-021-05',
+          id: 'turn-21-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Can\'t someone just swap the SIM card into another phone and run up charges before you process this?',
+          trainerGuidanceArabic: 'العميلة لسه خايفة من الشريحة. أكد لها إن الخط اتعلق تماماً على مستوى الشبكة في الثانية اللي اتكلمت فيها.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-21-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-21-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Absolutely, Amber. Your phone number is safely preserved. Whenever you are ready with a replacement device, we will activate it immediately.',
-          requiredKeywords: ['preserved', 'replacement', 'activate'],
+          spokenText: 'Your line is suspended and your IMEI is blacklisted, Chloe. Whenever you are ready with your backup phone, we can activate an eSIM in five minutes.',
+          requiredKeywords: ['suspended', 'blacklisted', 'ready', 'activate'],
+          trainerGuidanceArabic: 'أكد الحماية وقدم حل التفعيل للجهاز البديل.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-21-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear your fear, Chloe, but rest assured: the suspension was instantaneous at the tower level. The SIM card is completely dead and cannot make calls or use data.',
+          requiredKeywords: ['hear', 'fear', 'instantaneous', 'dead'],
+          trainerGuidanceArabic:
+              'أكد لها موت الشريحة بالكامل وفقدانها القدرة على الاتصال.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Emergency line suspension and IMEI blacklisting protocol.',
+        notes: 'Chloe\'s phone was stolen at a transit station. She needs line suspension and IMEI blacklisting.',
       ),
     ),
-
-    // 22: 14-Day Remorse Period & Restocking Fee
+    // 22: 14-Day Buyer\'s Remorse Return & Restocking Fee
     Scenario(
       id: 'scen-22-remorse-period',
-      title: '14-Day Return Policy & Device Restocking Fee Explanation',
-      moduleIndex: 1,
+      title: '14-Day Buyer\'s Remorse Return & Restocking Fee',
+      moduleIndex: 4,
       category: 'Billing & Payments',
       difficulty: 'intermediate',
-      customerPersona: 'Lucas Gray (Buyer with Second Thoughts on Big Screen)',
-      skillTags: const ['Return Policy', 'Restocking Fee', 'Disclosures'],
+      customerPersona: 'Daniel Vance (Customer Within Return Window)',
+      skillTags: const ['Remorse Period', 'Restocking Fee', 'Policy'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Lucas Gray. I bought a Galaxy S24 Ultra eight days ago, but the screen is just too big for my hands. I want to return it for the standard model, but the store told me there is a fifty-five dollar restocking fee? Why?',
+      customerResponse: 'Hi Alex, Daniel Vance. I bought this flagship phone six days ago, but it is way too bulky for my pocket. Can I return it for a smaller model?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'The standard retail return period is 14 days from purchase or delivery. A \$55 restocking fee applies to open-box wireless phone returns (except where prohibited by state law).',
+      contextNotes: 'Daniel bought a phone 6 days ago. He finds it too heavy and wants to return it.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-022-01',
+          id: 'turn-22-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'استقبل لوكاس ووضح له سياسة الإرجاع خلال الـ 14 يوم (Buyer Remorse).',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-022-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-22-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-022-02',
+          id: 'turn-22-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Why do I have to pay fifty-five dollars just to exchange an opened phone within the fourteen days?',
-          trainerGuidanceArabic: 'اشرح سبب رسوم الـ Restocking Fee (إعادة الفحص والتعقيم والتغليف) وأكد له إن الـ 14 يوم بتسمح له بالتبديل للحجم الأنسب.',
+          spokenText: 'Hi Alex, Daniel Vance. I bought this flagship phone six days ago, but it is way too bulky for my pocket. Can I return it for a smaller model?',
+          trainerGuidanceArabic: 'دانيال اشترى جهاز من 6 أيام وعاوز يرجعه. اشرح له سياسة الـ 14 يوم (Buyer\'s Remorse) ورسوم إعادة التخزين القياسية 55 دولار.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-022-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-22-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-022-03',
+          id: 'turn-22-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I understand, Lucas. The fifty-five dollar restocking fee covers warehouse inspection, repackaging, and data sanitization for opened devices. Since you are within the fourteen-day window, you can exchange it today for the smaller model.',
-          requiredKeywords: [
-            'fifty-five dollar',
-            'restocking fee',
-            'fourteen-day',
-            'exchange',
-          ],
-          trainerGuidanceArabic: 'نطق Restocking و Fee و P/B بوضوح.',
+          spokenText: 'You are well within your fourteen-day return period, Daniel. You can exchange it for a compact model; there is a standard fifty-five dollar restocking fee.',
+          requiredKeywords: ['fourteen', 'return', 'exchange', 'fifty five'],
+          trainerGuidanceArabic:
+              'اشرح إمكانية الاستبدال ورسوم الـ Restocking Fee.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-022-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-22-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-22-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-022-04',
+          id: 'turn-22-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Okay, that makes sense. If I exchange it for the smaller phone, does my installment agreement adjust to the lower price?',
-          trainerGuidanceArabic: 'أكد له إن خطة التقسيط هتتعدل للسعر الأقل.',
+          spokenText: 'Fifty-five dollars is fair enough since I opened the box. Let\'s do the exchange for the standard compact version.',
+          trainerGuidanceArabic:
+              'العميل وافق على الرسوم وعاوز يبدل الجهاز الأصغر.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-022-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-22-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-022-05',
+          id: 'turn-22-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Fifty-five dollars just to put a phone back on a shelf? I bought it less than a week ago, that fee is completely unfair!',
+          trainerGuidanceArabic: 'العميل معترض على الـ 55 دولار. وضح له إن الرسوم بتغطي فحص وتعقيم الجهاز وإعادة تهيئته، وقارنها بالتوفير في سعر الموديل الأصغر.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-22-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-22-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Yes, exactly. Your installment agreement will be updated to reflect the lower monthly payment for the standard device.',
-          requiredKeywords: ['installment', 'lower', 'payment'],
+          spokenText: 'I will process your exchange order for the compact model right now, Daniel. Your adjusted balance will reflect immediately!',
+          requiredKeywords: ['process', 'exchange', 'compact', 'reflect'],
+          trainerGuidanceArabic: 'أنهِ الاستبدال باحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-22-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I understand why that fee feels unexpected, Daniel. It covers sanitized diagnostic inspection, but the smaller model is actually two hundred dollars cheaper, saving you significant money overall.',
+          requiredKeywords: ['understand', 'fee', 'smaller', 'saving'],
+          trainerGuidanceArabic:
+              'وضح القيمة الإجمالية للتوفير لتخفيف أثر الرسوم.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: '14-day remorse period and restocking fee explanation drill.',
+        notes: 'Daniel bought a phone 6 days ago. He finds it too heavy and wants to return it.',
       ),
     ),
-
-    // 23: Warranty vs Insurance Claim Distinction
+    // 23: Manufacturer Warranty vs Insurance Claim
     Scenario(
       id: 'scen-23-warranty-vs-insurance',
-      title: 'Manufacturer Warranty vs Protect Advantage Insurance Claim',
-      moduleIndex: 2,
-      category: 'Technical Care',
+      title: 'Manufacturer Warranty vs Insurance Claim',
+      moduleIndex: 4,
+      category: 'Plan Upgrade & Features',
       difficulty: 'intermediate',
-      customerPersona: 'Diana Prince (Customer with Cracked Glass)',
-      skillTags: const ['Insurance vs Warranty', 'Deductible', 'Clarity'],
+      customerPersona: 'Karen White (Customer with Defective Charging Port)',
+      skillTags: const ['Warranty', 'Insurance', 'Education'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Diana Prince. My phone screen has a hairline crack and the touch sensor is glitching. My one-year warranty should cover this for free, right? Why was I told to file an insurance claim?',
+      customerResponse: 'Alex, Karen White calling. My phone won\'t charge unless I hold the cable at an angle. Do I have to pay a 200 dollar insurance deductible to fix this?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Manufacturer warranty covers mechanical/electrical defects with zero physical damage. Any cracks or liquid damage fall under device protection insurance, requiring a deductible.',
+      contextNotes: 'Karen\'s 8-month-old phone charging port is loose. She doesn\'t know if she pays a deductible or gets a free warranty replacement.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-023-01',
+          id: 'turn-23-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل ديانا ووضح الفرق بين الضمان المصنعي والتأمين ضد الحوادث.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-023-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-23-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-023-02',
+          id: 'turn-23-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'The touch screen is acting crazy, so that is a defect! Why won warranty replace it?',
-          trainerGuidanceArabic: 'اشرح بأسلوب راقٍ إن شروط الضمان المصنعي تشترط عدم وجود أي كسر أو شرخ في الزجاج، وإن الكسر بيعتبر Physical Damage بيتغطى بالتأمين (Insurance).',
+          spokenText: 'Alex, Karen White calling. My phone won\'t charge unless I hold the cable at an angle. Do I have to pay a 200 dollar insurance deductible to fix this?',
+          trainerGuidanceArabic: 'كارن منفذ الشحن بتاعها تالف من غير كسر. وضح لها الفرق بين الضمان المجاني للعيوب المصنعية (Warranty) والتأمين للحوادث (Insurance).',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-023-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-23-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-023-03',
+          id: 'turn-23-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I understand how frustrating that is, Diana. Manufacturer warranty covers internal hardware defects but excludes any physical impact or cracked glass. Because of the hairline crack, Protect Advantage insurance covers your screen repair for a low deductible.',
-          requiredKeywords: [
-            'manufacturer warranty',
-            'physical',
-            'cracked',
-            'protect advantage',
-            'deductible',
-          ],
-          trainerGuidanceArabic: 'وضح ميزة تصليح الشاشة بسعر Deductible مخفض مع Protect Advantage.',
+          spokenText: 'Good news, Karen: since there is no physical or liquid damage and you are within one year, this is covered under free manufacturer warranty with zero deductible.',
+          requiredKeywords: ['news', 'warranty', 'zero', 'deductible'],
+          trainerGuidanceArabic:
+              'طمنها بإن العيب المصنعي مجاني بدون أي خصومات.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-023-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-23-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-23-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-023-04',
+          id: 'turn-23-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Oh, I see. What is the deductible for a front screen repair if I file through insurance?',
-          trainerGuidanceArabic: 'وضح إن إصلاح الشاشة الأمامية غالباً 29 دولار في الأماكن المؤهلة.',
+          spokenText: 'Zero deductible? That is wonderful! I was dreading paying hundreds of dollars. How does the warranty swap work?',
+          trainerGuidanceArabic:
+              'العميلة سعيدة جداً. اشرح لها خطوات شحن الجهاز البديل.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-023-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-23-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-023-05',
+          id: 'turn-23-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'What if your warehouse claims there is liquid damage when I know for a fact it never touched water?',
+          trainerGuidanceArabic: 'العميلة متخوفة من تفتيش المستودع. طمنها واشرح لها مؤشر LDI في درج الشريحة.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-23-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-23-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Eligible cracked screen repairs through Protect Advantage are typically twenty-nine dollars, often with same-day certified technician repair.',
-          requiredKeywords: [
-            'twenty-nine dollars',
-            'protect advantage',
-            'certified',
-          ],
+          spokenText: 'We will ship an advanced replacement to your door in two business days, Karen. Thank you for taking care of your device!',
+          requiredKeywords: ['ship', 'replacement', 'days', 'care'],
+          trainerGuidanceArabic: 'أكد الشحن السريع.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-23-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I completely understand that worry, Karen. We check the internal Liquid Contact Indicator, and as long as that white sensor is uncolored, your warranty replacement is fully guaranteed.',
+          requiredKeywords: ['completely', 'worry', 'indicator', 'guaranteed'],
+          trainerGuidanceArabic: 'اشرح لها الحساس المائي لتطمينها التام.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional distinction between manufacturer warranty and insurance claim.',
+        notes: 'Karen\'s 8-month-old phone charging port is loose. She doesn\'t know if she pays a deductible or gets a free warranty replacement.',
       ),
     ),
-
-    // 24: Tablet Add-a-Line with Existing Unlimited Plan
+    // 24: Connected Device Tablet Line Promotion
     Scenario(
       id: 'scen-24-tablet-addline',
-      title: 'Adding an Unlimited Tablet Line to Existing Account',
-      moduleIndex: 3,
-      category: 'Sales & Discovery',
+      title: 'Connected Device Tablet Line Promotion',
+      moduleIndex: 4,
+      category: 'Plan Upgrade & Features',
       difficulty: 'intermediate',
-      customerPersona: 'Ryan Reynolds (Parent Buying Cellular iPad for Kids)',
-      skillTags: const ['Add-a-Line', 'Tablet Plan', 'Sales Discovery'],
+      customerPersona: 'George Miller (Existing Wireless Subscriber)',
+      skillTags: const ['Add a Line', 'Tablet', 'Discovery'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Ryan Reynolds. I bought an iPad with cellular for my daughter and I want to add it to my existing Unlimited Your Way wireless plan. How much does a standalone tablet line cost per month?',
+      customerResponse: 'Hello Alex, George Miller. My phone battery dies constantly because I tether my iPad for work. Is there a better way to keep it connected?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Adding an unlimited tablet line to an existing post-paid unlimited group is typically \$20/month plus taxes/fees, sharing or receiving dedicated unlimited tablet data.',
+      contextNotes: 'George uses his phone hotspot for his iPad. Adding a standalone tablet line costs 20 dollars monthly with unlimited data.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-024-01',
+          id: 'turn-24-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل رايان وابدأ شرح تفاصيل إضافة خط تابلت.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-024-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-24-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-024-02',
+          id: 'turn-24-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Does the tablet line get its own unlimited data, or does it eat into my phone hotspot?',
-          trainerGuidanceArabic: 'اشرح إن خط التابلت له باقة Unlimited خاصة بيه بسعر 20 دولار شهريا، ومش بيستهلك من هوت سبوت الموبايل.',
+          spokenText: 'Hello Alex, George Miller. My phone battery dies constantly because I tether my iPad for work. Is there a better way to keep it connected?',
+          trainerGuidanceArabic: 'جورج بيستهلك بطارية موبايله في توزيع النت للآيباد. اعرض عليه إضافة خط تابلت مخصص غير محدود بـ 20 دولار في الشهر.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-024-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-24-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-024-03',
+          id: 'turn-24-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'The unlimited tablet plan is twenty dollars per month when added to your current unlimited group. It includes its own dedicated unlimited on-device data without using your smartphone hotspot.',
-          requiredKeywords: [
-            'twenty dollars',
-            'unlimited tablet',
-            'dedicated',
-            'hotspot',
-          ],
-          trainerGuidanceArabic:
-              'ركز على وضوح عبارة "twenty dollars per month".',
+          spokenText: 'I have the perfect solution, George. You can add a dedicated unlimited tablet plan to your account for just twenty dollars a month, saving your phone battery completely.',
+          requiredKeywords: ['solution', 'unlimited', 'tablet', 'twenty'],
+          trainerGuidanceArabic: 'قدم ميزة خط التابلت المستقل لتوفير البطارية.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-024-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-24-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-24-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-024-04',
+          id: 'turn-24-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Twenty bucks for unlimited iPad data is great for road trips. Can you activate it using eSIM right now?',
-          trainerGuidanceArabic: 'أكد التفعيل اللحظي عبر الـ eSIM.',
+          spokenText: 'Twenty dollars a month for unlimited cellular data on my iPad? That solves my battery problem entirely. Let\'s add that line!',
+          trainerGuidanceArabic: 'العميل موافق ومتحمس للحل.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-024-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-24-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-024-05',
+          id: 'turn-24-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Twenty dollars every month is two hundred forty a year just for internet on my iPad. I think I\'ll just carry a battery bank.',
+          trainerGuidanceArabic: 'العميل شايف التكلفة السنوية. اعترف بحسابه المالي ووضح له قيمة الاتصال المستقل والإنتاجية أثناء السفر.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-24-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-24-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I have added the tablet line to your account with eSIM activation. You can download the cellular plan directly in iPad settings.',
-          requiredKeywords: ['added', 'tablet line', 'esim', 'settings'],
+          spokenText: 'Your new iPad line is added and ready for eSIM download, George! Enjoy seamless browsing without draining your phone battery!',
+          requiredKeywords: ['added', 'ready', 'seamless', 'draining'],
+          trainerGuidanceArabic: 'أكد تفعيل خط التابلت.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-24-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I respect your smart cost calculation, George. If you only travel occasionally, the battery bank is great; but for daily client work without hotspot lag, the twenty dollars pays for itself in productivity.',
+          requiredKeywords: ['respect', 'cost', 'hotspot', 'productivity'],
+          trainerGuidanceArabic: 'احترم حسبته واشرح القيمة الإنتاجية.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Fictional tablet add-a-line pricing and feature presentation.',
+        notes: 'George uses his phone hotspot for his iPad. Adding a standalone tablet line costs 20 dollars monthly with unlimited data.',
       ),
     ),
-
-    // 25: Apple Watch NumberSync Setup
+    // 25: Apple Watch Cellular & NumberSync Setup
     Scenario(
       id: 'scen-25-watch-numbersync',
-      title: 'Apple Watch Cellular Pairing & NumberSync Configuration',
-      moduleIndex: 2,
-      category: 'Technical Care',
+      title: 'Apple Watch Cellular & NumberSync Setup',
+      moduleIndex: 5,
+      category: 'Technical Troubleshooting',
       difficulty: 'intermediate',
-      customerPersona: 'Chloe Kim (Runner Wanting Phone-Free Workouts)',
-      skillTags: const ['NumberSync', 'Wearables', 'Technical Care'],
+      customerPersona: 'Lisa Ray (Customer Inquiring on Wearable Sync)',
+      skillTags: const ['NumberSync', 'Wearable', 'Technical'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Chloe Kim. I just got an Apple Watch Cellular, but when I try to set up cellular in the Watch app, NumberSync gives me an error code. I want to leave my phone home when running!',
+      customerResponse: 'Hi Alex, Lisa Ray here. If I leave my iPhone at home when I go for a run, will my new Apple Watch still ring with my normal number?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'NumberSync allows cellular smartwatches to use the same telephone number as the iPhone for calls and texts; requires active smartwatch rate plan (\$10.99/mo) and verified E911 address.',
+      contextNotes: 'Lisa got an Apple Watch Cellular and wants it to share her iPhone\'s phone number when she runs without her phone.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-025-01',
+          id: 'turn-25-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'استقبل كلوي ووضح لها خطوات ضبط NumberSync.',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-025-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-25-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-025-02',
+          id: 'turn-25-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Why does NumberSync keep asking for an emergency address during setup?',
-          trainerGuidanceArabic: 'اشرح أهمية عنوان الطوارئ E911 القانوني لساعة أبل وحدثه على الحساب لمتابعة التزامن.',
+          spokenText: 'Hi Alex, Lisa Ray here. If I leave my iPhone at home when I go for a run, will my new Apple Watch still ring with my normal number?',
+          trainerGuidanceArabic: 'ليزا بتسأل عن تشغيل الساعة بدون الموبايل في الجري. اشرح لها تقنية NumberSync واشتراك الساعة 10.99 دولار شهرياً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-025-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-25-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-025-03',
+          id: 'turn-25-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'NumberSync requires a verified E911 address so emergency responders can locate you if you make an emergency call from your watch. Once we confirm your physical address, the pairing completes instantly.',
-          requiredKeywords: [
-            'numbersync',
-            'e911 address',
-            'emergency',
-            'pairing',
-          ],
-          trainerGuidanceArabic: 'وضح دور عنوان E911 القانوني.',
+          spokenText: 'Yes it will, Lisa! With our NumberSync technology, your Apple Watch shares your exact mobile number for calls and texts even when miles away from your phone.',
+          requiredKeywords: ['numbersync', 'shares', 'mobile', 'number'],
+          trainerGuidanceArabic: 'اشرح لها تقنية NumberSync الموحدة للرقم.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-025-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-25-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-25-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-025-04',
+          id: 'turn-25-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Address confirmed, and the watch just finished syncing! I can make calls right from my wrist now!',
-          trainerGuidanceArabic: 'أكد اكتمال الخدمة واختم بروح مشجعة.',
+          spokenText: 'That is exactly what I wanted. So I can run with just my watch and AirPods and never miss an emergency call! Sign me up.',
+          trainerGuidanceArabic: 'العميلة وافقت ومبسوطة جداً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-025-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-25-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-025-05',
+          id: 'turn-25-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Wait, do I have to pay an extra monthly plan fee for a watch that is just mirroring my phone?',
+          trainerGuidanceArabic: 'العميلة معترضة على الرسوم الشهرية للساعة. وضح لها إن الساعة بتستخدم شريحة خلوية مستقلة متصلة بأبراج المحمول.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-25-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-25-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'That is wonderful, Chloe! Enjoy your phone-free runs and thank you for calling AT&T!',
-          requiredKeywords: ['wonderful', 'phone-free', 'thank you'],
+          spokenText: 'NumberSync is enabled on your watch line, Lisa! Go enjoy that run with complete peace of mind. Thank you for choosing AT&T!',
+          requiredKeywords: ['enabled', 'watch', 'peace', 'choosing'],
+          trainerGuidanceArabic: 'أغلق بود واحترافية.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-25-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear your question, Lisa. The ten dollar monthly plan provides dedicated cellular tower connectivity so your watch functions as a standalone phone even if your iPhone is turned off.',
+          requiredKeywords: ['hear', 'question', 'cellular', 'standalone'],
+          trainerGuidanceArabic: 'اشرح لها ميزة العمل المستقل بدون الموبايل.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'NumberSync smartwatch setup and E911 emergency address requirement.',
+        notes: 'Lisa got an Apple Watch Cellular and wants it to share her iPhone\'s phone number when she runs without her phone.',
       ),
     ),
-
-    // 26: Senior Citizen Plan Audit & Bill Optimization
+    // 26: Senior Account Bill Audit & Value Optimization
     Scenario(
       id: 'scen-26-senior-plan-review',
-      title: 'Grandfathered Plan Audit & Bill Optimization',
-      moduleIndex: 1,
+      title: 'Senior Account Bill Audit & Value Optimization',
+      moduleIndex: 5,
       category: 'Billing & Payments',
       difficulty: 'intermediate',
-      customerPersona: 'Walter Sullivan (Retired Senior on Obsolete Plan)',
-      skillTags: const ['Plan Optimization', 'Grandfathered Plans', 'Empathy'],
+      customerPersona:
+          'Walter Jenkins (Retired Senior Reviewing Household Expenses)',
+      skillTags: const ['Bill Audit', 'Senior Care', 'AERD'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Walter Sullivan. I have had my two wireless lines since 2012 on an old Mobile Share plan. My bill keeps creeping up and I am on a fixed income. Can you help me lower this without cutting my service?',
+      customerResponse: 'Hello Alex, Walter Jenkins. I am on a fixed pension and my monthly cell bill keeps going up. Can you look at my account and see if I\'m paying for things I don\'t need?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Grandfathered tiered-data plans incur administrative fee increases over time; migrating Walter to modern Unlimited Starter or AARP discount saves money while providing unlimited data.',
+      contextNotes: 'Walter is on an old shared data plan paying 135 dollars for 2 lines. Moving to current pricing reduces bill to 110 dollars.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-026-01',
+          id: 'turn-26-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استمع لوالتر بكل احترام وتفهم لظروف المعاش والدخل الثابت.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-026-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-26-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-026-02',
+          id: 'turn-26-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'I am paying 160 dollars for only six gigabytes of shared data. Can we do better?',
-          trainerGuidanceArabic: 'بشره بوجود خطط حديثة توفر له بيانات غير محدودة مع توفير 30-40 دولار شهريا، واذكر خصم AARP لو مشترك فيه.',
+          spokenText: 'Hello Alex, Walter Jenkins. I am on a fixed pension and my monthly cell bill keeps going up. Can you look at my account and see if I\'m paying for things I don\'t need?',
+          trainerGuidanceArabic: 'والتر عميل متقاعد عاوزه مراجعة لفاتورته لتقليل المصاريف. اعمل له فحص كامل للحساب واقترح الانتقال لخطة أحدث توفر له 25 دولار شهرياً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-026-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-26-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-026-03',
+          id: 'turn-26-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Walter, we can definitely lower your bill while giving you better service. By migrating your lines to Unlimited Starter with AutoPay, your monthly bill drops to one hundred twenty dollars with unlimited data.',
-          requiredKeywords: [
-            'lower',
-            'unlimited starter',
-            'autopay',
-            'one hundred twenty',
-          ],
-          trainerGuidanceArabic:
-              'وضح التوفير الواضح بالأرقام: 120 دولار شهريا مع إنترنت مفتوح.',
+          spokenText: 'I would be glad to help you audit your expenses, Walter. Looking at your plan, you are on an older legacy tier; switching to our current rates saves you twenty-five dollars every month.',
+          requiredKeywords: ['glad', 'audit', 'legacy', 'saves'],
+          trainerGuidanceArabic: 'اعرض عليه خطة التوفير الجديدة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-026-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-26-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-26-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-026-04',
+          id: 'turn-26-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Forty dollars less every month AND unlimited data? That is fantastic, Alex. Please switch us right away.',
-          trainerGuidanceArabic: 'أكد التغيير واشكره على ولائه الطويل للشركة.',
+          spokenText: 'Save twenty-five dollars a month without losing my service? That helps my monthly grocery budget tremendously, Alex. Please do that.',
+          trainerGuidanceArabic: 'والتر مبسوط جداً بالتوفير المالي.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-026-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-26-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-026-05',
+          id: 'turn-26-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Will this new plan lock me into a two-year contract? I don\'t want any penalties if I need to cancel later.',
+          trainerGuidanceArabic: 'والتر قلقان من عقود الاحتكار. طمنه بإن الخطط الجديدة مفيهاش عقود خدمة سنوية ويمكن إلغاؤها في أي وقت.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-26-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-26-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I have updated your plan to Unlimited Starter, saving you forty dollars each month. Thank you so much for being a loyal customer with us for over a decade!',
-          requiredKeywords: [
-            'unlimited starter',
-            'saving',
-            'forty dollars',
-            'loyal',
-          ],
+          spokenText: 'Your account is updated to the new lower rate, Walter! You will see the twenty-five dollar savings on your very next statement. It was an honor helping you today!',
+          requiredKeywords: ['updated', 'savings', 'statement', 'honor'],
+          trainerGuidanceArabic: 'أغلق المكالمة بود واحترام.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-26-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'Rest assured, Walter: modern plans have zero service contracts. You have total freedom to change or cancel anytime without penalties. You just get the twenty-five dollar monthly savings.',
+          requiredKeywords: ['rest', 'contracts', 'freedom', 'savings'],
+          trainerGuidanceArabic: 'أكد عدم وجود عقود احتكارية.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Grandfathered plan migration to current unlimited tier with cost savings.',
+        notes: 'Walter is on an old shared data plan paying 135 dollars for 2 lines. Moving to current pricing reduces bill to 110 dollars.',
       ),
     ),
-
-    // 27: Prepaid to Postpaid Account Migration
+    // 27: Prepaid to Postpaid Wireless Migration
     Scenario(
       id: 'scen-27-prepaid-to-postpaid',
-      title: 'Prepaid to Postpaid Line Migration & Device Upgrade',
-      moduleIndex: 3,
-      category: 'Sales & Discovery',
+      title: 'Prepaid to Postpaid Wireless Migration',
+      moduleIndex: 5,
+      category: 'Plan Upgrade & Features',
       difficulty: 'intermediate',
       customerPersona:
-          'Maria Gonzalez (Prepaid Customer Wanting Flagship Phone)',
-      skillTags: const ['Migration', 'Credit Check Disclosure', 'Upgrade'],
+          'Maria Santos (Prepaid Customer Wanting Device Financing)',
+      skillTags: const ['Migration', 'Prepaid to Postpaid', 'Financing'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Hi Alex! Maria Gonzalez here. I have had AT&T Prepaid for three years, but I want to get the new iPhone on monthly installments. Can I switch my account to postpaid without losing my phone number?',
+      customerResponse: 'Hi Alex, Maria Santos. I have had prepaid for two years, but I want to get the new Samsung on monthly installments. Can I switch without losing my number?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Prepaid to postpaid migration preserves the phone number, transfers remaining prepaid balance as bill credit, and requires credit check disclosure before financing.',
+      contextNotes: 'Maria has been on AT&T Prepaid for 2 years and wants to finance a new phone with 0 dollars down on postpaid.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-027-01',
+          id: 'turn-27-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'رحب بماريا واشرح لها خطوات النقل من كارت (Prepaid) إلى خط فاتورة (Postpaid).',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-027-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-27-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-027-02',
+          id: 'turn-27-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Will my phone number stay the same, and what happens to the twenty dollars balance I just added to my prepaid account?',
-          trainerGuidanceArabic: 'طمنها: الرقم يفضل زي ما هو بدون تغيير، والرصيد المتبقي بيتحول لرصيد دائن (Credit) على أول فاتورة.',
+          spokenText: 'Hi Alex, Maria Santos. I have had prepaid for two years, but I want to get the new Samsung on monthly installments. Can I switch without losing my number?',
+          trainerGuidanceArabic: 'ماريا عميلة بريبيد عاوزة تحول لنظام الفاتورة الشهرية عشان تقسط تليفون جديد بدون تغيير الرقم. اشرح لها خطوات الـ Migration والاحتفاظ برقمها.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-027-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-27-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-027-03',
+          id: 'turn-27-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Yes, Maria! You keep your exact phone number, and any unused prepaid balance transfers directly as a credit on your first postpaid bill. Moving to postpaid also qualifies you for device installment financing.',
-          requiredKeywords: [
-            'keep',
-            'phone number',
-            'credit',
-            'installment',
-            'postpaid',
-          ],
-          trainerGuidanceArabic: 'وضح ميزة تقسيط الأجهزة المتاحة على الفاتورة.',
+          spokenText: 'Welcome to postpaid, Maria! You keep your exact phone number, and your two years of on-time payments qualify you for zero-down installment financing today.',
+          requiredKeywords: ['welcome', 'postpaid', 'number', 'qualify'],
+          trainerGuidanceArabic:
+              'رحب بيها في البوست بيد واشرح ميزة التقسيط بصفر مقدم.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-027-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-27-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-27-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-027-04',
+          id: 'turn-27-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Does moving to postpaid require a credit check to finance the phone?',
-          trainerGuidanceArabic: 'أكد على إفصاح الفحص الائتماني (Credit check disclosure) بوضوح وأمانة.',
+          spokenText: 'Zero down payment? That is amazing! And my number stays exactly the same? Let\'s get the phone ordered!',
+          trainerGuidanceArabic: 'العميلة وافقت ومتحمسة جداً.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-027-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-27-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-027-05',
+          id: 'turn-27-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Wait, does switching to postpaid require a hard credit check that will drop my credit score?',
+          trainerGuidanceArabic: 'العميلة قلقانة من الفحص الائتماني (Credit Check). وضح لها إن تاريخ التزامها في البريبيد لمدة سنتين بيسهل الموافقة الداخلية الميسرة.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-27-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-27-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Yes, Maria. Financing a device on an installment plan requires a standard credit evaluation. With your three-year positive payment history with us, we can begin that seamlessly.',
-          requiredKeywords: ['credit evaluation', 'history', 'installment'],
+          spokenText: 'Your migration is complete and your new phone is ordered with zero down, Maria! Welcome to the postpaid family!',
+          requiredKeywords: ['migration', 'complete', 'ordered', 'welcome'],
+          trainerGuidanceArabic: 'أكد نجاح التحويل والطلب.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-27-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I completely understand your credit concern, Maria. Because you have two years of spotless prepaid history with us, we utilize your verified internal tenure, protecting your credit score.',
+          requiredKeywords: ['completely', 'credit', 'tenure', 'protecting'],
+          trainerGuidanceArabic:
+              'طمنها بالاعتماد على تاريخها الداخلي لحماية نقاطها الائتمانية.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Prepaid-to-postpaid migration and credit check disclosure.',
+        notes: 'Maria has been on AT&T Prepaid for 2 years and wants to finance a new phone with 0 dollars down on postpaid.',
       ),
     ),
-
-    // 28: FirstNet / Military / Appreciation Discount
+    // 28: FirstNet First Responder Appreciation & Verification
     Scenario(
       id: 'scen-28-firstnet-appreciation',
-      title: 'FirstNet & 25% Appreciation Discount Validation',
-      moduleIndex: 3,
-      category: 'Sales & Discovery',
+      title: 'FirstNet First Responder Appreciation & Verification',
+      moduleIndex: 5,
+      category: 'Plan Upgrade & Features',
       difficulty: 'intermediate',
-      customerPersona: 'Lieutenant Mark Ramirez (Firefighter & Paramedic)',
-      skillTags: const ['FirstNet', 'Appreciation Discount', 'Validation'],
+      customerPersona:
+          'Officer James Kelly (Police Officer Inquiring on Discount)',
+      skillTags: const ['FirstNet', 'First Responder', 'Verification'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Mark Ramirez. I am a paramedic and captain with the county fire department. A colleague told me AT&T offers a twenty-five percent discount for first responders and military. How do I get that on my family plan?',
+      customerResponse: 'Alex, Officer James Kelly. A sergeant in my precinct told me AT&T has a special dedicated network for first responders called FirstNet. What is that about?',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'First Responders, Military, Veterans, Teachers, and Nurses receive a 25% monthly discount on unlimited wireless plans via identity verification with ID.me or work credentials.',
+      contextNotes: 'Officer Kelly is an active duty police officer inquiring about FirstNet priority network access.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-028-01',
+          id: 'turn-28-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
           trainerGuidanceArabic:
-              'استقبل مارك واشكره على خدمته للمجتمع كرجل إطفاء ومسعف.',
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-028-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-28-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-028-02',
+          id: 'turn-28-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Does the twenty-five percent appreciation discount apply to all four lines on my family plan?',
-          trainerGuidanceArabic: 'اشكره على خدمته وأكد له إن خصم الـ 25% بينطبق على جميع خطوط باقات Unlimited المؤهلة في حسابه.',
+          spokenText: 'Alex, Officer James Kelly. A sergeant in my precinct told me AT&T has a special dedicated network for first responders called FirstNet. What is that about?',
+          trainerGuidanceArabic: 'الضابط كيلي بيسأل عن شبكة FirstNet المخصصة للمستجيبين الأوائل. اشكره على خدمته واشرح له أولوية الشبكة Band 14 والخصومات المخصصة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-028-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-28-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-028-03',
+          id: 'turn-28-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'First, Captain Ramirez, thank you for your service to our community. Yes, our First Responder Appreciation offer provides a full twenty-five percent monthly discount across all eligible unlimited lines on your account.',
-          requiredKeywords: [
-            'thank you',
-            'service',
-            'twenty-five percent',
-            'discount',
-            'lines',
-          ],
-          trainerGuidanceArabic: 'ابدأ بـ "thank you for your service".',
+          spokenText: 'First and foremost, Officer Kelly, thank you for your service in the community. FirstNet gives first responders priority cellular access on Band 14 that never slows during emergencies, plus significant discounts.',
+          requiredKeywords: ['service', 'firstnet', 'priority', 'emergencies'],
+          trainerGuidanceArabic: 'اشكره على خدمته واشرح ميزة Band 14 للطوارئ.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-028-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-28-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-28-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-028-04',
+          id: 'turn-28-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'That saves my family over fifty dollars every month! What proof or documents do I need to submit?',
-          trainerGuidanceArabic:
-              'اشرح كيفية رفع وثيقة العمل أو عبر منصة ID.me في دقائق.',
+          spokenText: 'True priority during emergencies is huge for our tactical comms. What do I need to submit to verify my badge and switch over?',
+          trainerGuidanceArabic: 'الضابط مهتم جداً بأولوية الاتصال في الطوارئ. وضح له خطوات رفع بطاقة العمل أو شارة الشرطة للتحقق.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-028-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-28-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-028-05',
+          id: 'turn-28-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Is this going to disconnect my family members who are currently sharing my consumer plan?',
+          trainerGuidanceArabic: 'الضابط قلقان على خطوط عائلته. طمنه بإن عائلته بتفضل على خطة عائلية مخصصة بخصم 25% إضافي لمجرد وجوده على FirstNet.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-28-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-28-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'I am sending a secure link to your phone right now. You can upload a photo of your departmental ID or paystub, and your twenty-five percent discount will appear within one to two billing cycles.',
-          requiredKeywords: [
-            'secure link',
-            'upload',
-            'twenty-five percent',
-            'billing cycles',
-          ],
+          spokenText: 'Your FirstNet profile is initialized, Officer Kelly! Upload a photo of your department ID at the link we texted, and thank you again for keeping us safe!',
+          requiredKeywords: ['profile', 'upload', 'safe', 'thank'],
+          trainerGuidanceArabic: 'أنهِ المكالمة بتقدير رسمي.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-28-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'Not at all, Officer Kelly! Your line moves to FirstNet priority, and your family stays together with an exclusive twenty-five percent discount on their unlimited lines.',
+          requiredKeywords: ['priority', 'family', 'discount', 'lines'],
+          trainerGuidanceArabic: 'طمنه بخصم 25% لعائلته بالكامل.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: '25% Appreciation discount verification for first responders and military.',
+        notes: 'Officer Kelly is an active duty police officer inquiring about FirstNet priority network access.',
       ),
     ),
-
-    // 29: Dead Air / Silent Caller Floor Protocol
+    // 29: Dead Air Protocol & Silent Caller Management
     Scenario(
       id: 'scen-29-dead-air-protocol',
-      title: 'Dead Air & Silent Caller Verification Protocol',
-      moduleIndex: 2,
-      category: 'Account Floor Care',
-      difficulty: 'beginner',
-      customerPersona: 'Silent Line (Caller Muted / Line Noise Only)',
-      skillTags: const ['Dead Air Protocol', 'Call Control', 'Procedure'],
+      title: 'Dead Air Protocol & Silent Caller Management',
+      moduleIndex: 5,
+      category: 'Clarification & Listening',
+      difficulty: 'advanced',
+      customerPersona:
+          'Silent Caller (Elderly or Distracted Customer on Open Line)',
+      skillTags: const ['Dead Air', 'Call Control', 'Protocol'],
       expectedResponse: _defaultAgentGreeting,
-      customerResponse: '... (Silence, distant faint background static) ...',
+      customerResponse:
+          '... [Faint breathing and distant paper rustling, no speech] ...',
       requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Operational Floor Rule: If caller is silent upon connection, agent must deliver the standard dead-air prompt twice before concluding call, never hanging up abruptly.',
+      contextNotes: 'The call connects but only faint rustling or silence is heard. The agent must deliver professional dead-air check-ins before disconnecting.',
       turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
         ScenarioTurn(
-          id: 'turn-029-01',
+          id: 'turn-29-01',
           turnNumber: 1,
           speaker: TurnSpeaker.agent,
           spokenText: _defaultAgentGreeting,
           requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'ابدأ بالتحية الإلزامية كالمعتاد.',
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-029-02'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-29-02'),
           ],
         ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
         ScenarioTurn(
-          id: 'turn-029-02',
+          id: 'turn-29-02',
           turnNumber: 2,
           speaker: TurnSpeaker.customer,
-          spokenText: '... (Complete silence) ...',
-          trainerGuidanceArabic: 'بروتوكول السكوت (Dead Air): العميل مش سامع أو الخط صامت. متقفلش في وشه! اسأل بوضوح: "Hello? I am unable to hear you. Can you hear me?"',
+          spokenText:
+              '... [Faint breathing and distant paper rustling, no speech] ...',
+          trainerGuidanceArabic: 'الخط مفتوح وفيه صوت هواء أو أوراق بس مفيش كلام. طبق بروتوكول Dead Air الرسمي: عرف بنفسك بوضوح واسأل إذا كان العميل سامعك قبل ما تقفل.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-029-03'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-29-03'),
           ],
         ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
         ScenarioTurn(
-          id: 'turn-029-03',
+          id: 'turn-29-03',
           turnNumber: 3,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Hello? This is Alex with AT&T. I am unable to hear audio on this line. If you can hear me, please speak or check your mute button.',
-          requiredKeywords: ['alex', 'unable to hear', 'mute'],
-          trainerGuidanceArabic: 'انتظر ثانيتين وقدم المحاولة الثانية الرسمية.',
+          spokenText: 'Hello? This is Alex with AT&T. I have an open line but cannot hear you speaking. If you can hear me, please go ahead, I am right here to help.',
+          requiredKeywords: ['hello', 'alex', 'open', 'help'],
+          trainerGuidanceArabic: 'طبق بروتوكول الـ Dead Air باحترافية.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-029-04'),
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-29-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-29-04B'),
           ],
         ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
         ScenarioTurn(
-          id: 'turn-029-04',
+          id: 'turn-29-04A',
           turnNumber: 4,
           speaker: TurnSpeaker.customer,
-          spokenText: 'Oh! I am so sorry Alex! My Bluetooth headset was connected to the car in the garage! Can you hear me now?',
-          trainerGuidanceArabic:
-              'العميل رجع على الخط! رحب بيه فورا وكمل المكالمة.',
+          spokenText: 'Oh! Hello! Forgive me Alex, I was fumbling with my headset and didn\'t realize the call connected! I need help checking my balance.',
+          trainerGuidanceArabic: 'العميل انتبه واعتذر إنه كان بيظبط السماعة.',
           branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-029-05'),
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-29-05A'),
           ],
         ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
         ScenarioTurn(
-          id: 'turn-029-05',
+          id: 'turn-29-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: '... [Continued complete silence for fifteen seconds after second prompt] ...',
+          trainerGuidanceArabic: 'الخط لسه صامت تماماً. طبق رسالة الإغلاق الرسمية للخط المفتوح بدون إنهاء فجائي.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-29-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-29-05A',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Yes, I can hear you loud and clear now! How can I assist you with your AT&T account today?',
-          requiredKeywords: ['hear', 'clear', 'assist'],
+          spokenText: 'No problem at all, I am glad we are connected! Let us look at that balance for you right away.',
+          requiredKeywords: ['problem', 'glad', 'balance', 'away'],
+          trainerGuidanceArabic: 'أكمل المكالمة بسلاسة.',
           isFinal: true,
         ),
-      ],
-      metadata: const ContentMetadata(
-        provenance: ProvenanceTier.workReported,
-        notes: 'Floor protocol for dead air check and professional patience.',
-      ),
-    ),
 
-    // 30: Skeptical Closer / Reluctant Customer Objection Handling
-    Scenario(
-      id: 'scen-30-skeptical-closer',
-      title: 'Skeptical Customer Closer & Risk Reversal Handling',
-      moduleIndex: 3,
-      category: 'Sales & Discovery',
-      difficulty: 'advanced',
-      customerPersona: 'Victor Stone (Cautious Commercial Contractor)',
-      skillTags: const ['Closing', 'Objection Handling', 'AERD'],
-      expectedResponse: _defaultAgentGreeting,
-      customerResponse: 'Alex, my name is Victor Stone. Everything you said about upgrading our three crew tablets to the unlimited plan sounds nice, but every time I make a change with a phone company, my bill ends up full of hidden fees. Why should I trust you today?',
-      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
-      contextNotes: 'Victor is ready to buy but held back by fear of billing surprises. The agent must deliver transparent billing recap, mention the 14-day risk-free guarantee, and invite confidence.',
-      turns: const [
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
         ScenarioTurn(
-          id: 'turn-030-01',
-          turnNumber: 1,
-          speaker: TurnSpeaker.agent,
-          spokenText: _defaultAgentGreeting,
-          requiredKeywords: ['att', 'alex', 'name'],
-          trainerGuidanceArabic: 'استقبل فيكتور بثقة وحيادية واضحة.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-030-02'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-030-02',
-          turnNumber: 2,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'Give me one good reason to believe my bill will actually be what you quoted today with no surprises.',
-          trainerGuidanceArabic: 'طبق Risk Reversal: اعترف بمخاوفه (AERD)، اقرأ له ملخص الفاتورة الشامل متضمنا الضرائب المتوقعة، وذكره بضمان الـ 14 يوم للإلغاء بدون شروط.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-030-03'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-030-03',
-          turnNumber: 3,
-          speaker: TurnSpeaker.agent,
-          spokenText: 'I completely respect your caution, Victor. I am reviewing the exact customer summary with you right now: exactly sixty dollars total for the three tablets with AutoPay, plus standard local taxes. You are protected by our fourteen-day return period if you are not fully satisfied.',
-          requiredKeywords: [
-            'respect',
-            'summary',
-            'sixty dollars',
-            'taxes',
-            'fourteen-day',
-          ],
-          trainerGuidanceArabic:
-              'أكد على الشفافية التامة في التسعير وفترة الـ 14 يوم.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-030-04'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-030-04',
-          turnNumber: 4,
-          speaker: TurnSpeaker.customer,
-          spokenText: 'I appreciate the straight talk and the exact breakdown, Alex. That is the transparency I was looking for. Go ahead and put the order through.',
-          trainerGuidanceArabic:
-              'أتمم الإجراء بثقة واشكره على ثقته فيك وفي أليكس.',
-          branches: [
-            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-030-05'),
-          ],
-        ),
-        ScenarioTurn(
-          id: 'turn-030-05',
+          id: 'turn-29-05B',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'It has been my pleasure, Victor. Your order is submitted, the confirmation is in your email, and your lines are active. Thank you for choosing AT&T!',
-          requiredKeywords: ['pleasure', 'order', 'submitted', 'confirmation'],
+          spokenText: 'I am unable to hear you at this time. I will disconnect this call to clear the line, but please call us back anytime or visit us online at att.com. Thank you for calling AT&T.',
+          requiredKeywords: ['unable', 'disconnect', 'anytime', 'thank'],
+          trainerGuidanceArabic:
+              'أغلق الخط بالصيغة الرسمية لبروتوكول الـ Dead Air.',
           isFinal: true,
         ),
       ],
       metadata: const ContentMetadata(
         provenance: ProvenanceTier.fictionalSimulation,
-        notes: 'Risk reversal, transparent pricing summary, and confident closing.',
+        notes: 'The call connects but only faint rustling or silence is heard. The agent must deliver professional dead-air check-ins before disconnecting.',
+      ),
+    ),
+    // 30: Skeptical Prospect Conversion & Fiber Guarantee
+    Scenario(
+      id: 'scen-30-skeptical-closer',
+      title: 'Skeptical Prospect Conversion & Fiber Guarantee',
+      moduleIndex: 5,
+      category: 'Plan Upgrade & Features',
+      difficulty: 'advanced',
+      customerPersona: 'Gregory Stone (Tough Competitor Cable Subscriber)',
+      skillTags: const ['Objection Handling', 'Closing', 'Value'],
+      expectedResponse: _defaultAgentGreeting,
+      customerResponse: 'Alex, Gregory Stone. I\'m sick of cable raising my bill twenty dollars every six months. You guys claim your fiber price is straightforward, but every telecom lies. Prove me wrong.',
+      requiredAnchors: TrainingConstants.greetingRequiredAnchors,
+      contextNotes: 'Gregory has cable internet and hates cable bill hikes. He wants fiber but doesn\'t trust price promises.',
+      turns: const [
+        // Turn 1: Mandatory Opening Greeting (Agent)
+        ScenarioTurn(
+          id: 'turn-30-01',
+          turnNumber: 1,
+          speaker: TurnSpeaker.agent,
+          spokenText: _defaultAgentGreeting,
+          requiredKeywords: ['att', 'alex', 'name'],
+          trainerGuidanceArabic:
+              'ابدأ بالتحية الإلزامية بصوت هادئ وواضح مع ذكر اسمك أليكس.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-30-02'),
+          ],
+        ),
+
+        // Turn 2: Customer Initial Statement / Inquiry
+        ScenarioTurn(
+          id: 'turn-30-02',
+          turnNumber: 2,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Alex, Gregory Stone. I\'m sick of cable raising my bill twenty dollars every six months. You guys claim your fiber price is straightforward, but every telecom lies. Prove me wrong.',
+          trainerGuidanceArabic: 'جريجوري متضايق من زيادات شركات الكيبل ومش واثق في أي شركة اتصالات. اثبت له مصداقية AT&T Fiber: سرعات متماثلة، بدون عقود سنوية، بدون رسوم تأجير راوتر، وبسعر ثابت وواضح.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-30-03'),
+          ],
+        ),
+
+        // Turn 3: Agent Core Explanation & AERD (Branch Point)
+        ScenarioTurn(
+          id: 'turn-30-03',
+          turnNumber: 3,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I completely understand your skepticism, Gregory. Cable plays pricing games. AT&T Fiber has no annual contract, equipment fees are included, and what you see is your straightforward monthly price.',
+          requiredKeywords: [
+            'understand',
+            'skepticism',
+            'contract',
+            'straightforward',
+          ],
+          trainerGuidanceArabic:
+              'اعترف بتجاربه السابقة واشرح مزايا الشفافية في الفايبر.',
+          branches: [
+            ScenarioBranch(conditionKey: 'success', nextTurnId: 'turn-30-04A'),
+            ScenarioBranch(conditionKey: 'low_aerd', nextTurnId: 'turn-30-04B'),
+          ],
+        ),
+
+        // Turn 4A: Customer Satisfied / Understanding Response (High-AERD Success Path)
+        ScenarioTurn(
+          id: 'turn-30-04A',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'No equipment fees and no annual contract? That is genuinely different from what cable pulls on me. Let\'s install it next Tuesday.',
+          trainerGuidanceArabic: 'جريجوري اقتنع بوضوح العرض وقرر الاشتراك.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-30-05A'),
+          ],
+        ),
+
+        // Turn 4B: Customer Pushback / Objection / Escalation (Low-AERD Path)
+        ScenarioTurn(
+          id: 'turn-30-04B',
+          turnNumber: 4,
+          speaker: TurnSpeaker.customer,
+          spokenText: 'Straightforward price? I read online your price goes up after twelve months just like everyone else!',
+          trainerGuidanceArabic: 'جريجوري لسه شاكك في زيادة بعد سنة. وضح له إن خطط الفايبر الحالية مفيهاش زيادة تلقائية بعد 12 شهر زي عروض زمان.',
+          branches: [
+            ScenarioBranch(conditionKey: 'default', nextTurnId: 'turn-30-05B'),
+          ],
+        ),
+
+        // Turn 5A: Agent Professional Closing (High-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-30-05A',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'You made a fantastic choice, Gregory! Fiber installation is locked for next Tuesday at eight AM. Welcome to transparent, blazing-fast internet!',
+          requiredKeywords: ['choice', 'locked', 'tuesday', 'welcome'],
+          trainerGuidanceArabic: 'أكد الموعد واشكره.',
+          isFinal: true,
+        ),
+
+        // Turn 5B: Agent De-escalation & Recovery (Low-AERD Terminal)
+        ScenarioTurn(
+          id: 'turn-30-05B',
+          turnNumber: 5,
+          speaker: TurnSpeaker.agent,
+          spokenText: 'I hear you, Gregory, but that was the old industry standard years ago. Today\'s AT&T Fiber plans have zero expiring promotional discounts, meaning no automatic price jump at month twelve.',
+          requiredKeywords: ['hear', 'standard', 'expiring', 'jump'],
+          trainerGuidanceArabic:
+              'اشرح التغيير في سياسة التسعير الحديثة ونفي الزيادة التلقائية.',
+          isFinal: true,
+        ),
+      ],
+      metadata: const ContentMetadata(
+        provenance: ProvenanceTier.fictionalSimulation,
+        notes: 'Gregory has cable internet and hates cable bill hikes. He wants fiber but doesn\'t trust price promises.',
       ),
     ),
   ];
 
-  /// Look up scenario by ID
-  static Scenario? findById(String id) {
-    try {
-      return allScenarios.firstWhere((s) => s.id == id);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Get scenarios by category
-  static List<Scenario> getByCategory(String category) {
-    return allScenarios.where((s) => s.category == category).toList();
-  }
-
-  /// Get all unique skill tags across the catalog
   static List<String> get allSkillTags {
     final tags = <String>{};
     for (final s in allScenarios) {
       tags.addAll(s.skillTags);
     }
     return tags.toList()..sort();
+  }
+
+  static Scenario? findById(String id) {
+    try {
+      return allScenarios.firstWhere((s) => s.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 }

@@ -14,6 +14,7 @@ enum DisclosureState {
   evaluating,
   evaluated,
   playingCustomerResponse,
+  playingReference,
   error,
 }
 
@@ -45,12 +46,20 @@ class DisclosureController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   DateTime? _listeningStartTime;
+  bool _isDisposed = false;
 
   DisclosureController({
     required this._speechService,
     required this._disclosureRepository,
     this._progressRepository,
   });
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
+  }
 
   Future<void> initialize() async {
     try {
@@ -73,6 +82,8 @@ class DisclosureController extends ChangeNotifier {
     _currentTranscript = '';
     _activeCustomerResponse = null;
     _state = DisclosureState.idle;
+    _speechService.stopSpeaking();
+    _speechService.cancelListening();
     notifyListeners();
   }
 
@@ -129,12 +140,10 @@ class DisclosureController extends ChangeNotifier {
     _state = DisclosureState.evaluated;
 
     if (_latestResult != null && _latestResult!.isTargetMet) {
-      // Pick a random or sequential customer response to simulate customer reply
       if (_selectedScript!.customerResponses.isNotEmpty) {
         _activeCustomerResponse = _selectedScript!.customerResponses.first;
       }
 
-      // Record progress
       if (_progressRepository != null) {
         await _progressRepository.recordDisclosureCompletion(
           scriptId: _selectedScript!.id,
@@ -171,6 +180,46 @@ class DisclosureController extends ChangeNotifier {
     }
   }
 
+  /// Play standard American English reference audio of the disclosure text
+  Future<void> playReferenceAudio() async {
+    if (_selectedScript == null) return;
+
+    if (_state == DisclosureState.playingReference) {
+      await stopReferenceAudio();
+      return;
+    }
+
+    _state = DisclosureState.playingReference;
+    notifyListeners();
+
+    try {
+      await _speechService.speakCustomerPrompt(
+        _selectedScript!.scriptText,
+        onFinished: () {
+          _state = DisclosureState.idle;
+          notifyListeners();
+        },
+        onError: (err) {
+          _errorMessage = 'Reference playback failed: $err';
+          _state = DisclosureState.idle;
+          notifyListeners();
+        },
+      );
+    } catch (e) {
+      _errorMessage = 'Reference playback failed: $e';
+      _state = DisclosureState.idle;
+      notifyListeners();
+    }
+  }
+
+  Future<void> stopReferenceAudio() async {
+    try {
+      await _speechService.stopSpeaking();
+    } catch (_) {}
+    _state = DisclosureState.idle;
+    notifyListeners();
+  }
+
   Future<void> saveCustomDraft({
     required String title,
     required String category,
@@ -195,6 +244,26 @@ class DisclosureController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateCustomDraft(DisclosureScript updated) async {
+    await _disclosureRepository.saveUserDraft(updated);
+    _scripts = await _disclosureRepository.getAllScripts();
+    _selectedScript = updated;
+    _latestResult = null;
+    _currentTranscript = '';
+    _state = DisclosureState.idle;
+    notifyListeners();
+  }
+
+  Future<void> deleteCustomDraft(String id) async {
+    await _disclosureRepository.deleteUserDraft(id);
+    _scripts = await _disclosureRepository.getAllScripts();
+    _selectedScript = _scripts.isNotEmpty ? _scripts.first : null;
+    _latestResult = null;
+    _currentTranscript = '';
+    _state = DisclosureState.idle;
+    notifyListeners();
+  }
+
   void cancel() {
     _speechService.cancelListening();
     _speechService.stopSpeaking();
@@ -204,6 +273,7 @@ class DisclosureController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _speechService.cancelListening();
     _speechService.stopSpeaking();
     super.dispose();

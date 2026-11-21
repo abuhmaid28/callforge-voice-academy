@@ -165,7 +165,11 @@ class MultiTurnEvaluator {
       } else {
         // Look for retry/low branch or default
         final lowBranch = turn.branches.firstWhere(
-          (b) => b.conditionKey == 'retry' || b.conditionKey == 'low_aerd',
+          (b) =>
+              b.conditionKey == 'retry' ||
+              b.conditionKey == 'low_aerd' ||
+              b.conditionKey == 'objection' ||
+              b.conditionKey == 'refusal',
           orElse: () => turn.branches.first,
         );
         nextTurnId = lowBranch.nextTurnId;
@@ -203,28 +207,65 @@ class MultiTurnEvaluator {
   }
 
   static bool _matchesKeyword(String transcript, String keyword) {
-    if (transcript.contains(keyword)) return true;
+    final lowerTranscript = transcript.toLowerCase();
+    final lowerKeyword = keyword.trim().toLowerCase();
+    if (lowerKeyword.isEmpty) return false;
 
-    // Check AT&T spoken transcription variants
-    if (keyword == 'att') {
-      return transcript.contains('att') ||
-          transcript.contains('at and t') ||
-          transcript.contains('at t');
+    // Check AT&T spoken transcription variants with strict word boundaries
+    if (lowerKeyword == 'att' ||
+        lowerKeyword == 'at&t' ||
+        lowerKeyword == 'at and t') {
+      final attPattern = RegExp(
+        r'\b(att|at and t|at t)\b',
+        caseSensitive: false,
+      );
+      if (attPattern.hasMatch(lowerTranscript)) return true;
+      if (lowerKeyword == 'att') return false; // Prevent fallback to substring
     }
 
-    // Word boundary check for tokens
-    final tokens = transcript.split(' ');
-    final kwTokens = keyword.split(' ');
-    if (kwTokens.length == 1) {
-      final target = kwTokens.first;
-      return tokens.any((t) => t == target || t.startsWith(target));
+    // Word boundary check to prevent substring false positives (e.g. 'att' in 'matter')
+    final pattern = RegExp(
+      r'\b' + RegExp.escape(lowerKeyword) + r'\b',
+      caseSensitive: false,
+    );
+    if (pattern.hasMatch(lowerTranscript)) return true;
+
+    // Multi-token phrase matching: check if tokens appear in contiguous sequence
+    final kwTokens = lowerKeyword
+        .split(' ')
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (kwTokens.length > 1) {
+      final transTokens = lowerTranscript
+          .split(' ')
+          .where((t) => t.isNotEmpty)
+          .toList();
+      for (int i = 0; i <= transTokens.length - kwTokens.length; i++) {
+        bool matches = true;
+        for (int j = 0; j < kwTokens.length; j++) {
+          if (transTokens[i + j] != kwTokens[j]) {
+            matches = false;
+            break;
+          }
+        }
+        if (matches) return true;
+      }
     }
+
     return false;
   }
 
   static bool _containsAnyMarker(String transcript, List<String> markers) {
+    final lowerTranscript = transcript.toLowerCase();
     for (final marker in markers) {
-      if (transcript.contains(marker)) return true;
+      final lowerMarker = marker.trim().toLowerCase();
+      if (lowerMarker.isEmpty) continue;
+      // Word-boundary prefix match (e.g. 'frustrat' matches 'frustrated' or 'frustrating')
+      final pattern = RegExp(
+        r'\b' + RegExp.escape(lowerMarker),
+        caseSensitive: false,
+      );
+      if (pattern.hasMatch(lowerTranscript)) return true;
     }
     return false;
   }

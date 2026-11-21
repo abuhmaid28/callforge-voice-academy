@@ -279,6 +279,7 @@ class _FloorSkillsScreenState extends State<FloorSkillsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             FloatingActionButton.extended(
+              heroTag: null,
               onPressed: () {
                 if (isListening) {
                   _controller.stopPbRecordingAndEvaluate();

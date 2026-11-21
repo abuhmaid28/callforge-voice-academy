@@ -32,7 +32,7 @@ void main() {
       expect(result.aerdBreakdown['A'], isTrue); // Acknowledge
       expect(result.aerdBreakdown['E'], isTrue); // Empathy
       expect(result.aerdBreakdown['D'], isTrue); // Defuse/Discover
-      expect(result.nextTurnId, equals('turn-01-04'));
+      expect(result.nextTurnId, equals('turn-01-04A'));
       expect(result.trainerFeedbackArabic, contains('أداء ممتاز'));
     });
 
@@ -48,6 +48,7 @@ void main() {
       expect(result.isTargetMet, isFalse);
       expect(result.score, lessThan(50.0));
       expect(result.missingKeywords, isNotEmpty);
+      expect(result.nextTurnId, equals('turn-01-04B'));
       expect(result.aerdBreakdown['E'], isFalse);
       expect(
         result.trainerFeedbackArabic,

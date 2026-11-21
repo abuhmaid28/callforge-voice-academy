@@ -77,27 +77,50 @@ void main() {
       },
     );
 
-    test('saveCustomDraft persists user draft and selects it', () async {
+    test('saveCustomDraft, updateCustomDraft, and deleteCustomDraft perform full CRUD', () async {
+      // 1. Create
       await controller.saveCustomDraft(
-        title: 'Custom Device Remorse Window',
-        category: 'Hardware & Devices',
+        title: 'Custom Remorse Policy',
+        category: 'Hardware',
         scriptText: 'You have fourteen days to return or exchange your device.',
         criticalTerms: [
           const CriticalTerm(term: 'fourteen days', category: 'duration'),
         ],
       );
 
+      expect(controller.selectedScript!.title, equals('Custom Remorse Policy'));
+      expect(controller.selectedScript!.isCustomUserDraft, isTrue);
+      final draftId = controller.selectedScript!.id;
+
+      // 2. Update
+      final updated = controller.selectedScript!.copyWith(
+        title: 'Updated Remorse Policy',
+        scriptText:
+            'You have fourteen days to return your device without penalty.',
+      );
+      await controller.updateCustomDraft(updated);
+
       expect(
         controller.selectedScript!.title,
-        equals('Custom Device Remorse Window'),
+        equals('Updated Remorse Policy'),
       );
-      expect(controller.selectedScript!.isCustomUserDraft, isTrue);
       expect(
-        controller.scripts.any(
-          (s) => s.title == 'Custom Device Remorse Window',
-        ),
+        controller.scripts.any((s) => s.title == 'Updated Remorse Policy'),
         isTrue,
       );
+
+      // 3. Delete
+      await controller.deleteCustomDraft(draftId);
+      expect(controller.scripts.any((s) => s.id == draftId), isFalse);
+      expect(controller.selectedScript!.id, equals('disc-autopay-01'));
     });
+
+    test(
+      'playReferenceAudio plays disclosure audio and returns to idle',
+      () async {
+        await controller.playReferenceAudio();
+        expect(controller.state, equals(DisclosureState.idle));
+      },
+    );
   });
 }
