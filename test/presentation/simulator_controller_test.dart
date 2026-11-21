@@ -48,6 +48,7 @@ void main() {
 
       expect(controller.hasEvaluation, isTrue);
       expect(controller.evaluationResult!.scriptTargetMet, isTrue);
+      expect(controller.evaluationResult!.isVerbatimMatch, isTrue);
       expect(controller.evaluationResult!.similarityPercentage, equals(100));
       expect(controller.bestScore, equals(100));
       expect(controller.recentAttempts.length, equals(1));
@@ -104,5 +105,33 @@ void main() {
       expect(controller.errorMessage, contains('No speech was captured'));
       expect(controller.engineState, equals(VoiceEngineState.idle));
     });
+
+    test(
+      'handles TTS customer speech playback failure without false completion',
+      () async {
+        mockSpeech.shouldFailTts = true;
+        await controller.playCustomerResponse();
+
+        expect(
+          controller.errorMessage,
+          contains('Simulated TTS playback failure'),
+        );
+        expect(controller.engineState, equals(VoiceEngineState.error));
+      },
+    );
+
+    test(
+      'cancels active speech session and ignores stale completion',
+      () async {
+        mockSpeech.simulatedTranscript = TrainingConstants.standardGreeting;
+        final listenFuture = controller.startListening();
+        await controller.cancelListening();
+        await listenFuture;
+
+        expect(controller.engineState, equals(VoiceEngineState.idle));
+        expect(controller.hasEvaluation, isFalse);
+        expect(controller.recentAttempts, isEmpty);
+      },
+    );
   });
 }

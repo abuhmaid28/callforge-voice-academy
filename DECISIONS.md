@@ -108,3 +108,22 @@ This document records the key architectural, technical, and domain decisions mad
 - **Decision**: Every requirement and script is categorized under one of 6 provenance tiers (`[User-Confirmed Workflow]`, `[Official Public Verified Information]`, `[Work-Reported Information]`, `[Derived Training Material]`, `[Fictional / Simulation Only]`, `[UNKNOWN]`).
 - **Consequences**:
   - Eliminates invented policies or hallucinated employer rules.
+
+
+---
+
+## ADR 009: Technical Milestone Architecture Reconciled with Original Charter (M0–M6)
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: An independent audit noted that the project roadmap had drifted from the original training charter scope. Specifically, M3 was intended as the integrated floor care module (combining American English listening, AERD call control, billing breakdown, and customer de-escalation), M4 for Consultative Sales Mastery, M5 for Quality Tracking & 90-Day Adaptive System, and M6 for Optional Advanced On-Device Acoustic Research.
+- **Decision**: Reconcile the technical milestone architecture directly with this charter:
+  - **M0**: Foundation & Environment Verification
+  - **M1**: Voice Prototype & Inbound Greeting Simulator
+  - **M2**: Disclosure Reading & Pronunciation Precision (verbatim karaoke tracking & P/B phonetic awareness drills)
+  - **M3**: Core Floor Care Simulator (Listening, AERD, Billing & De-escalation)
+  - **M4**: Consultative Sales Mastery (Discovery, Value Bridging, Plan Upgrades)
+  - **M5**: Quality Tracking & Adaptive 90-Day Learning System
+  - **M6**: Advanced Voice Evaluation & Acoustic Research (Optional On-Device Extension)
+- **Consequences**:
+  - Direct traceability between pedagogical training modules and engineering deliverables.
+  - Transparent release trajectory avoiding ad-hoc milestone proliferation.

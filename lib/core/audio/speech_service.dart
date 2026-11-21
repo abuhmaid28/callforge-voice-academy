@@ -24,7 +24,11 @@ abstract class ISpeechService {
   Stream<String> get partialTranscriptStream;
 
   Future<void> initialize();
-  Future<void> speakCustomerPrompt(String text, {VoidCallback? onFinished});
+  Future<void> speakCustomerPrompt(
+    String text, {
+    VoidCallback? onFinished,
+    Function(String error)? onError,
+  });
   Future<void> stopSpeaking();
   Future<void> startListening({
     required ResultCallback onResult,
@@ -48,6 +52,7 @@ class NativeSpeechService implements ISpeechService {
   String _latestRecognizedWords = '';
   bool _hasDeliveredFinalResult = false;
   Timer? _watchdogTimer;
+  int _sessionGeneration = 0;
 
   Function(String error)? _activeOnError;
   ResultCallback? _activeOnResult;
@@ -110,10 +115,12 @@ class NativeSpeechService implements ISpeechService {
 
         // Watchdog: If engine stopped without firing finalResult, resolve with latest words
         _watchdogTimer?.cancel();
-        _watchdogTimer = Timer(const Duration(milliseconds: 600), () {
+        final currentGen = _sessionGeneration;
+        _watchdogTimer = Timer(const Duration(milliseconds: 600), () async {
           if (!_hasDeliveredFinalResult &&
-              _state == VoiceEngineState.processing) {
-            _deliverFinalTranscript();
+              _state == VoiceEngineState.processing &&
+              currentGen == _sessionGeneration) {
+            await _deliverFinalTranscript(currentGen);
           }
         });
       }
@@ -136,24 +143,34 @@ class NativeSpeechService implements ISpeechService {
     return 'Speech recognition error: $rawError';
   }
 
-  void _deliverFinalTranscript() {
-    _watchdogTimer?.cancel();
+  Future<void> _deliverFinalTranscript(int sessionGen) async {
+    // Early guard: Ignore if session generation changed (canceled or restarted)
+    if (sessionGen != _sessionGeneration) return;
+    // Early guard: Prevent duplicate deliveries
+    if (_hasDeliveredFinalResult) return;
     _hasDeliveredFinalResult = true;
+    _watchdogTimer?.cancel();
 
     final transcript = _latestRecognizedWords.trim();
     if (transcript.isEmpty) {
-      _setState(VoiceEngineState.idle);
+      if (sessionGen == _sessionGeneration) {
+        _setState(VoiceEngineState.idle);
+      }
       if (_activeOnError != null) {
         _activeOnError!(
           'No speech was captured. Please tap the mic and try again.',
         );
       }
     } else {
-      _setState(VoiceEngineState.processing);
-      if (_activeOnResult != null) {
-        _activeOnResult!(transcript);
+      if (sessionGen == _sessionGeneration) {
+        _setState(VoiceEngineState.processing);
       }
-      _setState(VoiceEngineState.idle);
+      if (_activeOnResult != null) {
+        await _activeOnResult!(transcript);
+      }
+      if (sessionGen == _sessionGeneration) {
+        _setState(VoiceEngineState.idle);
+      }
     }
   }
 
@@ -161,6 +178,7 @@ class NativeSpeechService implements ISpeechService {
   Future<void> speakCustomerPrompt(
     String text, {
     VoidCallback? onFinished,
+    Function(String error)? onError,
   }) async {
     try {
       await stopListening();
@@ -173,13 +191,18 @@ class NativeSpeechService implements ISpeechService {
 
       _tts.setErrorHandler((msg) {
         _setState(VoiceEngineState.error);
-        if (onFinished != null) onFinished();
+        if (onError != null) {
+          onError('Customer speech playback error: $msg');
+        }
+        // Crucial fix: Do NOT call onFinished on error! Failure is distinct from completion.
       });
 
       await _tts.speak(text);
     } catch (e) {
       _setState(VoiceEngineState.error);
-      if (onFinished != null) onFinished();
+      if (onError != null) {
+        onError('Customer speech playback exception: $e');
+      }
     }
   }
 
@@ -199,6 +222,10 @@ class NativeSpeechService implements ISpeechService {
     Function(String error)? onError,
   }) async {
     await stopSpeaking();
+
+    // Increment session generation to invalidate any previous or late callbacks
+    _sessionGeneration++;
+    final currentSession = _sessionGeneration;
 
     _activeOnResult = onResult;
     _activeOnError = onError;
@@ -232,13 +259,14 @@ class NativeSpeechService implements ISpeechService {
 
     try {
       await _stt.listen(
-        onResult: (result) {
+        onResult: (result) async {
+          if (currentSession != _sessionGeneration) return;
           _latestRecognizedWords = result.recognizedWords;
           if (!_transcriptController.isClosed) {
             _transcriptController.add(result.recognizedWords);
           }
           if (result.finalResult) {
-            _deliverFinalTranscript();
+            await _deliverFinalTranscript(currentSession);
           }
         },
         listenOptions: stt.SpeechListenOptions(
@@ -258,21 +286,26 @@ class NativeSpeechService implements ISpeechService {
   @override
   Future<void> stopListening() async {
     _watchdogTimer?.cancel();
+    final currentSession = _sessionGeneration;
     try {
       await _stt.stop();
     } catch (_) {}
     if (_state == VoiceEngineState.listeningToUser) {
-      // If words were captured before user tapped stop, deliver them
+      // If words were captured before user tapped stop, deliver them cleanly
       if (!_hasDeliveredFinalResult && _latestRecognizedWords.isNotEmpty) {
-        _deliverFinalTranscript();
+        await _deliverFinalTranscript(currentSession);
       } else {
-        _setState(VoiceEngineState.idle);
+        if (currentSession == _sessionGeneration) {
+          _setState(VoiceEngineState.idle);
+        }
       }
     }
   }
 
   @override
   Future<void> cancelListening() async {
+    // Invalidate current session so any pending callback is dropped
+    _sessionGeneration++;
     _watchdogTimer?.cancel();
     _hasDeliveredFinalResult = true;
     _latestRecognizedWords = '';
@@ -284,6 +317,7 @@ class NativeSpeechService implements ISpeechService {
 
   @override
   void dispose() {
+    _sessionGeneration++;
     _watchdogTimer?.cancel();
     stopSpeaking();
     cancelListening();

@@ -4,17 +4,14 @@ import 'package:callforge/core/evaluation/speech_evaluator.dart';
 
 void main() {
   group('SpeechEvaluator - Text Normalization & Levenshtein', () {
-    test(
-      'normalize removes punctuation, lowers case, and collapses spaces',
-      () {
-        const input = "Hello,   THANK you for calling AT&T!  This is Alex... ";
-        final normalized = SpeechEvaluator.normalize(input);
-        expect(
-          normalized,
-          equals("hello thank you for calling att this is alex"),
-        );
-      },
-    );
+    test('normalize removes punctuation, expands ampersands, lowers case, and collapses spaces', () {
+      const input = "Hello,   THANK you for calling AT&T!  This is Alex... ";
+      final normalized = SpeechEvaluator.normalize(input);
+      expect(
+        normalized,
+        equals("hello thank you for calling at and t this is alex"),
+      );
+    });
 
     test('levenshteinDistance computes exact edit distance', () {
       expect(SpeechEvaluator.levenshteinDistance('plan', 'plan'), equals(0));
@@ -83,6 +80,57 @@ void main() {
     });
   });
 
+  group('SpeechEvaluator - Token-Aware Anchor Matching & AT&T Variants', () {
+    test('rejects substring false positives in unrelated words', () {
+      // "matter" contains "att", "Alexander" contains "alex", "firstname" contains "first"
+      const transcript =
+          "Hello, thank you for calling matter. This is Alexander. May I have your firstname and lastname, please?";
+      final result = SpeechEvaluator.evaluateGreeting(transcript);
+
+      expect(result.scriptTargetMet, isFalse);
+      expect(result.missingAnchors, contains('att'));
+      expect(result.missingAnchors, contains('alex'));
+      expect(result.missingAnchors, contains('first'));
+      expect(result.missingAnchors, contains('last'));
+      expect(result.missingAnchors, contains('name'));
+    });
+
+    test('matches AT&T speech-to-text rendering variations', () {
+      final variants = [
+        "Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?",
+        "Hello, thank you for calling ATT. This is Alex. May I have your first and last name, please?",
+        "Hello, thank you for calling AT and T. This is Alex. May I have your first and last name, please?",
+        "Hello, thank you for calling AT T. This is Alex. May I have your first and last name, please?",
+        "Hello, thank you for calling A T and T. This is Alex. May I have your first and last name, please?",
+      ];
+
+      for (final variant in variants) {
+        final result = SpeechEvaluator.evaluateGreeting(variant);
+        expect(
+          result.missingAnchors,
+          isNot(contains('att')),
+          reason: 'Failed to match AT&T variant: $variant',
+        );
+        expect(result.scriptTargetMet, isTrue);
+      }
+    });
+
+    test('distinguishes verbatim match from 70% drill progression threshold', () {
+      // Verbatim exact match
+      const exactTranscript = TrainingConstants.standardGreeting;
+      final exactResult = SpeechEvaluator.evaluateGreeting(exactTranscript);
+      expect(exactResult.isVerbatimMatch, isTrue);
+      expect(exactResult.scriptTargetMet, isTrue);
+
+      // Minor conversational variation: meets drill threshold (>=70% and all anchors), but NOT verbatim
+      const variationTranscript =
+          "Hi, thank you for calling AT&T. This is Alex. May I have your first and last name, please?";
+      final varResult = SpeechEvaluator.evaluateGreeting(variationTranscript);
+      expect(varResult.isVerbatimMatch, isFalse);
+      expect(varResult.scriptTargetMet, isTrue); // Can still advance the drill
+    });
+  });
+
   group('SpeechEvaluator - Inbound Greeting Evaluation', () {
     test(
       'perfect verbatim greeting passes with high score and perfect coaching',
@@ -91,6 +139,7 @@ void main() {
         final result = SpeechEvaluator.evaluateGreeting(transcript);
 
         expect(result.passed, isTrue);
+        expect(result.isVerbatimMatch, isTrue);
         expect(result.accuracyPercentage, equals(100));
         expect(result.missingAnchors, isEmpty);
         expect(result.detectedPbErrors, isEmpty);

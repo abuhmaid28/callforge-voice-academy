@@ -13,6 +13,8 @@ class MockSpeechService implements ISpeechService {
   bool shouldFailNetwork = false;
   bool shouldFailInit = false;
   bool shouldTimeoutWithSilence = false;
+  bool shouldFailTts = false;
+  int _sessionGeneration = 0;
 
   @override
   VoiceEngineState get state => _state;
@@ -43,10 +45,19 @@ class MockSpeechService implements ISpeechService {
   Future<void> speakCustomerPrompt(
     String text, {
     VoidCallback? onFinished,
+    Function(String error)? onError,
   }) async {
     _setState(VoiceEngineState.customerSpeaking);
-    // Simulate brief TTS duration
     await Future.delayed(const Duration(milliseconds: 20));
+
+    if (shouldFailTts) {
+      _setState(VoiceEngineState.error);
+      if (onError != null) {
+        onError('Simulated TTS playback failure');
+      }
+      return;
+    }
+
     _setState(VoiceEngineState.idle);
     if (onFinished != null) onFinished();
   }
@@ -63,6 +74,9 @@ class MockSpeechService implements ISpeechService {
     required ResultCallback onResult,
     Function(String error)? onError,
   }) async {
+    _sessionGeneration++;
+    final currentSession = _sessionGeneration;
+
     if (shouldFailMic) {
       _setState(VoiceEngineState.error);
       if (onError != null) {
@@ -84,9 +98,11 @@ class MockSpeechService implements ISpeechService {
     if (shouldTimeoutWithSilence) {
       _setState(VoiceEngineState.listeningToUser);
       await Future.delayed(const Duration(milliseconds: 20));
-      _setState(VoiceEngineState.idle);
-      if (onError != null) {
-        onError('No speech was captured. Please tap the mic and try again.');
+      if (currentSession == _sessionGeneration) {
+        _setState(VoiceEngineState.idle);
+        if (onError != null) {
+          onError('No speech was captured. Please tap the mic and try again.');
+        }
       }
       return;
     }
@@ -98,9 +114,13 @@ class MockSpeechService implements ISpeechService {
 
     // Simulate completion
     await Future.delayed(const Duration(milliseconds: 20));
+    if (currentSession != _sessionGeneration) return;
+
     _setState(VoiceEngineState.processing);
     await onResult(simulatedTranscript);
-    _setState(VoiceEngineState.idle);
+    if (currentSession == _sessionGeneration) {
+      _setState(VoiceEngineState.idle);
+    }
   }
 
   @override
@@ -112,6 +132,7 @@ class MockSpeechService implements ISpeechService {
 
   @override
   Future<void> cancelListening() async {
+    _sessionGeneration++;
     if (_state == VoiceEngineState.listeningToUser) {
       _setState(VoiceEngineState.idle);
     }
@@ -119,6 +140,7 @@ class MockSpeechService implements ISpeechService {
 
   @override
   void dispose() {
+    _sessionGeneration++;
     _stateController.close();
     _transcriptController.close();
   }

@@ -75,6 +75,10 @@ class SimulatorController extends ChangeNotifier {
       onFinished: () {
         notifyListeners();
       },
+      onError: (err) {
+        _errorMessage = err;
+        notifyListeners();
+      },
     );
   }
 

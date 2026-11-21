@@ -5,13 +5,13 @@
 - **Product Name**: CALLFORGE (CallForge Voice Academy)
 - **Target Audience**: Offshore Customer Service & Sales Representatives handling AT&T inbound queues (specifically at Sutherland Global Services, Egypt).
 - **Core User Persona**: **Alex** `[User-Confirmed Workflow]`.
-- **Primary Objective**: Build conversational confidence, call steering, consultative sales discovery, and mandatory script adherence through structured spoken voice practice.
+- **Primary Objective**: Build conversational confidence, call steering, consultative sales discovery, and standard script adherence through structured spoken voice practice.
 - **Platform**: Flutter mobile application (Android-first) `[User-Confirmed Workflow]`.
 
 ### Source Provenance Legend:
 - `[User-Confirmed Workflow]`: Verified directly by user.
 - `[Official Public Verified Information]`: Verifiable via official documentation.
-- `[Work-Reported Information]`: Reported from operational floor practice.
+- `[Work-Reported Information]`: Reported from operational floor practice without proprietary exposure.
 - `[Derived Training Material]`: Instructional design created for skill building.
 - `[Fictional / Simulation Only]`: Simulated scenario context.
 - `[UNKNOWN]`: Missing policy or technical detail.
@@ -22,15 +22,17 @@
 
 1. **Simulation Model**:
    - **Mode**: Push-to-Talk / Tap-to-Speak turn-based roleplaying `[Technical Fact]`. (The system is **not** full-duplex continuous open-mic).
-   - **Turn Sequence**: For inbound calls, the representative **Alex** initiates the turn with the mandatory opening greeting upon call arrival. Once recognized and evaluated, the simulated customer responds via Text-to-Speech `[Derived Training Material]`.
+   - **Turn Sequence**: For inbound calls, the representative **Alex** initiates the turn with the mandatory opening greeting upon call arrival (Turn 1). Once recognized and evaluated, the simulated customer responds via Text-to-Speech (Turn 2) `[Derived Training Material]`.
 2. **Audio Stack & Availability**:
    - **TTS**: Native Android `TextToSpeech` (`en-US`) `[Official Public Verified Information]`.
    - **STT**: Native Android `SpeechRecognizer` (`en_US`) `[Official Public Verified Information]`.
-   - **Offline Realities**: Offline STT is **conditional** on the physical Android device having the Google Speech Services English (US) offline model pre-installed. When offline and without the local model, the Android recognizer will report an error; the app must catch this and display clear user instructions `[Official Public Verified Information]`.
+   - **Offline Realities**: Offline STT is **conditional** on the physical Android device having the Google Speech Services English (US) offline model pre-installed. When offline and without the local model, the Android recognizer will report an error; the app catches this and displays clear user instructions `[Official Public Verified Information]`.
+3. **Usage & Compliance Scope**:
+   - CALLFORGE is a personal educational training aid. It **does not** guarantee specific floor performance metrics, employer certification, or employment outcomes.
 
 ---
 
-## 3. Mandatory Protocol & Guardrails
+## 3. Floor Context & Guardrails (Training Handoff Integration)
 
 - **Mandatory Inbound Greeting** `[User-Confirmed Workflow]`:
   > *"Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?"*
@@ -41,10 +43,14 @@
   - **D**efuse: Transition smoothly into discovery questions.
 - **Escalation Realities & Boundaries**:
   - In the user's specific operational process, **supervisor callbacks are not available** `[Work-Reported Information]`.
-  - Authorized supervisor transfer mechanisms (e.g. warm transfers, internal support desks) remain `UNKNOWN [Training Context Only]`.
+  - Authorized supervisor transfer mechanisms (e.g. warm transfers, internal floor support) remain `UNKNOWN [Training Context Only]`.
   - CALLFORGE **does not** mandate arbitrary de-escalation quotas (such as forcing exactly two de-escalation attempts before a transfer) because employer policies vary and are not verified.
+- **Verification & Account Security Protocols**:
+  - CPNI (Customer Proprietary Network Information) verification requirements (e.g., verifying passcodes, authorized callers, one-time pins) are treated as training drills `[Derived Training Material]`.
+- **Work-Reported Offers & Limitations**:
+  - Promotional items like 55+ plan eligibility are restricted by geographic market and account conditions `[Work-Reported Information]`. Specific tier pricing remains `UNKNOWN [Training Context Only]`.
 - **Fictional Data & Compliance Guardrails** `[Fictional / Simulation Only]`:
-  - All customer identities (*e.g., David Miller*), account numbers (*e.g., 902-555-0192*), bill balances, and device models are strictly fictional simulations.
+  - All customer identities (*e.g., David Miller*), account numbers (*e.g., 902-555-0192*), bill balances, activation fees, and device models are strictly fictional simulations.
   - Fictional billing examples (*e.g., promotional credit timing*) are training drills, not binding carrier policy.
   - Proprietary AT&T tools, intranet systems, or confidential employer documentation are never stored or simulated.
 
@@ -55,12 +61,12 @@
 ### Module 1: Real Voice Call Simulator
 - **Focus**: Turn-based interactive voice roleplay.
 - **Simulation Flow**: Alex speaks opening greeting -> Customer responds via TTS -> Alex executes AERD discovery -> Turn progression.
-- **Evaluation**: Recognized-text similarity and mandatory semantic anchor verification.
+- **Evaluation**: Recognized-text similarity and token-aware semantic anchor verification.
 
 ### Module 2: Disclosure Reading & Pronunciation Precision
 - **Focus**: Verbatim delivery of mandatory legal disclosures and phonemic awareness drills.
 - **Components**:
-  - Verbatim text comparison against target disclosure scripts.
+  - Verbatim text comparison against target disclosure scripts (e.g. CPNI, autopay terms, 36-month installment agreements).
   - P/B Phonemic Contrast Learning Drills (educational awareness for Arabic speakers regarding `/p/` vs `/b/` confusion pairs like *plan/blan*, *payment/bayment*). Note: Evaluated via text recognition heuristics, not laboratory acoustic analysis.
 
 ### Module 3: American English Listening & Speaking

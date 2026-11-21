@@ -23,9 +23,14 @@ class CoachingCard extends StatelessWidget {
     final statusColor = result.scriptTargetMet
         ? AppColors.success
         : AppColors.error;
-    final statusTitle = result.scriptTargetMet
-        ? 'SCRIPT TARGET MET (Practice Simulation)'
-        : 'PRACTICE TARGET UNMET (Incomplete Script)';
+    final String statusTitle;
+    if (result.isVerbatimMatch) {
+      statusTitle = 'VERBATIM TARGET MET (100% Exact Script)';
+    } else if (result.scriptTargetMet) {
+      statusTitle = 'DRILL TARGET MET (70%+ Practice Threshold)';
+    } else {
+      statusTitle = 'DRILL TARGET UNMET (Script Incomplete)';
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 12),
@@ -80,13 +85,10 @@ class CoachingCard extends StatelessWidget {
                       : AppColors.warning,
                 ),
                 MetricBadge(
-                  label: 'Session Pace (est.)',
+                  label: 'Session Pace (unvalidated)',
                   value: '${result.estimatedWpm} wpm',
-                  icon: Icons.speed,
-                  color:
-                      (result.estimatedWpm >= 100 && result.estimatedWpm <= 170)
-                      ? AppColors.success
-                      : AppColors.warning,
+                  icon: Icons.timer_outlined,
+                  color: AppColors.textSecondary,
                 ),
               ],
             ),

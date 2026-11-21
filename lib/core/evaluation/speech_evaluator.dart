@@ -26,11 +26,13 @@ class SpeechEvaluator {
     'broduct': 'product',
   };
 
-  /// Normalizes a string by lowercasing, stripping punctuation, and removing excess whitespace.
+  /// Normalizes a string by lowercasing, stripping punctuation (retaining alphanumeric),
+  /// and collapsing whitespace.
   static String normalize(String text) {
     return text
         .toLowerCase()
-        .replaceAll(RegExp(r"[^\w\s]"), '') // remove punctuation
+        .replaceAll(RegExp(r"[^\w\s&]"), '') // keep words, spaces, &
+        .replaceAll('&', ' and ')
         .replaceAll(RegExp(r'\s+'), ' ') // collapse whitespace
         .trim();
   }
@@ -117,6 +119,86 @@ class SpeechEvaluator {
     return errors;
   }
 
+  /// Token-aware semantic anchor validation for the inbound greeting.
+  /// Validates presence using exact word token boundaries and supports common AT&T STT variations.
+  /// Prevents false positives from substring matching (e.g. "matter" != "att", "Alexander" != "alex").
+  static ({List<String> matched, List<String> missing}) evaluateGreetingAnchors(
+    List<String> tokens,
+  ) {
+    final matched = <String>[];
+    final missing = <String>[];
+
+    // Check 'alex' (exact token boundary)
+    if (tokens.contains('alex')) {
+      matched.add('alex');
+    } else {
+      missing.add('alex');
+    }
+
+    // Check 'first' (exact token boundary)
+    if (tokens.contains('first')) {
+      matched.add('first');
+    } else {
+      missing.add('first');
+    }
+
+    // Check 'last' (exact token boundary)
+    if (tokens.contains('last')) {
+      matched.add('last');
+    } else {
+      missing.add('last');
+    }
+
+    // Check 'name' (exact token 'name' or 'names')
+    if (tokens.contains('name') || tokens.contains('names')) {
+      matched.add('name');
+    } else {
+      missing.add('name');
+    }
+
+    // Check AT&T variants across tokens
+    if (_matchesAttVariant(tokens)) {
+      matched.add('att');
+    } else {
+      missing.add('att');
+    }
+
+    return (matched: matched, missing: missing);
+  }
+
+  /// Recognizes common STT output variations for "AT&T":
+  /// "att", "at&t", "at and t", "at t", "a t t", "a t and t"
+  static bool _matchesAttVariant(List<String> tokens) {
+    if (tokens.contains('att') || tokens.contains('at&t')) {
+      return true;
+    }
+    // Check 2-token sequence: ["at", "t"]
+    for (int i = 0; i < tokens.length - 1; i++) {
+      if (tokens[i] == 'at' && tokens[i + 1] == 't') {
+        return true;
+      }
+    }
+    // Check 3-token sequence: ["at", "and", "t"] or ["a", "t", "t"]
+    for (int i = 0; i < tokens.length - 2; i++) {
+      if (tokens[i] == 'at' && tokens[i + 1] == 'and' && tokens[i + 2] == 't') {
+        return true;
+      }
+      if (tokens[i] == 'a' && tokens[i + 1] == 't' && tokens[i + 2] == 't') {
+        return true;
+      }
+    }
+    // Check 4-token sequence: ["a", "t", "and", "t"]
+    for (int i = 0; i < tokens.length - 3; i++) {
+      if (tokens[i] == 'a' &&
+          tokens[i + 1] == 't' &&
+          tokens[i + 2] == 'and' &&
+          tokens[i + 3] == 't') {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Evaluates Alex's inbound greeting against the mandatory AT&T standard script.
   static EvaluationResult evaluateGreeting(
     String transcript, {
@@ -128,32 +210,34 @@ class SpeechEvaluator {
     final normalizedTrans = normalize(transcript);
     final words = normalizedTrans.isEmpty
         ? <String>[]
-        : normalizedTrans.split(' ');
+        : normalizedTrans.split(' ').where((w) => w.isNotEmpty).toList();
 
-    // Check mandatory semantic anchors
-    final matchedAnchors = <String>[];
-    final missingAnchors = <String>[];
-
-    for (final anchor in TrainingConstants.greetingRequiredAnchors) {
-      if (normalizedTrans.contains(anchor)) {
-        matchedAnchors.add(anchor);
-      } else {
-        missingAnchors.add(anchor);
-      }
-    }
+    // Check mandatory semantic anchors using token-aware matching
+    final anchorResult = evaluateGreetingAnchors(words);
+    final matchedAnchors = anchorResult.matched;
+    final missingAnchors = anchorResult.missing;
 
     // Reference tokens
-    final refTokens = normalize(expected).split(' ');
+    final refTokens = normalize(expected)
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .toList();
     final wer = calculateWordErrorRate(refTokens, words);
 
     // Phonetic P/B educational warnings
     final pbErrors = detectPbErrors(transcript);
 
-    // Approximate Speaking Pace (Tokens per Active Minute)
+    // Unvalidated session pace: words per active session duration
+    // Note: Not an acoustic syllable rate.
     final seconds = max(1, duration.inSeconds);
     final wpm = ((words.length / seconds) * 60).round();
 
-    // Script target is met if normalized similarity >= 0.70 AND all mandatory semantic anchors present
+    // Verbatim match requires exact 100% text similarity
+    final isVerbatimMatch =
+        similarity >= 0.999 && wer == 0.0 && missingAnchors.isEmpty;
+
+    // Drill progression target: requires >= 0.70 normalized similarity AND all mandatory semantic anchors
+    // Note: This is an educational drill threshold, NOT a certification of verbatim compliance.
     final scriptTargetMet = similarity >= 0.70 && missingAnchors.isEmpty;
 
     // Generate Natural Egyptian Arabic Coaching
@@ -170,6 +254,7 @@ class SpeechEvaluator {
       textSimilarityScore: similarity,
       wordErrorRate: wer,
       scriptTargetMet: scriptTargetMet,
+      isVerbatimMatch: isVerbatimMatch,
       missingAnchors: missingAnchors,
       matchedAnchors: matchedAnchors,
       detectedPbErrors: pbErrors,
