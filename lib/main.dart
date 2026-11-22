@@ -5,6 +5,7 @@ import 'core/audio/speech_service.dart';
 import 'core/di/service_locator.dart';
 import 'core/theme/app_theme.dart';
 import 'data/datasources/attempt_local_datasource.dart';
+import 'data/datasources/custom_offers_local_datasource.dart';
 import 'data/datasources/disclosure_local_datasource.dart';
 import 'data/datasources/progress_local_datasource.dart';
 import 'data/repositories/attempt_repository_impl.dart';
@@ -39,6 +40,11 @@ Future<void> main() async {
   final progressDataSource = ProgressLocalDataSource(prefs);
   final progressRepo = ProgressRepositoryImpl(progressDataSource);
   ServiceLocator.registerSingleton<IProgressRepository>(progressRepo);
+
+  final customOffersDataSource = CustomOffersLocalDataSource(prefs);
+  ServiceLocator.registerSingleton<CustomOffersLocalDataSource>(
+    customOffersDataSource,
+  );
 
   runApp(const CallForgeApp(home: MainScaffold()));
 }

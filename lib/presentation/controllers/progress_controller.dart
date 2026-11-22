@@ -57,6 +57,19 @@ class ProgressController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updatePreferences({
+    int? targetDailyMinutes,
+    double? preferredSpeechSpeed,
+    String? primaryLearningGoal,
+  }) async {
+    await _progressRepository.updateLearningPreferences(
+      targetDailyMinutes: targetDailyMinutes,
+      preferredSpeechSpeed: preferredSpeechSpeed,
+      primaryLearningGoal: primaryLearningGoal,
+    );
+    await loadProgress();
+  }
+
   DailyWorkoutRecommendation _computeDailyRecommendation(UserProgress prog) {
     final weakestTag = prog.weakestSkillTag;
 

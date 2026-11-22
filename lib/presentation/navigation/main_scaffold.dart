@@ -8,6 +8,7 @@ import '../screens/disclosure_studio_screen.dart';
 import '../screens/floor_skills_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/progress_screen.dart';
+import '../screens/sales_lab_screen.dart';
 import '../screens/voice_arena_screen.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -63,7 +64,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       setState(() {
         _currentIndex = index;
       });
-      if (index == 0 || index == 4) {
+      if (index == 0 || index == 5) {
         _progressController.loadProgress();
       }
     }
@@ -76,6 +77,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       const VoiceArenaScreen(),
       DisclosureStudioScreen(key: _disclosureKey),
       FloorSkillsScreen(key: _floorSkillsKey),
+      const SalesLabScreen(),
       ProgressScreen(progressController: _progressController),
     ];
 
@@ -104,6 +106,11 @@ class _MainScaffoldState extends State<MainScaffold> {
             icon: Icon(Icons.tune_outlined),
             selectedIcon: Icon(Icons.tune_rounded),
             label: 'Floor Skills',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.storefront_outlined),
+            selectedIcon: Icon(Icons.storefront_rounded),
+            label: 'Sales Lab',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),

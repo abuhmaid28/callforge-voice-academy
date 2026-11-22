@@ -16,6 +16,10 @@ class AttemptRecord {
   final String? scriptSnapshot;
   final String? scriptVersion;
   final String? attemptType;
+  final String? salesOutcomeType;
+  final bool? isNoSaleSuccess;
+  final int? curriculumDay;
+  final Map<String, dynamic>? salesScorecard;
 
   const AttemptRecord({
     required this.id,
@@ -32,6 +36,10 @@ class AttemptRecord {
     this.scriptSnapshot,
     this.scriptVersion,
     this.attemptType,
+    this.salesOutcomeType,
+    this.isNoSaleSuccess,
+    this.curriculumDay,
+    this.salesScorecard,
   });
 
   Map<String, dynamic> toMap() {
@@ -50,6 +58,10 @@ class AttemptRecord {
       if (scriptSnapshot != null) 'scriptSnapshot': scriptSnapshot,
       if (scriptVersion != null) 'scriptVersion': scriptVersion,
       if (attemptType != null) 'attemptType': attemptType,
+      if (salesOutcomeType != null) 'salesOutcomeType': salesOutcomeType,
+      if (isNoSaleSuccess != null) 'isNoSaleSuccess': isNoSaleSuccess,
+      if (curriculumDay != null) 'curriculumDay': curriculumDay,
+      if (salesScorecard != null) 'salesScorecard': salesScorecard,
     };
   }
 
@@ -69,6 +81,12 @@ class AttemptRecord {
       scriptSnapshot: map['scriptSnapshot'] as String?,
       scriptVersion: map['scriptVersion'] as String?,
       attemptType: map['attemptType'] as String?,
+      salesOutcomeType: map['salesOutcomeType'] as String?,
+      isNoSaleSuccess: map['isNoSaleSuccess'] as bool?,
+      curriculumDay: map['curriculumDay'] as int?,
+      salesScorecard: map['salesScorecard'] != null
+          ? Map<String, dynamic>.from(map['salesScorecard'] as Map)
+          : null,
     );
   }
 

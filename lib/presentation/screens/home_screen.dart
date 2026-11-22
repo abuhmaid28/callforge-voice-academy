@@ -1,25 +1,101 @@
 import 'package:flutter/material.dart';
 
+import '../../core/di/service_locator.dart';
+import '../../data/datasources/sales_scenario_catalog.dart';
+import '../../data/datasources/scenario_catalog.dart';
+import '../../domain/entities/adaptive_curriculum.dart';
+import '../../domain/repositories/progress_repository.dart';
+import '../controllers/curriculum_controller.dart';
 import '../controllers/progress_controller.dart';
+import '../widgets/curriculum_timeline_view.dart';
 import 'disclosure_studio_screen.dart';
 import 'floor_skills_screen.dart';
 import 'multi_turn_simulator_screen.dart';
+import 'sales_lab_screen.dart';
+import 'sales_simulator_screen.dart';
 import 'voice_arena_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final ProgressController progressController;
 
   const HomeScreen({super.key, required this.progressController});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  CurriculumController? _curriculumController;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ServiceLocator.isRegistered<IProgressRepository>()) {
+      _curriculumController = CurriculumController(
+        progressRepository: ServiceLocator.get<IProgressRepository>(),
+      );
+      _curriculumController!.addListener(_onCurriculumUpdate);
+      _curriculumController!.loadCurriculum();
+    }
+  }
+
+  void _onCurriculumUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _curriculumController?.removeListener(_onCurriculumUpdate);
+    _curriculumController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refreshAll() async {
+    await widget.progressController.loadProgress();
+    if (_curriculumController != null) {
+      await _curriculumController!.loadCurriculum();
+    }
+  }
+
+  void _startDailyWorkout(BuildContext context, DailyWorkoutPlan workout) {
+    final scenarioId = workout.day.primaryScenarioId;
+    if (scenarioId.isNotEmpty) {
+      final salesScenario = SalesScenarioCatalog.findById(scenarioId);
+      if (salesScenario != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SalesSimulatorScreen(
+              scenario: salesScenario,
+              curriculumDay: workout.day.dayNumber,
+            ),
+          ),
+        ).then((_) => _refreshAll());
+        return;
+      }
+
+      final arenaScenario = ScenarioCatalog.findById(scenarioId);
+      if (arenaScenario != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MultiTurnSimulatorScreen(scenario: arenaScenario),
+          ),
+        ).then((_) => _refreshAll());
+        return;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return AnimatedBuilder(
-      animation: progressController,
+      animation: widget.progressController,
       builder: (context, child) {
-        final progress = progressController.progress;
-        final rec = progressController.dailyRecommendation;
+        final progress = widget.progressController.progress;
+        final rec = widget.progressController.dailyRecommendation;
 
         return Scaffold(
           appBar: AppBar(
@@ -74,7 +150,7 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           body: RefreshIndicator(
-            onRefresh: () => progressController.loadProgress(),
+            onRefresh: _refreshAll,
             child: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
@@ -143,7 +219,44 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // Today's Recommended Workout Card
+                // 90-Day Adaptive Academy Timeline
+                if (_curriculumController != null &&
+                    _curriculumController!.progressSummary != null &&
+                    _curriculumController!.activeWorkout != null) ...[
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_month_rounded,
+                        size: 18,
+                        color: Color(0xFF00A3E0),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '90-DAY ADAPTIVE ACADEMY',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  CurriculumTimelineView(
+                    summary: _curriculumController!.progressSummary!,
+                    workout: _curriculumController!.activeWorkout!,
+                    onSelectDuration: (mins) async {
+                      await _curriculumController!.setDuration(mins);
+                      setState(() {});
+                    },
+                    onStartWorkout: () => _startDailyWorkout(
+                      context,
+                      _curriculumController!.activeWorkout!,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Today's Recommended Workout Card (Floor Skills / Arena fallback)
                 if (rec != null) ...[
                   Row(
                     children: [
@@ -253,6 +366,20 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _hubCard(
+                  context: context,
+                  title: 'Sales Mastery Lab',
+                  subtitle: '48 Consultative scenarios, 8 objection drills, 12 discovery drills, and product-fit tool.',
+                  icon: Icons.storefront_rounded,
+                  accentColor: const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SalesLabScreen()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
                 _hubCard(
                   context: context,
                   title: '30-Scenario Voice Arena',

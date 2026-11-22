@@ -241,3 +241,23 @@ This document records the key architectural, technical, and domain decisions mad
   - 100% truthful metrics without uncalibrated acoustic pace claims.
   - Full visibility into failed practice attempts and coaching without false progress increments.
   - Validated by 96 automated tests with zero failures, zero analyzer warnings, and 100% clean formatting.
+
+---
+
+## ADR 015: C2-MEGA Sales Mastery Architecture, 48 Branching Scenarios, Ethical Scorecard, Needs->Fit->Value Engine, and 90-Day Adaptive Academy
+
+- **Status**: ACCEPTED (ADDED 2026-11-22)
+- **Context**: Autonomous Campaign C2 (Issue #7, PR #8) authorizes delivery of Milestone 4 (Sales Mastery Lab) and Milestone 5 (90-Day Adaptive Training Academy). Floor practice requires transitioning from defensive care to consultative selling without violating customer autonomy or making unsupported commitments (rate locks, supervisor callbacks, fee guarantees).
+- **Decision**:
+  1. **48 Branching Sales Scenarios**: Authored 48 distinct multi-turn sales scenarios across 6 core categories (Wireless Upgrade, Fiber Discovery, Add-a-Line, Landline-to-Wireless, Trade-In & EIP, Retention Care-to-Sales). Each scenario features 8–16+ turns, >=2 decision branches, and 3 reachable terminal outcomes (`qualifiedAccept`, `respectfulNoSale`, `needsVerification`).
+  2. **12 Spoken Discovery & 8 Objection Drills**: Created dedicated targeted drills with synthetic TTS customer prompts, open-ended question keywords, and Egyptian Arabic coaching cards.
+  3. **Needs -> Fit -> Value Product Engine & Custom Offers**: Implemented explainable `ProductFitEngine` supporting physical facility guardrails (Fiber address qualification check required prior to commitment, Landline rate-center portability check required) and ethical budget contradiction handling. Implemented on-device `CustomOffersLocalDataSource` allowing agents to author local practice offers without remote cloud dependencies.
+  4. **Ethical Sales Evaluator & Scorecard**: Implemented 7-dimension consultative rubric with `ScorecardRating` (`exemplary`, `proficient`, `developing`, `notAssessed`). Supports ethical "No-Sale Success" honoring customer decisions when products do not fit or customers decline. Deducts a -30 penalty for prohibited promises (rate locks, guaranteed supervisor callbacks, permanent fee waivers).
+  5. **90-Day Adaptive Curriculum Engine**: Built 90-day structured syllabus across 3 phases (Foundations, Sales Confidence, Advanced Closing) and 13 weekly milestones. Generates daily workouts customized for 10/20/30-minute durations with calendar-boundary recovery mode for skipped days.
+  6. **Polished Flutter Sales UX**: Delivered `SalesLabScreen` with 4 tabs, `SalesSimulatorScreen` with caller profile ribbon and phase indicator, `ProductFitScreen`, `ObjectionDrillScreen`, `DiscoveryDrillScreen`, `CurriculumTimelineView`, and updated `MainScaffold` with 6 tab destinations.
+  7. **Automated Verification**: Created comprehensive unit, widget, and integration tests covering all 48 scenarios, 8 objection drills, 12 discovery drills, curriculum engine, sales evaluator, product-fit guardrails, and full app smoke journeys (133 tests passing with 0 failures).
+- **Consequences**:
+  - Delivers a complete enterprise-grade consultative sales and 90-day training academy.
+  - Zero uncalibrated acoustic or revenue KPIs; 100% deterministic, explainable evaluation.
+  - Fully backward-compatible persistence and seamless tab navigation.
+  - Validated by 133 automated tests (0 failures), 0 analyzer warnings, and 100% clean formatting.
