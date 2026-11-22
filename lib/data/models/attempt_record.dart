@@ -12,6 +12,10 @@ class AttemptRecord {
   final List<String> missingAnchors;
   final List<String> pbErrors;
   final String arabicCoaching;
+  final String? scriptTitle;
+  final String? scriptSnapshot;
+  final String? scriptVersion;
+  final String? attemptType;
 
   const AttemptRecord({
     required this.id,
@@ -24,6 +28,10 @@ class AttemptRecord {
     required this.missingAnchors,
     required this.pbErrors,
     required this.arabicCoaching,
+    this.scriptTitle,
+    this.scriptSnapshot,
+    this.scriptVersion,
+    this.attemptType,
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +46,10 @@ class AttemptRecord {
       'missingAnchors': missingAnchors,
       'pbErrors': pbErrors,
       'arabicCoaching': arabicCoaching,
+      if (scriptTitle != null) 'scriptTitle': scriptTitle,
+      if (scriptSnapshot != null) 'scriptSnapshot': scriptSnapshot,
+      if (scriptVersion != null) 'scriptVersion': scriptVersion,
+      if (attemptType != null) 'attemptType': attemptType,
     };
   }
 
@@ -53,6 +65,10 @@ class AttemptRecord {
       missingAnchors: List<String>.from(map['missingAnchors'] ?? []),
       pbErrors: List<String>.from(map['pbErrors'] ?? []),
       arabicCoaching: map['arabicCoaching'] as String,
+      scriptTitle: map['scriptTitle'] as String?,
+      scriptSnapshot: map['scriptSnapshot'] as String?,
+      scriptVersion: map['scriptVersion'] as String?,
+      attemptType: map['attemptType'] as String?,
     );
   }
 

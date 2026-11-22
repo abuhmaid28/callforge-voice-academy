@@ -145,3 +145,99 @@ This document records the key architectural, technical, and domain decisions mad
   - Eliminates dependency on personal hardware while maintaining strict verification rigor.
   - Development continues autonomously with reproducible CI and cloud emulator gates.
   - Zero spending on paid runners or external cloud device labs; runs entirely on standard GitHub-hosted infrastructure.
+
+---
+
+## ADR 011: C1-MEGA Architecture — M2 Disclosure Studio, M3 Floor Skills, and Multi-Turn Voice Arena
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: Issue #4 authorized an autonomous mega-campaign (C1-MEGA) delivering the combined capabilities of M2 (Disclosure Studio) and M3 (Core Floor Care), expanding from single-turn greeting validation to complete multi-turn conversational simulations, legal disclosure tracking, and floor skill drills.
+- **Decision**:
+  1. **6-Tier Typed Provenance Framework**: Integrated `ProvenanceTier` enum into all domain entities, explicitly categorizing content as `userConfirmed`, `officialVerified`, `workReported`, `derivedTraining`, `fictionalSimulation`, or `unknown`.
+  2. **Token-by-Token Karaoke Tracking**: Implemented `DisclosureEvaluator` with Levenshtein-based token alignment, critical term validation (prices, timeframes, penalties), WER, and P/B phonemic alerts.
+  3. **30-Scenario Voice Arena**: Authored 30 comprehensive fictional call scenarios spanning billing proration, fiber troubleshooting, de-escalation, sales discovery, and floor care, with multi-turn branching dialogue trees and Egyptian Arabic coaching cards.
+  4. **Multi-Turn Conversation Evaluator**: Created `MultiTurnEvaluator` combining semantic anchor coverage, AERD (Acknowledge, Empathy, Reassure, Defuse) scoring, and dynamic branch resolution.
+  5. **Floor Skills Drills**: Built dedicated interactive modules for P/B bilabial minimal pair drills and fast numbers & active listening dictation.
+  6. **Feature-First Navigation**: Implemented `MainScaffold` with 5 primary destinations (Today/Home, Voice Arena, Disclosure Studio, Floor Skills, Progress) powered by a lightweight `ServiceLocator`.
+  7. **Deterministic Daily Coach**: Built rule-based daily workout recommendation identifying the user's weakest skill tag without fake AI scoring.
+- **Consequences**:
+  - Delivers complete end-to-end training experience covering greeting, disclosures, de-escalation, and floor drills in one cohesive application.
+  - Maintains 100% backward compatibility with M1 tests and legacy entrypoints.
+  - Fully verified with 67 automated tests and clean static analysis.
+
+---
+
+## ADR 012: C1-R1 Adaptive Scenario Branching, Sequence-Aware Alignment, and Full Product Journeys
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: Independent PR review and Issue #6 identified critical gaps in the initial C1 foundation:
+  1. 120 scenario turns used placeholder `default` branches instead of genuine adaptive branching.
+  2. `DisclosureEvaluator` used unordered bag-of-words matching, permitting scrambled words and missing altered negation words (`not`, `never`, `cannot`).
+  3. Disclosure Studio lacked custom draft CRUD (edit/delete) and reference audio playback.
+  4. Misleading WPM performance grading and "compliance" claims remained in disclosure UI.
+  5. Substring keyword matching in `MultiTurnEvaluator` caused false positives (e.g. `att` matching inside `matter`).
+  6. Bilabial P/B contrast drills always awarded 100% regardless of spoken transcript accuracy.
+  7. Lack of end-to-end integration tests exercising 5-tab user journeys.
+- **Decision**:
+  1. **Dynamic Programming Sequence Alignment**: Upgraded `DisclosureEvaluator` to sequence-aware Needleman-Wunsch / Levenshtein alignment with explicit match, substitution, omission (deletion), and insertion (`TokenMatchStatus.inserted`) tracking.
+  2. **Negation Alteration Safety**: Enforced strict negation word tracking (`{'not', 'no', 'never', 'without', 'only', 'unless', 'cannot', 'cant', 'wont', 'dont'}`). Any omitted or substituted negation immediately invalidates `isTargetMet = false`.
+  3. **Full 6-Turn Adaptive Scenario Trees**: Converted all 30 scenarios in `ScenarioCatalog` into genuine 6-turn adaptive dialogue trees with two distinct reachable branches: Turn 4A/5A (high-AERD resolution) vs Turn 4B/5B (low-AERD objection/recovery), each with tailored customer TTS and non-empty Egyptian Arabic coaching. Supervisor callbacks are explicitly noted as unavailable.
+  4. **Disclosure Draft CRUD & Reference Audio**: Completed local draft update and delete actions with confirmation dialogs, backed by `SharedPreferences` persistence and reference audio playback.
+  5. **Honest Labeling**: Replaced all unvalidated compliance/WPM badges with honest transcript match indicators (`RECOGNIZED TRANSCRIPT MATCH`, `PRACTICE TARGET MET/UNMET`).
+  6. **Token-Aware Regex Keyword Matching**: Enforced word-boundary regex (`\b(att|at and t|at t)\b`) eliminating substring false positives.
+  7. **Spoken P/B Transcript Evaluation**: Updated `FloorSkillsController` to evaluate recognized spoken transcript against target vs contrast words, alerting on bilabial confusion.
+  8. **Full Product Journey Integration Tests**: Created `C1-01` through `C1-04` tests in `test/integration/app_smoke_test.dart` and `integration_test/app_test.dart` exercising the complete 5-tab app.
+- **Consequences**:
+  - Eliminates all default branching placeholders and guarantees pedagogically rich, responsive multi-turn simulations.
+  - Guarantees strict verbatim legal disclosure evaluation that rejects out-of-order and negation-altered speech.
+  - Fully verified across 76 automated unit, widget, and integration tests with zero static analysis issues and 100% Dart formatting.
+
+---
+
+## ADR 013: Strict Mandatory Gates, Locked Disclosure Consent, Versioned Practice Attempts, and Calendar-Day Streaks
+
+- **Status**: ACCEPTED (ADDED 2026-11-21)
+- **Context**: Independent PR #5 review identified six final acceptance criteria required for C1 product completion:
+  1. Opening Turn 1 must strictly gate progression: missing required anchors (Alex, AT&T) or empty audio must remain on Turn 1 and block customer Turn 2.
+  2. Terminal call completion must only be granted upon successful final-turn evaluation, preventing empty audio passes and recording progress at most once.
+  3. Customer consent simulation outcomes (Agreed, Questioned, Refused) in Disclosure Studio must be locked behind successful practice reading (`isTargetMet == true`).
+  4. Fictional scenarios must strictly adhere to floor realities: zero unauthorized commitments to waive activation fees, guarantee rate locks, or promise supervisor callbacks.
+  5. Learning progress requires genuine consecutive calendar-day streak calculation, and attempt history must store versioned script title and snapshot copy.
+  6. Audio lifecycle requires centralized teardown on tab navigation and session generation tokens guarding asynchronous callbacks.
+- **Decision**:
+  1. **Strict Opening & Completion Gates**: Updated `MultiTurnEvaluator` and `MultiTurnController` to enforce that failed Turn 1 greetings and failed terminal turns remain in `MultiTurnState.idle` without advancing or recording premature completion.
+  2. **Locked Consent Outcome Simulation**: Updated `DisclosureStudioScreen` and `DisclosureController` to disable and visually lock consent simulation until a successful practice read is completed (`isTargetMet == true`).
+  3. **Billing Script Policy Sanitization**: Audited all 30 scenarios in `ScenarioCatalog`, removing unauthorized commitments (activation fee waivers, rate locks, supervisor callbacks, replacement guarantees) and substituting realistic conditional dispute requests and billing review flows.
+  4. **Calendar-Day Streak Logic**: Implemented `calculateNewStreak` in `ProgressRepositoryImpl` using date difference math: same day maintains streak, consecutive calendar day increments streak by 1, and gaps of 2+ days reset streak to 1.
+  5. **Versioned Attempt History**: Extended `AttemptRecord` with `scriptTitle`, `scriptSnapshot`, and `attemptType`, persisting complete historical snapshots on disclosure and scenario completion.
+  6. **Centralized Audio Lifecycle & Tab Safety**: Implemented awaited cancellation of speech and playback in `MainScaffold` on destination changes, combined with incrementing session generation counters across all controllers.
+  7. **Negative & Recovery Test Suite**: Added `C1-05` to smoke and emulator integration suites verifying greeting gates, locked consent, and rapid tab switching safety.
+- **Consequences**:
+  - Eliminates all progression loopholes, unauthorized promises, and false progress claims.
+  - Guarantees complete data integrity and backward-compatible persistence.
+  - Validated by 87 automated tests (0 failures), 0 analyzer warnings, and 100% clean formatting.
+
+---
+
+## ADR 014: Stop-Flushed Final Transcript Delivery, Active-Tab Audio Teardown, Complete History Versioning, and Removal of Uncalibrated WPM
+
+- **Status**: ACCEPTED (ADDED 2026-11-22)
+- **Context**: Independent PR #5 review (comment 7070116295) identified final voice reliability and metric precision requirements:
+  1. `stopListening()` race condition in `MultiTurnController`, `DisclosureController`, and `FloorSkillsController`: incrementing session generation tokens prior to awaiting `stopListening()` caused STT engines that flush final recognition results during `stopListening()` to discard their own final recognized transcripts.
+  2. Test harness lacked delayed-final STT test doubles: `MockSpeechService` only delivered final transcripts eagerly during `startListening()`, masking real-world platform channel flush behavior.
+  3. Tab switching away from active recording or TTS in `MainScaffold` cancelled background audio but left screen controllers (`DisclosureStudioScreen`, `FloorSkillsScreen`) in stuck recording/playback states inside the `IndexedStack`.
+  4. Unsupported WPM metrics remained visible in `HistoryScreen` (`${record.wpm} wpm`), making uncalibrated pace claims from word counts.
+  5. Failed practice attempts (disclosures, scenario final turns) were omitted from `AttemptRepository`, making them invisible in history and obscuring Egyptian Arabic coaching, while script versions were missing.
+- **Decision**:
+  1. **Split Session Generation & Safe Stop Token**: Decoupled general session generations from active listening session tokens (`_activeListenSession`). During `stopListening()`, controllers await buffer flush with the active token intact, allowing flushed final transcripts to be captured, and then immediately seal the session token before evaluation.
+  2. **Delayed-Final STT Test Double**: Added `deliverFinalOnStop` mode to `MockSpeechService` to deterministically simulate realistic STT engines where final transcripts arrive during `stopListening()`.
+  3. **Active-Tab Controller Teardown**: Added `GlobalKey` references and `resetAudioSession()` methods to `DisclosureStudioScreenState` and `FloorSkillsScreenState` in `MainScaffold`. Switching away from either tab now resets both the speech engine and the active screen controller to `idle`.
+  4. **Removal of Visible WPM**: Removed `${record.wpm} wpm` from `HistoryScreen`, replacing it with attempt badges (`TARGET MET` / `NEEDS PRACTICE`, attempt type chips) and script version tags. Set recorded `wpm: 0` in active controllers while maintaining backward-compatible model field serialization.
+  5. **Comprehensive Failed-Attempt History & Script Versions**: Added `scriptVersion` to `AttemptRecord`. Persist failed disclosure readings and failed scenario final turns in `AttemptRepository` (`passed: false`, `wpm: 0`) without inflating `totalDisclosuresCompleted` or `totalSimulationsCompleted` in `UserProgress`.
+  6. **Regression Coverage**: Added deterministic unit, widget, and integration tests covering delayed-final delivery, tab-switching cancellation, and WPM absence.
+- **Consequences**:
+  - Zero transcript loss regardless of whether STT delivers tokens during recording or stop buffer flush.
+  - Zero stuck controller states when switching tabs.
+  - 100% truthful metrics without uncalibrated acoustic pace claims.
+  - Full visibility into failed practice attempts and coaching without false progress increments.
+  - Validated by 96 automated tests with zero failures, zero analyzer warnings, and 100% clean formatting.

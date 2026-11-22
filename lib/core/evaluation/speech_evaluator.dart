@@ -31,6 +31,7 @@ class SpeechEvaluator {
   static String normalize(String text) {
     return text
         .toLowerCase()
+        .replaceAll('-', ' ')
         .replaceAll(RegExp(r"[^\w\s&]"), '') // keep words, spaces, &
         .replaceAll('&', ' and ')
         .replaceAll(RegExp(r'\s+'), ' ') // collapse whitespace

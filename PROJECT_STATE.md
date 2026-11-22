@@ -1,12 +1,13 @@
 # PROJECT_STATE.md — Current Project Status
 
 **Repository**: `https://github.com/abuhmaid28/callforge-voice-academy`  
-**Current Branch**: `feat/m1-voice-prototype` (M1 Remediation, Reliability & Hosted CI Verification)  
-**Pull Request**: [#2](https://github.com/abuhmaid28/callforge-voice-academy/pull/2) (`mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`)  
-**Active Issue**: [#3](https://github.com/abuhmaid28/callforge-voice-academy/issues/3) (TASK 005 — Phone-free CI and hosted Android Emulator acceptance)  
-**Verified CI Run**: [Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356) (`ALL JOBS PASSED`)  
-**Verified Remote HEAD**: `f2e1513e7ddee5196c34722b33b52503d37f798b`  
-**Last Updated**: 2026-11-21
+**Base Commit**: `40f2c0438c415b53b961d353a7c67b62494266a0` (Approved M1 Squash Merge on `main`)  
+**Current Branch**: `feat/c1-mega-disclosure-floor-skills` (C1-R1 MEGA Autonomous Recovery Campaign)  
+**Active PR**: [#5](https://github.com/abuhmaid28/callforge-voice-academy/pull/5)  
+**Active Issue**: [#6](https://github.com/abuhmaid28/callforge-voice-academy/issues/6) (C1-R1 MEGA Recovery: Adaptive Branching, Order-Safe Alignment, & Product Journeys)  
+**Active Milestone**: C1 Final Closeout (M2 Disclosure Studio + M3 Floor Skills Remediation)  
+**Test Suite**: 96 automated tests passing (`flutter test`) | Static Analysis: Clean (`flutter analyze`) | Dart Format: 100% compliant  
+**Last Updated**: 2026-11-22
 
 ---
 
@@ -17,46 +18,53 @@
 | **Flutter SDK** | `VERIFIED` | Flutter 3.47.0 (Channel stable, Dart 3.13.0) at `C:\src\flutter` |
 | **Android SDK** | `VERIFIED` | Android SDK 36.0.0, Platform android-37.0 at `C:\Android\Sdk` |
 | **Java JDK** | `VERIFIED` | OpenJDK 25.0.2 at `C:\Program Files\Android\Android Studio\jbr` |
-| **Android Licenses**| `VERIFIED` | All Android licenses accepted |
 | **GitHub CLI** | `VERIFIED` | Authenticated as `abuhmaid28` via git operations protocol HTTPS |
 | **Hardware Environment**| `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
 | **Verification Strategy**| `VERIFIED` | Phone-free hosted Linux CI (GitHub Actions) & Android Emulator integration tests (ADR 010) |
-| **PR Mergeability**| `CLEAN` | Verified via GitHub API (`mergeable: MERGEABLE`, zero git merge conflicts) |
+| **Automated Tests** | `VERIFIED` | 87 tests passing (unit, widget, integration) |
 
 ---
 
-## 🎯 Active Milestone: M1 — Voice Prototype & Inbound Greeting Simulator
+## 🎯 Active Milestone: C1-R1 MEGA Remediation & Completion
 
-- [x] Phase 1: Environment verification & Git origin connection.
-- [x] Phase 2: Bootstrap project documentation & GitHub milestones/issues (Milestone #1, Issue #1).
-- [x] Phase 3: Production-quality voice architecture & Android prototype design.
-- [x] Phase 4: Implement Flutter M1 voice prototype on `feat/m1-voice-prototype`.
-- [x] Task 002 Remediation & Foundation Truth Audit:
-  - [x] Source Provenance Framework established across documentation (`[User-Confirmed Workflow]`, `[Official Public Verified Information]`, `[Work-Reported Information]`, `[Derived Training Material]`, `[Fictional / Simulation Only]`, `[UNKNOWN]`).
-  - [x] Removed invented employer policies (supervisor callbacks are not available in user's process `[Work-Reported Information]`; arbitrary 2-attempt de-escalation rule and promotional delay claims removed).
-  - [x] Restored technical roadmap structure (M0–M6) while preserving all 10 pedagogical modules.
-  - [x] Corrected speech evaluation integrity: Recognized-Text Similarity, Token Error Rate, estimated session pace, educational P/B awareness alerts. Removed false claims of acoustic native pronunciation or official employer QA compliance.
-  - [x] Corrected inbound simulation sequence: Alex delivers opening greeting first (Turn 1), customer responds via TTS upon target confirmation (Turn 2).
-  - [x] Hardened audio lifecycle and speech recognizer resilience (specific error translations, timeout watchdog, permission handling, offline guidance, cancel/retry cleanup).
-  - [x] Clarified synthetic waveform as a simulated activity visualizer, not a hardware microphone amplitude meter.
-- [x] Task 003 Final M1 Reliability & Review Hardening:
-  - [x] Replaced substring anchor matching with token-boundary evaluation to eliminate false positives (`matter`, `Alexander`, `firstname`, `lastname`).
-  - [x] Added recognition of AT&T speech-to-text rendering variations (`att`, `at&t`, `at and t`, `at t`, `a t and t`).
-  - [x] Audio session generation IDs (`_sessionGeneration`) preventing duplicate callbacks and stale completions.
-  - [x] Reconciled M0–M6 technical roadmap with product requirements and all 10 curriculum modules in `docs/ROADMAP.md`.
-- [x] Task 004 Physical Android Voice Acceptance & Review Hardening:
-  - [x] Unified canonical ST-01 through ST-11 checklist in `docs/QA_ACCEPTANCE.md`.
-  - [x] Corrected ADB launch command package ID in `docs/QA_ACCEPTANCE.md` from `com.callforge.voice_academy` to `com.callforge.callforge`.
-  - [x] Renamed verbatim banner to `VERBATIM TRANSCRIPT MATCH (100% Text Match)` to avoid misrepresenting transcript match as acoustic pronunciation.
-  - [x] Removed uncalibrated WPM badge from coaching UI until calibrated audio timing is integrated.
-  - [x] Fixed audio lifecycle races: `retry()` awaits `stopSpeaking()` and cancels listening; `_handleSpeechError` ignores stale errors outside listening/processing; `_deliverFinalTranscript` preserves `customerSpeaking` state.
-- [x] Task 005 Phone-Free Hosted CI & Cloud Android Emulator Acceptance (Issue #3):
-  - [x] GitHub Actions workflow `.github/workflows/ci.yml` committed at `f2e1513e7ddee5196c34722b33b52503d37f798b`.
-  - [x] Automated quality & build job verified in CI ([Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356)): format, analyze, 31 tests, and debug APK build passed in 6m 4s.
-  - [x] Hosted Android Emulator job verified in CI ([Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356)): booted API 34 Pixel 6 AVD on KVM, installed APK, executed `integration_test/app_test.dart`, all tests passed in 11m 17s.
-  - [x] Replaced obsolete mandatory personal phone testing with hosted CI and Android Emulator verification in `docs/QA_ACCEPTANCE.md` and `docs/ROADMAP.md`.
-  - [x] Documented ADR 010 in `DECISIONS.md`.
-  - [x] Strict boundary enforced: Speech test doubles simulate state transitions and text evaluation; real physical microphone acoustics and physical offline voice packs remain designated `NOT TESTED / UNVERIFIED (Awaiting Real Device or Simulated Hardware Environment)`.
+- [x] **Phase 1 — Genuine Adaptive Branching Across All 30 Scenarios**:
+  - Replaced all 120 default-branching placeholders across 30 scenarios with complete 6-turn adaptive dialogue trees.
+  - Structured every scenario with two reachable, distinct branches: Turn 4A / 5A (high-AERD resolution) and Turn 4B / 5B (low-AERD objection/recovery).
+  - Tailored customer TTS responses and rich Egyptian Arabic trainer coaching for every turn; supervisor callbacks explicitly documented as absent.
+- [x] **Phase 2 — Sequence-Aware Dynamic Programming Disclosure Alignment**:
+  - Replaced unordered token matching in `DisclosureEvaluator` with sequence-aware Needleman-Wunsch / Levenshtein alignment.
+  - Added explicit token tracking: matched, substituted, missing (deleted), and inserted (`TokenMatchStatus.inserted`).
+  - Added strict negation word tracking (`not`, `no`, `never`, `without`, `only`, `unless`, `cannot`, etc.); any omitted or substituted negation immediately invalidates target met.
+  - Added 6th fictional script `disc-cpni-06` (`Customer Account Privacy & CPNI Authentication`) in `DisclosureCatalog`.
+- [x] **Phase 3 — Disclosure Studio Local Draft Management & Reference Audio**:
+  - Added custom draft editing bottom sheet and delete confirmation dialogs in `DisclosureStudioScreen`.
+  - Added reference audio playback (`playReferenceAudio`, `stopReferenceAudio`) in `DisclosureController` and screen header.
+  - Replaced misleading WPM/compliance labels with honest indicators: `RECOGNIZED TRANSCRIPT MATCH`, `PRACTICE TARGET MET/UNMET`.
+- [x] **Phase 4 — Hardened Multi-Turn Dialogue & Keyword Matching**:
+  - Enforced word-boundary regex (`\b(att|at and t|at t)\b`) in `MultiTurnEvaluator` to eliminate substring false positives like `matter`.
+  - Added `retryCurrentTurn()` in `MultiTurnController` to reset failed turns cleanly without history pollution.
+- [x] **Phase 5 — Spoken Floor Skills Evaluation**:
+  - Evaluated recognized speech against target vs contrast words in `FloorSkillsController`, detecting bilabial confusion instead of hardcoding 100%.
+- [x] **Phase 6 — Cross-Tab Audio Safety**:
+  - Added automatic audio stopping and cancellation on bottom navigation destination changes in `MainScaffold`.
+- [x] **Phase 7 — Comprehensive Product Journey Integration Tests**:
+  - Created canonical `C1-01` through `C1-04` integration tests in `test/integration/app_smoke_test.dart` and `integration_test/app_test.dart` exercising the complete 5-tab user journeys.
+- [x] **Phase 8 — C1-R1 Final Acceptance Remediation (Six Findings)**:
+  - **B1**: Strict Turn 1 greeting gate enforced in `MultiTurnEvaluator` and `MultiTurnController`: missing Alex/AT&T or empty audio remains on Turn 1 in idle state and blocks customer Turn 2.
+  - **B2**: Final-turn completion gate enforced: failed final turn remains in idle state; simulation completion and progress recording only occur on successful completion, exactly once.
+  - **B3**: Disclosure consent simulation outcome buttons (`AGREED`, `QUESTIONED`, `REFUSED`) locked behind successful practice reading (`isTargetMet == true`) in UI and guarded in `DisclosureController.playCustomerResponse`.
+  - **B4**: Policy-sanitized all 30 billing scenarios in `ScenarioCatalog`, removing unauthorized fee waivers, rate locks, supervisor callback promises, and replacement guarantees; validated via Policy Guard unit test.
+  - **B5**: Versioned local practice history implemented in `AttemptRecord` (`scriptTitle`, `scriptSnapshot`, `attemptType`); consecutive calendar-day streak logic implemented in `ProgressRepositoryImpl.calculateNewStreak` (same-day maintains, next-day increments, 2+ day gap resets to 1).
+  - **B6**: Centralized awaited teardown of speech/audio on navigation destination change in `MainScaffold`; session generation token guards in all controllers preventing cross-tab audio leaks.
+  - **C1-05**: Added Negative & Recovery Journey integration test covering greeting gates, locked consent, and rapid tab switching across local smoke and hosted Android emulator suites.
+  - 87 total automated tests passing cleanly with 0 static analysis issues and 100% formatted Dart code.
+- [x] **Phase 9 — C1 Final Closeout (Voice Reliability & History Metrics Remediation)**:
+  - **Stop-Flushed Final Transcript Delivery**: Eliminated `stopListening()` race condition in `MultiTurnController`, `DisclosureController`, and `FloorSkillsController`. Retained active session token while awaiting `stopListening()`, allowing buffer-flushed tokens to be captured before sealing session.
+  - **Delayed-Final STT Test Double**: Implemented `deliverFinalOnStop` mode on `MockSpeechService` to deterministically verify that transcripts delivered during `stopListening()` are evaluated without data loss.
+  - **Active-Tab Controller Teardown**: Implemented `resetAudioSession()` across `DisclosureStudioScreenState` and `FloorSkillsScreenState`, invoked via `GlobalKey` in `MainScaffold` on destination changes, cleanly returning screens to idle without stuck states.
+  - **Removal of Visible WPM**: Removed `${record.wpm} wpm` display from `HistoryScreen`, replacing with status badges and attempt type chips. Set `wpm: 0` in active controllers while preserving model fields for backward-compatible serialization.
+  - **Complete Failed-Attempt History & Script Versions**: Added `scriptVersion` to `AttemptRecord`. Persisted failed disclosure readings and failed scenario final turns in `AttemptRepository` (`passed: false`, `wpm: 0`) without inflating completion counters in `UserProgress`.
+  - 96 total automated tests passing cleanly with 0 static analysis issues and 100% formatted Dart code.
 
 ---
 
@@ -64,24 +72,13 @@
 
 | Module | Curriculum Focus | Technical Milestone | Status | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Real Voice Call Simulator** | Spoken roleplay | M1 & M3 | `IN PROGRESS` | M1 delivers Turn 1 greeting & customer response; M3 expands to full multi-turn branching. |
-| **2. Disclosure Reading & Pronunciation** | Legal disclosures & phonetics | M2 | `PLANNED` | Verbatim karaoke tracking and P/B phonemic contrast learning suite. |
-| **3. American English Listening & Speaking** | Dialects & fast speech | M3 | `PLANNED` | Conversational pacing & active listening extraction. |
-| **4. AERD and Call Control** | Steering & de-escalation | M3 | `PLANNED` | Acknowledge, Empathy, Reassure, Defuse framework without dead air. |
-| **5. AT&T Product Knowledge** | Plan & device training | M4 | `PLANNED` | Fictionalized Fiber, Unlimited, and EIP trade-in catalog (`[Fictional / Simulation Only]`). |
-| **6. Sales Discovery and Conversion** | Consultative sales | M4 | `PLANNED` | Open-ended discovery questioning and value bridging. |
-| **7. Billing and Technical Troubleshooting** | Bill breakdown & tech reset | M3 | `PLANNED` | Fictionalized proration and diagnostic drills. |
-| **8. Escalation and Angry Customers** | High stress calls | M3 | `PLANNED` | De-escalation matrix & authorized transfer etiquette (`[UNKNOWN]` proprietary rules omitted). |
-| **9. KPI and Quality Tracking** | Handling pace & scorecard | M5 | `PLANNED` | Practice metrics; not official employer QA. |
-| **10. Adaptive 90-Day Learning System** | Long-term progression | M5 | `PLANNED` | Progressive 90-day trajectory from Nesting to Elite Master. |
-
----
-
-## 🔍 Verification Status & Merge Recommendation
-
-1. **Testing Status**:
-   - Verification is completed and verified green on GitHub Actions CI ([Run 44938049356](https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/44938049356)).
-   - Both `quality_and_build` and `android_emulator_integration` jobs passed.
-   - User's personal phone and local Windows PC hardware scans remain completely uninvolved.
-2. **Merge Recommendation**:
-   - **DO NOT MERGE PR #2** without explicit Product Owner authorization. M2 development remains unauthorized until M1 is officially accepted.
+| **1. Real Voice Call Simulator** | Spoken roleplay | M1 & M3 | `IMPLEMENTED` | Multi-turn branching simulation cockpit with 30 scenarios. |
+| **2. Disclosure Reading & Pronunciation** | Legal disclosures & phonetics | M2 | `IMPLEMENTED` | Karaoke tracking, critical terms checking, customer consent, P/B drills. |
+| **3. American English Listening & Speaking** | Dialects & fast speech | M3 | `IMPLEMENTED` | Fast numbers & IMEI active listening dictation drills. |
+| **4. AERD and Call Control** | Steering & de-escalation | M3 | `IMPLEMENTED` | AERD scoring engine with Egyptian Arabic coaching cards. |
+| **5. AT&T Product Knowledge** | Plan & device training | M4 | `IMPLEMENTED (PARTIAL)` | Fictionalized Fiber, Unlimited, and EIP trade-in scenarios (`[Fictional / Simulation Only]`). |
+| **6. Sales Discovery and Conversion** | Consultative sales | M4 | `IMPLEMENTED (PARTIAL)` | Discovery questioning in scenarios 20, 24, 27, 28, 30. |
+| **7. Billing and Technical Troubleshooting** | Bill breakdown & tech reset | M3 | `IMPLEMENTED` | Proration, billing cycles, red light gateway, and move orders. |
+| **8. Escalation and Angry Customers** | High stress calls | M3 | `IMPLEMENTED` | Supervisor demand, transfer frustration, and line suspension care. |
+| **9. KPI and Quality Tracking** | Handling pace & scorecard | M5 | `IN PROGRESS` | Local progress tracking, daily streaks, and skill mastery radar. |
+| **10. Adaptive 90-Day Learning System** | Long-term progression | M5 | `IN PROGRESS` | Daily workout recommendations based on weakest skill tag. |
