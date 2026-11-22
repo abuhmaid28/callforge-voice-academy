@@ -137,6 +137,95 @@ class ProgressRepositoryImpl implements IProgressRepository {
   }
 
   @override
+  Future<void> recordSalesSimulationCompletion({
+    required String scenarioId,
+    required List<String> skillTags,
+    required double score,
+    required bool isNoSaleSuccess,
+  }) async {
+    final current = await _dataSource.getProgress();
+    final updatedSales = List<String>.from(current.completedSalesScenarioIds);
+    if (!updatedSales.contains(scenarioId)) {
+      updatedSales.add(scenarioId);
+    }
+
+    final updatedMastery = Map<String, double>.from(current.skillMastery);
+    final normalizedScore = (score / 100.0).clamp(0.0, 1.0);
+    for (final tag in skillTags) {
+      final prev = updatedMastery[tag] ?? 0.5;
+      updatedMastery[tag] = ((prev * 0.7) + (normalizedScore * 0.3)).clamp(
+        0.0,
+        1.0,
+      );
+    }
+    // Boost consultative sales mastery tag
+    const salesTag = 'Sales Mastery';
+    final prevSales = updatedMastery[salesTag] ?? 0.5;
+    updatedMastery[salesTag] = ((prevSales * 0.7) + (normalizedScore * 0.3))
+        .clamp(0.0, 1.0);
+
+    final today = _getTodayDateString();
+    final newStreak = calculateNewStreak(
+      currentStreak: current.streakDays,
+      lastPracticeDateStr: current.lastPracticeDate,
+    );
+
+    final updated = current.copyWith(
+      streakDays: newStreak,
+      lastPracticeDate: today,
+      totalSalesScenariosCompleted: current.totalSalesScenariosCompleted + 1,
+      skillMastery: updatedMastery,
+      completedSalesScenarioIds: updatedSales,
+    );
+
+    await _dataSource.saveProgress(updated);
+  }
+
+  @override
+  Future<void> recordCurriculumDayCompletion({
+    required int dayNumber,
+    required double score,
+  }) async {
+    final current = await _dataSource.getProgress();
+    final updatedDays = List<int>.from(current.completedCurriculumDays);
+    if (!updatedDays.contains(dayNumber)) {
+      updatedDays.add(dayNumber);
+      updatedDays.sort();
+    }
+
+    final nextDay = (dayNumber < 90) ? dayNumber + 1 : 90;
+    final today = _getTodayDateString();
+    final newStreak = calculateNewStreak(
+      currentStreak: current.streakDays,
+      lastPracticeDateStr: current.lastPracticeDate,
+    );
+
+    final updated = current.copyWith(
+      streakDays: newStreak,
+      lastPracticeDate: today,
+      currentCurriculumDay: nextDay,
+      completedCurriculumDays: updatedDays,
+    );
+
+    await _dataSource.saveProgress(updated);
+  }
+
+  @override
+  Future<void> updateLearningPreferences({
+    int? targetDailyMinutes,
+    double? preferredSpeechSpeed,
+    String? primaryLearningGoal,
+  }) async {
+    final current = await _dataSource.getProgress();
+    final updated = current.copyWith(
+      targetDailyMinutes: targetDailyMinutes,
+      preferredSpeechSpeed: preferredSpeechSpeed,
+      primaryLearningGoal: primaryLearningGoal,
+    );
+    await _dataSource.saveProgress(updated);
+  }
+
+  @override
   Future<void> resetAllProgress() async {
     await _dataSource.clearProgress();
   }

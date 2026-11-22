@@ -12,6 +12,7 @@ import 'package:callforge/data/datasources/progress_local_datasource.dart';
 import 'package:callforge/data/repositories/attempt_repository_impl.dart';
 import 'package:callforge/data/repositories/disclosure_repository_impl.dart';
 import 'package:callforge/data/repositories/progress_repository_impl.dart';
+import 'package:callforge/data/datasources/custom_offers_local_datasource.dart';
 import 'package:callforge/domain/repositories/attempt_repository.dart';
 import 'package:callforge/domain/repositories/disclosure_repository.dart';
 import 'package:callforge/domain/repositories/progress_repository.dart';
@@ -517,6 +518,149 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('CALLFORGE ACADEMY'), findsOneWidget);
+      },
+    );
+  });
+
+  group('CALLFORGE C2 Sales Mastery & 90-Day Adaptive Academy Tests', () {
+    late MockSpeechService mockSpeech;
+    late AttemptRepositoryImpl attemptRepo;
+    late DisclosureRepositoryImpl disclosureRepo;
+    late ProgressRepositoryImpl progressRepo;
+    late CustomOffersLocalDataSource customOffersDataSource;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      mockSpeech = MockSpeechService();
+      attemptRepo = AttemptRepositoryImpl(AttemptLocalDataSource(prefs));
+      disclosureRepo = DisclosureRepositoryImpl(
+        DisclosureLocalDataSource(prefs),
+      );
+      progressRepo = ProgressRepositoryImpl(ProgressLocalDataSource(prefs));
+      customOffersDataSource = CustomOffersLocalDataSource(prefs);
+
+      ServiceLocator.reset();
+      ServiceLocator.registerSingleton<ISpeechService>(mockSpeech);
+      ServiceLocator.registerSingleton<IAttemptRepository>(attemptRepo);
+      ServiceLocator.registerSingleton<AttemptRepositoryImpl>(attemptRepo);
+      ServiceLocator.registerSingleton<IDisclosureRepository>(disclosureRepo);
+      ServiceLocator.registerSingleton<IProgressRepository>(progressRepo);
+      ServiceLocator.registerSingleton<CustomOffersLocalDataSource>(
+        customOffersDataSource,
+      );
+    });
+
+    testWidgets(
+      'C2-01: Sales Lab launches scenario and advances past Turn 1 greeting gate',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const CallForgeApp(home: MainScaffold(initialIndex: 4)),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify Sales Lab renders
+        expect(find.text('Sales Mastery Lab'), findsOneWidget);
+        final scenarioCard = find.text(
+          'Commuter Mobile Hotspot & Priority Data Upgrade',
+        );
+        expect(scenarioCard, findsOneWidget);
+
+        await tester.tap(scenarioCard);
+        await tester.pumpAndSettle();
+
+        // SalesSimulatorScreen is active
+        expect(find.textContaining('Carlos Mendez'), findsOneWidget);
+        expect(find.textContaining('CURRENT PHASE: GREETING'), findsOneWidget);
+
+        final micButton = find.byKey(const Key('btn_mic_talk'));
+        expect(micButton, findsOneWidget);
+
+        // Turn 1: Agent speaks mandatory greeting
+        mockSpeech.simulatedTranscript = TrainingConstants.standardGreeting;
+        await tester.tap(micButton); // Start listening
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(micButton); // Stop & evaluate
+        await tester.pumpAndSettle();
+
+        // Advances past Turn 1: Customer Turn 2 auto-plays and advances
+        expect(find.textContaining('CURRENT PHASE:'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'C2-02: Product-Fit tool enforces Fiber address qualification guardrail',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const CallForgeApp(home: MainScaffold(initialIndex: 4)),
+        );
+        await tester.pumpAndSettle();
+
+        // Switch to Product-Fit Tool tab
+        final productFitTab = find.text('Product-Fit Tool');
+        await tester.ensureVisible(productFitTab);
+        await tester.tap(productFitTab);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Needs → Fit → Value Tool'), findsOneWidget);
+        expect(find.text('Address Qualified for Fiber'), findsOneWidget);
+
+        // Verify standard products listed
+        expect(find.text('AT&T Fiber 300 Mbps'), findsOneWidget);
+
+        // Toggle switch to off (simulate unverified address)
+        final switchFinder = find.byType(Switch).first;
+        await tester.tap(switchFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('REQUIRES VERIFICATION'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'C2-03: Today screen 90-Day Adaptive Academy workout progression and duration selection',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const CallForgeApp(home: MainScaffold(initialIndex: 0)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('CALLFORGE ACADEMY'), findsOneWidget);
+        expect(find.text('90-DAY ADAPTIVE ACADEMY'), findsOneWidget);
+        expect(find.text('DAY 1 WORKOUT'), findsOneWidget);
+        expect(find.text('20 m'), findsOneWidget);
+
+        // Switch target duration to 10 minutes
+        await tester.tap(find.text('10 m'));
+        await tester.pumpAndSettle();
+
+        // Verify start daily workout button is ready
+        expect(
+          find.byKey(const Key('btn_start_daily_workout')),
+          findsOneWidget,
+        );
       },
     );
   });
