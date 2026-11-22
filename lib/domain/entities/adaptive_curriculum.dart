@@ -10,6 +10,98 @@ enum CurriculumPhaseType {
   phase3AdvancedClosing,
 }
 
+/// The type of step in a multi-step daily workout queue.
+enum WorkoutStepType {
+  /// A preliminary speech, phonemic, or discovery warm-up drill.
+  warmupDrill,
+
+  /// The core simulated multi-turn customer scenario of the day.
+  primaryScenario,
+
+  /// A secondary drill to challenge the agent on objections or number recognition.
+  challengeDrill,
+
+  /// Structured pedagogical review of coaching points and scorecard metrics.
+  coachingReview,
+}
+
+/// A discrete actionable task within a daily workout session.
+class WorkoutStep {
+  final String id;
+  final String title;
+  final String titleArabic;
+  final String description;
+  final WorkoutStepType type;
+  final String targetId; // scenario ID or drill ID
+  final String?
+  drillType; // 'objection', 'discovery', 'pb_contrast', 'fast_numbers'
+  final int estimatedMinutes;
+  final bool isCompleted;
+
+  const WorkoutStep({
+    required this.id,
+    required this.title,
+    this.titleArabic = '',
+    required this.description,
+    required this.type,
+    required this.targetId,
+    this.drillType,
+    required this.estimatedMinutes,
+    this.isCompleted = false,
+  });
+
+  WorkoutStep copyWith({
+    String? id,
+    String? title,
+    String? titleArabic,
+    String? description,
+    WorkoutStepType? type,
+    String? targetId,
+    String? drillType,
+    int? estimatedMinutes,
+    bool? isCompleted,
+  }) {
+    return WorkoutStep(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      titleArabic: titleArabic ?? this.titleArabic,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      targetId: targetId ?? this.targetId,
+      drillType: drillType ?? this.drillType,
+      estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'titleArabic': titleArabic,
+    'description': description,
+    'type': type.name,
+    'targetId': targetId,
+    if (drillType != null) 'drillType': drillType,
+    'estimatedMinutes': estimatedMinutes,
+    'isCompleted': isCompleted,
+  };
+
+  factory WorkoutStep.fromJson(Map<String, dynamic> json) => WorkoutStep(
+    id: json['id'] as String,
+    title: json['title'] as String,
+    titleArabic: json['titleArabic'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    type: WorkoutStepType.values.firstWhere(
+      (t) => t.name == json['type'],
+      orElse: () => WorkoutStepType.primaryScenario,
+    ),
+    targetId: json['targetId'] as String,
+    drillType: json['drillType'] as String?,
+    estimatedMinutes: json['estimatedMinutes'] as int? ?? 5,
+    isCompleted: json['isCompleted'] as bool? ?? false,
+  );
+}
+
 /// Metadata and assignment for an individual day in the 90-day program.
 class CurriculumDay {
   final int dayNumber; // 1..90
@@ -77,6 +169,7 @@ class DailyWorkoutPlan {
   final DateTime scheduledDate;
   final DateTime? completedAt;
   final double? scoreEarned;
+  final List<WorkoutStep> steps;
 
   const DailyWorkoutPlan({
     required this.day,
@@ -86,6 +179,7 @@ class DailyWorkoutPlan {
     required this.scheduledDate,
     this.completedAt,
     this.scoreEarned,
+    this.steps = const [],
   });
 
   DailyWorkoutPlan copyWith({
@@ -96,6 +190,7 @@ class DailyWorkoutPlan {
     DateTime? scheduledDate,
     DateTime? completedAt,
     double? scoreEarned,
+    List<WorkoutStep>? steps,
   }) {
     return DailyWorkoutPlan(
       day: day ?? this.day,
@@ -105,6 +200,7 @@ class DailyWorkoutPlan {
       scheduledDate: scheduledDate ?? this.scheduledDate,
       completedAt: completedAt ?? this.completedAt,
       scoreEarned: scoreEarned ?? this.scoreEarned,
+      steps: steps ?? this.steps,
     );
   }
 
@@ -116,6 +212,7 @@ class DailyWorkoutPlan {
     'scheduledDate': scheduledDate.toIso8601String(),
     if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
     if (scoreEarned != null) 'scoreEarned': scoreEarned,
+    'steps': steps.map((s) => s.toJson()).toList(),
   };
 
   factory DailyWorkoutPlan.fromJson(Map<String, dynamic> json) =>
@@ -129,6 +226,11 @@ class DailyWorkoutPlan {
             ? DateTime.parse(json['completedAt'] as String)
             : null,
         scoreEarned: (json['scoreEarned'] as num?)?.toDouble(),
+        steps:
+            (json['steps'] as List<dynamic>?)
+                ?.map((e) => WorkoutStep.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
       );
 }
 

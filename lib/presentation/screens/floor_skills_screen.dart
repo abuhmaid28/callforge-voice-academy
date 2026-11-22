@@ -7,7 +7,14 @@ import '../controllers/floor_skills_controller.dart';
 import '../widgets/waveform_indicator.dart';
 
 class FloorSkillsScreen extends StatefulWidget {
-  const FloorSkillsScreen({super.key});
+  final FloorDrillType? initialDrillType;
+  final String? initialDrillId;
+
+  const FloorSkillsScreen({
+    super.key,
+    this.initialDrillType,
+    this.initialDrillId,
+  });
 
   @override
   State<FloorSkillsScreen> createState() => FloorSkillsScreenState();
@@ -35,6 +42,18 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
       speechService: speechService,
       progressRepository: progressRepo,
     );
+
+    if (widget.initialDrillType != null && widget.initialDrillId != null) {
+      _controller.selectDrillById(
+        widget.initialDrillType == FloorDrillType.fastNumbers
+            ? 'fast_numbers'
+            : 'pb_contrast',
+        widget.initialDrillId!,
+      );
+    } else if (widget.initialDrillType != null) {
+      _controller.selectDrillType(widget.initialDrillType!);
+    }
+
     _controller.addListener(_onUpdate);
   }
 

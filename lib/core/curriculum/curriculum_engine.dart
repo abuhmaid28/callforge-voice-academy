@@ -56,6 +56,8 @@ class CurriculumEngine {
       }
     }
 
+    final steps = _generateWorkoutSteps(day, chosenMinutes);
+
     return DailyWorkoutPlan(
       day: day,
       chosenMinutes: chosenMinutes,
@@ -64,7 +66,100 @@ class CurriculumEngine {
       scheduledDate: now,
       completedAt: completedAt,
       scoreEarned: scoreEarned,
+      steps: steps,
     );
+  }
+
+  static List<WorkoutStep> _generateWorkoutSteps(
+    CurriculumDay day,
+    int minutes,
+  ) {
+    final steps = <WorkoutStep>[];
+    final dayNum = day.dayNumber;
+
+    // Step 1: Warm-up Drill
+    final warmupDrillType = day.drillType ?? 'pb_contrast';
+    final warmupDrillId = day.drillId ?? 'pb-01-payment';
+    final warmupMins = minutes == 10 ? 3 : (minutes == 20 ? 4 : 5);
+
+    steps.add(
+      WorkoutStep(
+        id: 'step-warmup-$dayNum',
+        title: 'Warm-up Drill: ${day.focusSkillTag}',
+        titleArabic: 'إحماء صوتي ومهاري',
+        description: 'Sharpen vocal delivery, terminology, and phonemic awareness before live customer interaction.',
+        type: WorkoutStepType.warmupDrill,
+        targetId: warmupDrillId,
+        drillType: warmupDrillType,
+        estimatedMinutes: warmupMins,
+      ),
+    );
+
+    // Step 2: Primary Simulated Scenario
+    final primaryMins = minutes == 10 ? 7 : (minutes == 20 ? 12 : 15);
+    steps.add(
+      WorkoutStep(
+        id: 'step-primary-$dayNum',
+        title: 'Primary Scenario: ${day.themeTitle}',
+        titleArabic: day.themeTitleArabic,
+        description: 'Execute the core interactive multi-turn scenario adhering to mandatory opening, empathy, and disclosure standards.',
+        type: WorkoutStepType.primaryScenario,
+        targetId: day.primaryScenarioId,
+        estimatedMinutes: primaryMins,
+      ),
+    );
+
+    // Step 3 for 30 minutes: Challenge Drill
+    if (minutes >= 30) {
+      String challengeType = 'objection';
+      String challengeId = 'obj-01-not-interested';
+
+      if (day.phase == CurriculumPhaseType.phase1Foundations) {
+        if (warmupDrillType == 'pb_contrast') {
+          challengeType = 'fast_numbers';
+          challengeId = 'num-01-acct';
+        } else {
+          challengeType = 'pb_contrast';
+          challengeId = 'pb-01-payment';
+        }
+      } else if (day.phase == CurriculumPhaseType.phase2SalesConfidence) {
+        challengeType = 'objection';
+        challengeId = 'obj-02-too-expensive';
+      } else {
+        challengeType = 'discovery';
+        challengeId = 'disc-04-budget-comfort';
+      }
+
+      steps.add(
+        WorkoutStep(
+          id: 'step-challenge-$dayNum',
+          title: 'Challenge Drill: Cross-Skill Agility',
+          titleArabic: 'تدريب التحدي المتقدم',
+          description: 'Reinforce handling of unexpected customer pushback and friction under pressure.',
+          type: WorkoutStepType.challengeDrill,
+          targetId: challengeId,
+          drillType: challengeType,
+          estimatedMinutes: 6,
+        ),
+      );
+    }
+
+    // Step 3 (20 min) or Step 4 (30 min): Coaching Review
+    if (minutes >= 20) {
+      steps.add(
+        WorkoutStep(
+          id: 'step-review-$dayNum',
+          title: 'Pedagogical Review & Scorecard',
+          titleArabic: 'مراجعة الملاحظات التدريبية',
+          description: 'Analyze your turn-by-turn performance, Egyptian Arabic coaching notes, and compliance metrics.',
+          type: WorkoutStepType.coachingReview,
+          targetId: day.primaryScenarioId,
+          estimatedMinutes: 4,
+        ),
+      );
+    }
+
+    return steps;
   }
 
   /// Calculates high-level progress statistics across the 90-day curriculum.

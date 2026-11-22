@@ -36,10 +36,30 @@ void main() {
         expect(milestone?.titleArabic.isNotEmpty, isTrue);
       }
     });
+
+    test('100% of all 90 curriculum days resolve to existing scenarios and drills', () {
+      for (final day in CurriculumDataSource.allDays) {
+        expect(
+          CurriculumDataSource.scenarioExists(day.primaryScenarioId),
+          isTrue,
+          reason:
+              'Day ${day.dayNumber}: Scenario ${day.primaryScenarioId} must exist',
+        );
+
+        if (day.drillType != null && day.drillId != null) {
+          expect(
+            CurriculumDataSource.drillExists(day.drillType!, day.drillId!),
+            isTrue,
+            reason:
+                'Day ${day.dayNumber}: Drill (${day.drillType}, ${day.drillId}) must exist',
+          );
+        }
+      }
+    });
   });
 
   group('CurriculumEngine Workout & Recovery Tests', () {
-    test('generates workout for specified minutes', () {
+    test('generates multi-step workout queues for 10, 20, and 30 minutes', () {
       final workout10 = CurriculumEngine.generateDailyWorkout(
         dayNumber: 5,
         chosenMinutes: 10,
@@ -47,13 +67,30 @@ void main() {
       expect(workout10.chosenMinutes, equals(10));
       expect(workout10.day.dayNumber, equals(5));
       expect(workout10.isRecoveryWorkout, isFalse);
+      expect(workout10.steps.length, equals(2));
+      expect(workout10.steps[0].type, equals(WorkoutStepType.warmupDrill));
+      expect(workout10.steps[1].type, equals(WorkoutStepType.primaryScenario));
+
+      final workout20 = CurriculumEngine.generateDailyWorkout(
+        dayNumber: 45,
+        chosenMinutes: 20,
+      );
+      expect(workout20.chosenMinutes, equals(20));
+      expect(workout20.steps.length, equals(3));
+      expect(workout20.steps[0].type, equals(WorkoutStepType.warmupDrill));
+      expect(workout20.steps[1].type, equals(WorkoutStepType.primaryScenario));
+      expect(workout20.steps[2].type, equals(WorkoutStepType.coachingReview));
 
       final workout30 = CurriculumEngine.generateDailyWorkout(
-        dayNumber: 45,
+        dayNumber: 75,
         chosenMinutes: 30,
       );
       expect(workout30.chosenMinutes, equals(30));
-      expect(workout30.day.dayNumber, equals(45));
+      expect(workout30.steps.length, equals(4));
+      expect(workout30.steps[0].type, equals(WorkoutStepType.warmupDrill));
+      expect(workout30.steps[1].type, equals(WorkoutStepType.primaryScenario));
+      expect(workout30.steps[2].type, equals(WorkoutStepType.challengeDrill));
+      expect(workout30.steps[3].type, equals(WorkoutStepType.coachingReview));
     });
 
     test('triggers recovery mode when 2 or more days are skipped without resetting progress', () {
