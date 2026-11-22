@@ -1,4 +1,9 @@
 import '../../domain/entities/adaptive_curriculum.dart';
+import '../../presentation/controllers/floor_skills_controller.dart';
+import 'sales_scenario_catalog.dart';
+import 'sales_scenarios/discovery_drills.dart';
+import 'sales_scenarios/objection_drills.dart';
+import 'scenario_catalog.dart';
 
 abstract class CurriculumDataSource {
   /// Canonical 13-week milestones across the 90-day adaptive curriculum.
@@ -117,11 +122,64 @@ abstract class CurriculumDataSource {
   static List<CurriculumDay> _build90Days() {
     final days = <CurriculumDay>[];
 
+    // Canonical 30 Care Scenarios for Phase 1
+    final phase1CareScenarioIds = [
+      'scen-01-first-bill',
+      'scen-02-tradein-credits',
+      'scen-03-intl-roaming',
+      'scen-04-data-throttle',
+      'scen-05-gateway-redlight',
+      'scen-06-fiber-reschedule',
+      'scen-07-autopay-discount',
+      'scen-08-payment-arrangement',
+      'scen-09-paper-bill-fee',
+      'scen-10-supervisor-demand',
+      'scen-11-eip-payoff',
+      'scen-12-tradein-box',
+      'scen-13-third-party-charge',
+      'scen-14-bereavement-transfer',
+      'scen-15-fast-numbers',
+      'scen-16-noisy-background',
+      'scen-17-hold-frustration',
+      'scen-18-moving-relocation',
+      'scen-19-esim-transfer',
+      'scen-20-fiber-upgrade',
+      'scen-21-stolen-phone',
+      'scen-22-remorse-period',
+      'scen-23-warranty-vs-insurance',
+      'scen-24-tablet-addline',
+      'scen-25-watch-numbersync',
+      'scen-26-senior-plan-review',
+      'scen-27-prepaid-to-postpaid',
+      'scen-28-firstnet-appreciation',
+      'scen-29-dead-air-protocol',
+      'scen-30-skeptical-closer',
+    ];
+
+    // Floor drills for Phase 1
+    final pbDrillIds = [
+      'pb-01-payment',
+      'pb-02-plan',
+      'pb-03-paperless',
+      'pb-04-problem',
+      'pb-05-postpaid',
+    ];
+
+    final fastNumberIds = [
+      'num-01-acct',
+      'num-02-imei',
+      'num-03-phone',
+      'num-04-balance',
+    ];
+
     // Days 1–30: Phase 1 Foundations
     for (int d = 1; d <= 30; d++) {
-      // Primary care scenario id from existing 30 care scenarios (e.g. 'scen-01' to 'scen-30')
-      final scenarioId = 'scen-${d.toString().padLeft(2, '0')}';
+      final scenarioId = phase1CareScenarioIds[d - 1];
       final isOdd = d % 2 != 0;
+      final drillType = isOdd ? 'pb_contrast' : 'fast_numbers';
+      final drillId = isOdd
+          ? pbDrillIds[((d - 1) ~/ 2) % pbDrillIds.length]
+          : fastNumberIds[((d ~/ 2) - 1) % fastNumberIds.length];
 
       days.add(
         CurriculumDay(
@@ -131,10 +189,8 @@ abstract class CurriculumDataSource {
           themeTitleArabic: 'اليوم $d: أساسيات خدمة العملاء ومخارج الصوت',
           focusSkillTag: isOdd ? 'Greeting Discipline' : 'AERD Empathy',
           primaryScenarioId: scenarioId,
-          drillType: isOdd ? 'pb_contrast' : 'fast_numbers',
-          drillId: isOdd
-              ? 'drill-pb-${(d % 5) + 1}'
-              : 'drill-num-${(d % 5) + 1}',
+          drillType: drillType,
+          drillId: drillId,
           learningObjectives: [
             'Deliver standard Alex greeting without omissions',
             'Handle customer inquiries using calm, structured AERD',
@@ -154,7 +210,7 @@ abstract class CurriculumDataSource {
       'sales-06-security-activearmor-upgrade',
       'sales-07-student-shared-data-switch',
       'sales-08-dual-carrier-pro-upgrade',
-      'sales-09-fiber-300-streaming-upgrade',
+      'sales-09-fiber-cable-frustrated',
       'sales-10-fiber-wfh-heavy-uploader',
       'sales-11-fiber-gaming-latency',
       'sales-12-fiber-smart-home-ecosystem',
@@ -175,8 +231,8 @@ abstract class CurriculumDataSource {
     for (int d = 31; d <= 60; d++) {
       final index = (d - 31) % phase2ScenarioIds.length;
       final scenarioId = phase2ScenarioIds[index];
-      final discIndex = ((d - 31) % 12) + 1;
-      final drillId = 'disc-${discIndex.toString().padLeft(2, '0')}';
+      final discIndex = (d - 31) % DiscoveryDrillsCatalog.drills.length;
+      final drillId = DiscoveryDrillsCatalog.drills[discIndex].id;
 
       days.add(
         CurriculumDay(
@@ -228,8 +284,8 @@ abstract class CurriculumDataSource {
     for (int d = 61; d <= 90; d++) {
       final index = (d - 61) % phase3ScenarioIds.length;
       final scenarioId = phase3ScenarioIds[index];
-      final objIndex = ((d - 61) % 8) + 1;
-      final drillId = 'obj-${objIndex.toString().padLeft(2, '0')}';
+      final objIndex = (d - 61) % ObjectionDrillsCatalog.drills.length;
+      final drillId = ObjectionDrillsCatalog.drills[objIndex].id;
 
       days.add(
         CurriculumDay(
@@ -252,6 +308,63 @@ abstract class CurriculumDataSource {
     }
 
     return days;
+  }
+
+  /// Check if a scenario ID exists in either Care ScenarioCatalog or SalesScenarioCatalog.
+  static bool scenarioExists(String scenarioId) {
+    return ScenarioCatalog.findById(scenarioId) != null ||
+        SalesScenarioCatalog.findById(scenarioId) != null;
+  }
+
+  /// Check if a drill exists for given drillType and drillId.
+  static bool drillExists(String drillType, String drillId) {
+    if (drillType == 'pb_contrast') {
+      return FloorSkillsController.findPbById(drillId) != null;
+    } else if (drillType == 'fast_numbers') {
+      return FloorSkillsController.findFastNumberById(drillId) != null;
+    } else if (drillType == 'discovery') {
+      return SalesScenarioCatalog.allDiscoveryDrills.any(
+        (d) => d.id == drillId,
+      );
+    } else if (drillType == 'objection') {
+      return SalesScenarioCatalog.allObjectionDrills.any(
+        (d) => d.id == drillId,
+      );
+    }
+    return false;
+  }
+
+  /// Resolve scenario entity by ID.
+  static dynamic resolveScenario(String scenarioId) {
+    final sales = SalesScenarioCatalog.findById(scenarioId);
+    if (sales != null) return sales;
+    return ScenarioCatalog.findById(scenarioId);
+  }
+
+  /// Resolve drill item entity by type and ID.
+  static dynamic resolveDrill(String drillType, String drillId) {
+    if (drillType == 'pb_contrast') {
+      return FloorSkillsController.findPbById(drillId);
+    } else if (drillType == 'fast_numbers') {
+      return FloorSkillsController.findFastNumberById(drillId);
+    } else if (drillType == 'discovery') {
+      try {
+        return SalesScenarioCatalog.allDiscoveryDrills.firstWhere(
+          (d) => d.id == drillId,
+        );
+      } catch (_) {
+        return null;
+      }
+    } else if (drillType == 'objection') {
+      try {
+        return SalesScenarioCatalog.allObjectionDrills.firstWhere(
+          (d) => d.id == drillId,
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   /// Get metadata for a specific curriculum day (1..90).

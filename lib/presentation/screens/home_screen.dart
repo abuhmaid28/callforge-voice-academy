@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../core/audio/speech_service.dart';
 import '../../core/di/service_locator.dart';
 import '../../data/datasources/sales_scenario_catalog.dart';
 import '../../data/datasources/scenario_catalog.dart';
 import '../../domain/entities/adaptive_curriculum.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../controllers/curriculum_controller.dart';
+import '../controllers/floor_skills_controller.dart';
 import '../controllers/progress_controller.dart';
 import '../widgets/curriculum_timeline_view.dart';
 import 'disclosure_studio_screen.dart';
+import 'discovery_drill_screen.dart';
 import 'floor_skills_screen.dart';
 import 'multi_turn_simulator_screen.dart';
+import 'objection_drill_screen.dart';
 import 'sales_lab_screen.dart';
 import 'sales_simulator_screen.dart';
 import 'voice_arena_screen.dart';
@@ -58,33 +62,392 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _startDailyWorkout(BuildContext context, DailyWorkoutPlan workout) {
-    final scenarioId = workout.day.primaryScenarioId;
-    if (scenarioId.isNotEmpty) {
-      final salesScenario = SalesScenarioCatalog.findById(scenarioId);
-      if (salesScenario != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SalesSimulatorScreen(
-              scenario: salesScenario,
-              curriculumDay: workout.day.dayNumber,
+    _showWorkoutQueueSheet(context, workout);
+  }
+
+  void _launchScenario(BuildContext context, String scenarioId, int dayNumber) {
+    if (scenarioId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No scenario ID assigned')),
+      );
+      return;
+    }
+    final salesScenario = SalesScenarioCatalog.findById(scenarioId);
+    if (salesScenario != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SalesSimulatorScreen(
+            scenario: salesScenario,
+            curriculumDay: dayNumber,
+          ),
+        ),
+      ).then((_) => _refreshAll());
+      return;
+    }
+
+    final arenaScenario = ScenarioCatalog.findById(scenarioId);
+    if (arenaScenario != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MultiTurnSimulatorScreen(scenario: arenaScenario),
+        ),
+      ).then((_) => _refreshAll());
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: Could not resolve scenario "$scenarioId"'),
+        backgroundColor: Colors.red.shade800,
+      ),
+    );
+  }
+
+  void _launchStep(
+    BuildContext context,
+    WorkoutStep step,
+    DailyWorkoutPlan workout,
+  ) {
+    switch (step.type) {
+      case WorkoutStepType.warmupDrill:
+      case WorkoutStepType.challengeDrill:
+        if (step.drillType == 'discovery') {
+          final exists = SalesScenarioCatalog.allDiscoveryDrills.any(
+            (d) => d.id == step.targetId,
+          );
+          if (!exists) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error: Could not resolve discovery drill "${step.targetId}"',
+                ),
+                backgroundColor: Colors.red.shade800,
+              ),
+            );
+            return;
+          }
+          final speech = ServiceLocator.get<ISpeechService>();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DiscoveryDrillScreen(
+                speechService: speech,
+                initialDrillId: step.targetId,
+              ),
+            ),
+          ).then((_) => _refreshAll());
+        } else if (step.drillType == 'objection') {
+          final exists = SalesScenarioCatalog.allObjectionDrills.any(
+            (d) => d.id == step.targetId,
+          );
+          if (!exists) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error: Could not resolve objection drill "${step.targetId}"',
+                ),
+                backgroundColor: Colors.red.shade800,
+              ),
+            );
+            return;
+          }
+          final speech = ServiceLocator.get<ISpeechService>();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ObjectionDrillScreen(
+                speechService: speech,
+                initialDrillId: step.targetId,
+              ),
+            ),
+          ).then((_) => _refreshAll());
+        } else if (step.drillType == 'fast_numbers') {
+          final item = FloorSkillsController.findFastNumberById(step.targetId);
+          if (item == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error: Could not resolve fast numbers drill "${step.targetId}"',
+                ),
+                backgroundColor: Colors.red.shade800,
+              ),
+            );
+            return;
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FloorSkillsScreen(
+                initialDrillType: FloorDrillType.fastNumbers,
+                initialDrillId: step.targetId,
+              ),
+            ),
+          ).then((_) => _refreshAll());
+        } else {
+          final item = FloorSkillsController.findPbById(step.targetId);
+          if (item == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error: Could not resolve P/B drill "${step.targetId}"',
+                ),
+                backgroundColor: Colors.red.shade800,
+              ),
+            );
+            return;
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FloorSkillsScreen(
+                initialDrillType: FloorDrillType.pbContrast,
+                initialDrillId: step.targetId,
+              ),
+            ),
+          ).then((_) => _refreshAll());
+        }
+        break;
+
+      case WorkoutStepType.primaryScenario:
+        _launchScenario(context, step.targetId, workout.day.dayNumber);
+        break;
+
+      case WorkoutStepType.coachingReview:
+        showDialog(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            title: const Text('Pedagogical Review & Objectives'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    workout.day.themeTitle,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (workout.day.themeTitleArabic.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      workout.day.themeTitleArabic,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Key Learning Objectives:',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  ...workout.day.learningObjectives.map(
+                    (obj) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('• '),
+                          Expanded(
+                            child: Text(
+                              obj,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        );
+        break;
+    }
+  }
+
+  void _showWorkoutQueueSheet(BuildContext context, DailyWorkoutPlan workout) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade600,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00A3E0)
+                              .withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'DAY ${workout.day.dayNumber} WORKOUT (${workout.chosenMinutes} MIN)',
+                          style: const TextStyle(
+                            color: Color(0xFF00A3E0),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(sheetContext),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    workout.day.themeTitle,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (workout.day.themeTitleArabic.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      workout.day.themeTitleArabic,
+                      style: TextStyle(
+                        color: theme.colorScheme.secondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    'WORKOUT QUEUE (${workout.steps.length} STEPS)',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...workout.steps.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final step = entry.value;
+                    IconData icon;
+                    switch (step.type) {
+                      case WorkoutStepType.warmupDrill:
+                        icon = Icons.record_voice_over_rounded;
+                        break;
+                      case WorkoutStepType.primaryScenario:
+                        icon = Icons.headset_mic_rounded;
+                        break;
+                      case WorkoutStepType.challengeDrill:
+                        icon = Icons.bolt_rounded;
+                        break;
+                      case WorkoutStepType.coachingReview:
+                        icon = Icons.fact_check_rounded;
+                        break;
+                    }
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: const Color(0xFF00A3E0)
+                              .withValues(alpha: 0.2),
+                          child: Icon(
+                            icon,
+                            size: 18,
+                            color: const Color(0xFF00A3E0),
+                          ),
+                        ),
+                        title: Text(
+                          '${index + 1}. ${step.title}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${step.estimatedMinutes} min • ${step.description}',
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(
+                          Icons.play_circle_fill_rounded,
+                          color: Color(0xFF00A3E0),
+                        ),
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _launchStep(context, step, workout);
+                        },
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFF00A3E0),
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text(
+                        'START PRIMARY SCENARIO',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _launchScenario(
+                          context,
+                          workout.day.primaryScenarioId,
+                          workout.day.dayNumber,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ).then((_) => _refreshAll());
-        return;
-      }
-
-      final arenaScenario = ScenarioCatalog.findById(scenarioId);
-      if (arenaScenario != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MultiTurnSimulatorScreen(scenario: arenaScenario),
-          ),
-        ).then((_) => _refreshAll());
-        return;
-      }
-    }
+        );
+      },
+    );
   }
 
   @override

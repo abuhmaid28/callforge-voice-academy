@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/audio/speech_service.dart';
 import '../../core/evaluation/sales_evaluator.dart';
+import '../../core/evaluation/speech_evaluator.dart';
 import '../../data/models/attempt_record.dart';
 import '../../domain/entities/sales_scenario.dart';
 import '../../domain/entities/sales_scorecard.dart';
@@ -189,12 +190,26 @@ class SalesSimulatorController extends ChangeNotifier {
 
     // GATE: Turn 1 Opening Mandatory Greeting Check
     if (_currentTurn!.turnNumber == 1) {
-      final lower = _liveTranscript.toLowerCase();
-      final hasAlex = lower.contains('alex');
-      final hasAtt = lower.contains('at&t') || lower.contains('att');
+      final norm = SpeechEvaluator.normalize(_liveTranscript);
+      final tokens = norm.split(' ').where((w) => w.isNotEmpty).toList();
+      final anchorResult = SpeechEvaluator.evaluateGreetingAnchors(tokens);
 
-      if (!hasAudio || !hasAlex || !hasAtt) {
-        _errorMessage = 'Mandatory Greeting Incomplete: You must state your name (Alex) and AT&T.';
+      final hasAlex = anchorResult.matched.contains('alex');
+      final hasAtt = anchorResult.matched.contains('att');
+      final hasCustomerName =
+          anchorResult.matched.contains('name') ||
+          (anchorResult.matched.contains('first') &&
+              anchorResult.matched.contains('last'));
+
+      if (!hasAudio || !hasAlex || !hasAtt || !hasCustomerName) {
+        final missingList = <String>[];
+        if (!hasAlex) missingList.add('Alex');
+        if (!hasAtt) missingList.add('AT&T');
+        if (!hasCustomerName) missingList.add('Customer Name request');
+
+        _errorMessage =
+            'Mandatory Greeting Incomplete: Missing ${missingList.join(', ')}. '
+            'Please deliver the standard greeting: "Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?"';
         _state = SalesSimulatorState.idle;
         notifyListeners();
         return;
@@ -226,13 +241,48 @@ class SalesSimulatorController extends ChangeNotifier {
 
   void _resolveNextTurn() {
     if (_currentTurn == null || _activeScenario == null) return;
+    if (_currentTurn!.branches.isEmpty) return;
 
-    if (_currentTurn!.branches.isNotEmpty) {
+    if (_currentTurn!.branches.length == 1) {
       final defaultBranch = _currentTurn!.branches.first;
       final nextTurn = _activeScenario!.findTurnById(defaultBranch.nextTurnId);
       if (nextTurn != null) {
         _advanceToTurn(nextTurn);
       }
+      return;
+    }
+
+    final normTranscript = SpeechEvaluator.normalize(_liveTranscript);
+    final hasRequired =
+        _currentTurn!.requiredKeywords.isEmpty ||
+        _currentTurn!.requiredKeywords.any(
+          (k) => normTranscript.contains(k.toLowerCase()),
+        );
+
+    final ScenarioBranch selectedBranch;
+    if (hasRequired) {
+      selectedBranch = _currentTurn!.branches.firstWhere(
+        (b) =>
+            b.conditionKey == 'success' ||
+            b.conditionKey == 'high_empathy' ||
+            b.conditionKey == 'accept' ||
+            b.conditionKey == 'default',
+        orElse: () => _currentTurn!.branches.first,
+      );
+    } else {
+      selectedBranch = _currentTurn!.branches.firstWhere(
+        (b) =>
+            b.conditionKey == 'objection' ||
+            b.conditionKey == 'retry' ||
+            b.conditionKey == 'low_aerd' ||
+            b.conditionKey == 'friction',
+        orElse: () => _currentTurn!.branches.first,
+      );
+    }
+
+    final nextTurn = _activeScenario!.findTurnById(selectedBranch.nextTurnId);
+    if (nextTurn != null) {
+      _advanceToTurn(nextTurn);
     }
   }
 
@@ -298,46 +348,65 @@ class SalesSimulatorController extends ChangeNotifier {
   }
 
   String _evaluateCustomerBranch(SalesTurn customerTurn) {
-    // If only 1 branch, return it directly
     if (customerTurn.branches.length == 1) {
       return customerTurn.branches.first.nextTurnId;
     }
 
-    // Branch selection logic based on previous agent transcript
     final previousAgentText = _conversationHistory.reversed
         .firstWhere(
           (b) => b.speaker == TurnSpeaker.agent,
           orElse: () => _conversationHistory.first,
         )
-        .text
-        .toLowerCase();
+        .text;
+    final normPrev = SpeechEvaluator.normalize(previousAgentText);
 
-    // Check for decline / no-sale branch
-    if (previousAgentText.contains('respect') ||
-        previousAgentText.contains('no problem') ||
-        previousAgentText.contains('keep') ||
-        previousAgentText.contains('leave as is')) {
+    // 1. Check for decline / no-sale branch
+    if (normPrev.contains('respect') ||
+        normPrev.contains('no problem') ||
+        normPrev.contains('keep') ||
+        normPrev.contains('leave as is') ||
+        normPrev.contains('completely understand')) {
       final declineBranch = customerTurn.branches.firstWhere(
         (b) =>
-            b.conditionKey == 'decline' || b.conditionKey.contains('no_sale'),
+            b.conditionKey == 'decline' ||
+            b.conditionKey == 'no_sale' ||
+            b.conditionKey.contains('no_sale'),
         orElse: () => customerTurn.branches.first,
       );
       return declineBranch.nextTurnId;
     }
 
-    // Check for verification branch
-    if (previousAgentText.contains('verify') ||
-        previousAgentText.contains('check') ||
-        previousAgentText.contains('address') ||
-        previousAgentText.contains('specifications')) {
+    // 2. Check for verification branch
+    if (normPrev.contains('verify') ||
+        normPrev.contains('check') ||
+        normPrev.contains('address') ||
+        normPrev.contains('specifications') ||
+        normPrev.contains('coverage') ||
+        normPrev.contains('look up')) {
       final verifyBranch = customerTurn.branches.firstWhere(
-        (b) => b.conditionKey == 'verify' || b.conditionKey.contains('check'),
+        (b) =>
+            b.conditionKey == 'verify' ||
+            b.conditionKey == 'needs_check' ||
+            b.conditionKey.contains('check'),
         orElse: () => customerTurn.branches.first,
       );
       return verifyBranch.nextTurnId;
     }
 
-    // Default to accept branch if present
+    // 3. Check for friction / objection if response is very short/unclear
+    if (normPrev.split(' ').where((w) => w.isNotEmpty).length < 3) {
+      final frictionBranch = customerTurn.branches.where(
+        (b) =>
+            b.conditionKey == 'objection' ||
+            b.conditionKey == 'friction' ||
+            b.conditionKey == 'low_aerd',
+      );
+      if (frictionBranch.isNotEmpty) {
+        return frictionBranch.first.nextTurnId;
+      }
+    }
+
+    // 4. Default to accept branch if present
     final acceptBranch = customerTurn.branches.firstWhere(
       (b) => b.conditionKey == 'accept' || b.conditionKey == 'default',
       orElse: () => customerTurn.branches.first,
@@ -357,13 +426,49 @@ class SalesSimulatorController extends ChangeNotifier {
         )
         .toList();
 
+    SalesOutcomeType validatedOutcome = outcome;
+
+    // Ethical conversion gate:
+    // If proposed outcome is qualifiedAccept, verify discovery and disclosure prerequisites
+    if (validatedOutcome == SalesOutcomeType.qualifiedAccept) {
+      final allAgentText = _agentTurnTranscripts.values.join(' ').toLowerCase();
+      final normalizedAll = SpeechEvaluator.normalize(allAgentText);
+
+      final hasProhibited =
+          SalesEvaluator.universalProhibitedPromises.any(
+            (p) => normalizedAll.contains(p.toLowerCase()),
+          ) ||
+          _activeScenario!.prohibitedPromises.any(
+            (p) => normalizedAll.contains(p.toLowerCase()),
+          );
+
+      final hasDiscovery =
+          SalesEvaluator.discoveryQuestionMarkers.any(
+            (m) => normalizedAll.contains(m),
+          ) ||
+          RegExp(
+            r'\b(who|what|where|when|why|how|which|tell me|could you|would you|can you|do you|are you)\b',
+          ).hasMatch(normalizedAll);
+
+      if (hasProhibited || !hasDiscovery) {
+        validatedOutcome = SalesOutcomeType.needsVerification;
+      }
+    }
+
     // Evaluate full call using SalesEvaluator
-    final scorecard = SalesEvaluator.evaluateSalesCall(
+    var scorecard = SalesEvaluator.evaluateSalesCall(
       scenario: _activeScenario!,
       agentUtterances: _agentTurnTranscripts.values.toList(),
-      reachedOutcome: outcome,
+      reachedOutcome: validatedOutcome,
       completedTurns: completedTurns,
     );
+
+    // If scorecard failed overall (score < 70 or violations), do not award qualified acceptance
+    if (!scorecard.passed &&
+        validatedOutcome == SalesOutcomeType.qualifiedAccept) {
+      validatedOutcome = SalesOutcomeType.needsVerification;
+      scorecard = scorecard.copyWith(outcomeType: validatedOutcome);
+    }
 
     _latestScorecard = scorecard;
     _state = SalesSimulatorState.callCompleted;
@@ -389,7 +494,7 @@ class SalesSimulatorController extends ChangeNotifier {
           scriptSnapshot: _activeScenario!.contextNotes,
           scriptVersion: 'sales-v2.0',
           attemptType: 'sales',
-          salesOutcomeType: outcome.name,
+          salesOutcomeType: validatedOutcome.name,
           isNoSaleSuccess: scorecard.isNoSaleSuccess,
           curriculumDay: curriculumDay,
           salesScorecard: scorecard.toJson(),
@@ -406,7 +511,8 @@ class SalesSimulatorController extends ChangeNotifier {
         isNoSaleSuccess: scorecard.isNoSaleSuccess,
       );
 
-      if (curriculumDay != null) {
+      // Award curriculum day completion ONLY when passed
+      if (curriculumDay != null && scorecard.passed) {
         progressRepository!.recordCurriculumDayCompletion(
           dayNumber: curriculumDay!,
           score: scorecard.overallScore,

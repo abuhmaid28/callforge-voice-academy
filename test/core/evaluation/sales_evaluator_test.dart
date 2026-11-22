@@ -164,5 +164,27 @@ void main() {
       expect(aerdDim.rating, equals(ScorecardRating.exemplary));
       expect(aerdDim.feedbackEnglish, contains('AERD'));
     });
+
+    test('Punctuation-agnostic question discovery detects spoken interrogatives without question marks', () {
+      final agentUtterances = [
+        'Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please',
+        'Tell me what speed you are currently experiencing at home during peak hours',
+        'How many connected devices are usually streaming at the same time',
+        'May I review your unlimited plan options',
+      ];
+
+      final scorecard = SalesEvaluator.evaluateSalesCall(
+        scenario: sampleScenario,
+        agentUtterances: agentUtterances,
+        reachedOutcome: SalesOutcomeType.needsVerification,
+        completedTurns: sampleScenario.turns.take(4).toList(),
+      );
+
+      final discoveryDim = scorecard.dimensions.firstWhere(
+        (d) => d.key == 'need_discovery',
+      );
+      expect(discoveryDim.rating, equals(ScorecardRating.exemplary));
+      expect(discoveryDim.feedbackEnglish, contains('Excellent'));
+    });
   });
 }

@@ -1,14 +1,19 @@
 # PROJECT_STATE.md — CALLFORGE Current Project Status
 
-## Current execution checkpoint (2026-11-22)
+## Current execution checkpoint (2026-11-23)
 - **Repository**: `https://github.com/abuhmaid28/callforge-voice-academy`
-- **Current milestone**: **C2-MEGA** — M4 Consultative Sales Mastery + M5 90-Day Adaptive Academy
-- **Implementation issue**: https://github.com/abuhmaid28/callforge-voice-academy/issues/7
-- **Current feature branch**: `feat/c2-mega-sales-mastery`
-- **Starting main baseline**: `00ed8f58cde9972cca6f2d63e31ad095b6509ebb` (approved C1 squash merge)
-- **C1 source head accepted**: `d05889bb009ec194e9c6d5ab20a683ac5e24af0f`
-- **C1 CI evidence**: https://github.com/abuhmaid28/callforge-voice-academy/actions/runs/45063363761 — **96/96 Flutter tests and 9/9 hosted Android API34 emulator tests passed** (mocked speech).
-- **C2 implementation status**: **COMPLETED**. Full delivery of 48 branching consultative sales scenarios, 8 objection drills, 12 discovery drills, explainable Product-Fit engine with local custom offers CRUD, 7-dimension ethical sales scorecard, 90-day adaptive curriculum syllabus, polished Flutter UX, and full automated verification.
+- **Current milestone**: **C2-R1** — Sales Academy Quality, Workout Progression & Concurrency Resilience
+- **Implementation issue**: https://github.com/abuhmaid28/callforge-voice-academy/issues/9
+- **Current feature branch**: `feat/c2-r1-sales-academy-quality`
+- **Draft PR**: [#10](https://github.com/abuhmaid28/callforge-voice-academy/pull/10)
+- **Base merge commit**: `7b773aeb6ba2d3821fcebab1d59d33da906e665f` (approved C2-MEGA squash merge)
+- **C2-R1 implementation status**: **COMPLETED**.
+  - B1: 100% of 90 curriculum day IDs and linked drill IDs resolved and launchable; multi-step structured workout queues (10m 2-step, 20m 3-step, 30m 4-step) with bottom sheet modal launcher.
+  - B2: Turn 1 greeting gate hardened using token-aware anchor matching (`SpeechEvaluator`); rejects substring false-positives ("matter"/"battery") and requires Alex, AT&T, and customer first/last name request.
+  - B3: Ethical sales conversion gate validates consultative discovery, disclosure coverage, and passing scorecard before awarding `qualifiedAccept`, downgrading unearned sales to `needsVerification`.
+  - B4: Turn branching and customer evaluation hardened with multi-condition matching and punctuation-agnostic interrogative recognition.
+  - B5: Fictional framing (`[Fictional / Simulation Only]`) and zero supervisor callbacks enforced.
+  - B6: Progress persistence serialized via FIFO async synchronization lock; curriculum day completion awarded strictly on passing score (`>= 70.0`).
 - **Binding verification strategy**: No personal Android phone, Windows local emulator, local ADB/USB scans, paid APIs, unverified real AT&T offers, proprietary scripts or real customer PII. Native audio remains simulated.
 - **Product Owner's authorization**: Complete autonomous execution without routine approvals; standing squash merge authorization granted upon 100% green CI.
 
@@ -24,7 +29,7 @@
 | **GitHub CLI** | `VERIFIED` | Authenticated as `abuhmaid28` via git operations protocol HTTPS |
 | **Hardware Environment**| `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
 | **Verification Strategy**| `VERIFIED` | Phone-free hosted Linux CI (GitHub Actions) & Android Emulator integration tests (ADR 010) |
-| **Automated Tests** | `VERIFIED` | 133 tests passing (unit, widget, integration) with 0 static analysis issues |
+| **Automated Tests** | `VERIFIED` | 138 tests passing (unit, widget, integration) with 0 static analysis issues |
 
 ---
 

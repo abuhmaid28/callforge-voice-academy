@@ -9,12 +9,14 @@ import '../../domain/repositories/progress_repository.dart';
 enum FloorDrillType { pbContrast, fastNumbers, aerdFramework }
 
 class PbPairItem {
+  final String id;
   final String wordP;
   final String wordB;
   final String practiceSentence;
   final String phoneticTipArabic;
 
   const PbPairItem({
+    required this.id,
     required this.wordP,
     required this.wordB,
     required this.practiceSentence,
@@ -48,6 +50,7 @@ class FloorSkillsController extends ChangeNotifier {
   // P/B Drills Catalog
   static const List<PbPairItem> pbDrillItems = [
     PbPairItem(
+      id: 'pb-01-payment',
       wordP: 'Payment',
       wordB: 'Bayment',
       practiceSentence: 'Your monthly payment is thirty dollars.',
@@ -55,6 +58,7 @@ class FloorSkillsController extends ChangeNotifier {
           'حرف الـ P voiceless، لازم تخرج دفعة هواء قوية وماتحولوش لـ B.',
     ),
     PbPairItem(
+      id: 'pb-02-plan',
       wordP: 'Plan',
       wordB: 'Blan',
       practiceSentence: 'Let us review your unlimited plan options.',
@@ -62,18 +66,21 @@ class FloorSkillsController extends ChangeNotifier {
           'قول Plan بدفعة هواء واضحة بدون تشغيل الحبال الصوتية في البداية.',
     ),
     PbPairItem(
+      id: 'pb-03-paperless',
       wordP: 'Paperless',
       wordB: 'Baperless',
       practiceSentence: 'Enrolling in paperless billing saves five dollars.',
       phoneticTipArabic: 'كلمة Paperless فيها صوتين P، انتبه للأول والتاني.',
     ),
     PbPairItem(
+      id: 'pb-04-problem',
       wordP: 'Problem',
       wordB: 'Broblem',
       practiceSentence: 'I will personally resolve this problem for you.',
       phoneticTipArabic: 'لا تقل Broblem، افتح شفتيك بدفعة هواء لصوت P.',
     ),
     PbPairItem(
+      id: 'pb-05-postpaid',
       wordP: 'Postpaid',
       wordB: 'Bostpaid',
       practiceSentence:
@@ -81,6 +88,22 @@ class FloorSkillsController extends ChangeNotifier {
       phoneticTipArabic: 'Postpaid تبدأ بـ P، انتبه للفرق بينها وبين B.',
     ),
   ];
+
+  static PbPairItem? findPbById(String id) {
+    try {
+      return pbDrillItems.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static FastNumberItem? findFastNumberById(String id) {
+    try {
+      return fastNumberItems.firstWhere((n) => n.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
 
   // Fast Numbers Catalog
   static const List<FastNumberItem> fastNumberItems = [
@@ -160,6 +183,20 @@ class FloorSkillsController extends ChangeNotifier {
     _sessionGeneration++;
     _activeListenSession++;
     _activeDrillType = type;
+    _resetDrillState();
+    notifyListeners();
+  }
+
+  void selectDrillById(String drillType, String drillId) {
+    if (drillType == 'pb_contrast') {
+      _activeDrillType = FloorDrillType.pbContrast;
+      final idx = pbDrillItems.indexWhere((p) => p.id == drillId);
+      if (idx != -1) _currentPbIndex = idx;
+    } else if (drillType == 'fast_numbers') {
+      _activeDrillType = FloorDrillType.fastNumbers;
+      final idx = fastNumberItems.indexWhere((n) => n.id == drillId);
+      if (idx != -1) _currentNumberIndex = idx;
+    }
     _resetDrillState();
     notifyListeners();
   }

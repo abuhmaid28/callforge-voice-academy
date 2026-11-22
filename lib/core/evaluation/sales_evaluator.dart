@@ -127,7 +127,16 @@ abstract class SalesEvaluator {
     final hasDiscoveryQuestions = discoveryQuestionMarkers.any(
       (m) => normalizedAll.contains(m),
     );
-    final questionCount = RegExp(r'\?').allMatches(allAgentText).length;
+    int questionCount = RegExp(r'\?').allMatches(allAgentText).length;
+    final interrogativeRegex = RegExp(
+      r'\b(who|what|where|when|why|how|which|tell me|could you|would you|can you|do you|are you|is there|did you)\b',
+    );
+    for (final utterance in agentUtterances) {
+      final normU = SpeechEvaluator.normalize(utterance);
+      if (normU.contains('?') || interrogativeRegex.hasMatch(normU)) {
+        questionCount++;
+      }
+    }
 
     ScorecardRating discoveryRating;
     String discoveryFeedbackEn;

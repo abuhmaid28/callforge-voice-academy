@@ -28,13 +28,14 @@ This document defines the automated quality gates, acceptance criteria, and veri
 - **Code Formatting**: **100% compliant** (`dart format --output=none --set-exit-if-changed .`)
 - **Debug APK Build**: **Built successfully in 32.9s** (`build/app/outputs/flutter-apk/app-debug.apk`)
 
-### Test Suite Execution Summary (133 Tests)
+### Test Suite Execution Summary (138 Tests)
 
 | Test Suite File | Scope & Target Capabilities | Tests Passed | Status |
 | :--- | :--- | :--- | :--- |
+| `test/data/c2_r1_reproduction_test.dart` | C2-R1 Verification: 100% (90/90) curriculum day scenario & drill resolution, Turn 1 greeting gate rejection of substring false-positives ("matter"), synchronized FIFO progress persistence without lost updates | 3 | `PASS` |
 | `test/data/sales_scenario_catalog_test.dart` | 48 sales scenario integrity, uniqueness, 3 reachable terminal outcomes per scenario, Policy Guard zero prohibited promises, 8 objection drills, 12 discovery drills | 10 | `PASS` |
-| `test/data/curriculum_engine_test.dart` | 90-day syllabus integrity, 3 phases, 13 weekly milestones, 10/20/30 min daily workout generation, skipped-day recovery mode, progress summary math | 8 | `PASS` |
-| `test/core/evaluation/sales_evaluator_test.dart` | 7-Dimension consultative scorecard, opening discipline, discovery questions, AERD active listening, prohibited promise penalties (-30 cap), respectful No-Sale Success rating | 6 | `PASS` |
+| `test/data/curriculum_engine_test.dart` | 90-day syllabus integrity, 100% scenario & drill existence, 3 phases, 13 weekly milestones, multi-step workout queue generation (10m 2-step, 20m 3-step, 30m 4-step), skipped-day recovery mode, progress summary math | 9 | `PASS` |
+| `test/core/evaluation/sales_evaluator_test.dart` | 7-Dimension consultative scorecard, opening discipline, punctuation-agnostic discovery questioning, AERD active listening, prohibited promise penalties (-30 cap), respectful No-Sale Success rating | 7 | `PASS` |
 | `test/core/evaluation/product_fit_engine_test.dart` | Explainable Needs->Fit->Value matching, Fiber address qualification guardrail, Landline portability guardrail, budget contradiction detection, 10 standard products metadata | 5 | `PASS` |
 | `test/presentation/sales_screens_widget_test.dart` | SalesLabScreen 4 tabs and filtering, SalesSimulatorScreen caller profile & phase banner, ProductFitScreen switches and cards, ObjectionDrillScreen audio simulation, DiscoveryDrillScreen open-ended inquiry | 5 | `PASS` |
 | `test/data/scenario_catalog_test.dart` | 30 care scenario uniqueness, 6-turn adaptive branches (4A/5A vs 4B/5B), graph reachability, end-to-end evaluation, Policy Guard B4 | 8 | `PASS` |
@@ -49,7 +50,7 @@ This document defines the automated quality gates, acceptance criteria, and veri
 | `test/presentation/floor_skills_controller_test.dart` | Spoken P/B contrast drill evaluation, fast number audio playback, digit precision verification, delayed-final STT capture | 7 | `PASS` |
 | `test/presentation/screens_widget_test.dart` | MainScaffold 6-tab navigation, VoiceArenaScreen, MultiTurnSimulatorScreen, DisclosureStudioScreen, FloorSkillsScreen, HistoryScreen, active-listening teardown | 7 | `PASS` |
 | `test/widget_test.dart` | SimulatorScreen M1 greeting rendering and voice drill loop | 2 | `PASS` |
-| `test/integration/app_smoke_test.dart` | Headless app smoke integration lifecycle tests (ST-01..11, C1-01..05, and C2-01..03 Sales Lab & 90-Day Academy journeys) | 12 | `PASS` |
+| `test/integration/app_smoke_test.dart` | Headless app smoke integration lifecycle tests (ST-01..11, C1-01..05, and C2-01..03 Sales Lab & 90-Day Academy journeys with multi-step workout queue and greeting gate) | 12 | `PASS` |
 
 ---
 

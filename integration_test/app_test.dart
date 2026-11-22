@@ -597,7 +597,22 @@ void main() {
         final micButton = find.byKey(const Key('btn_mic_talk'));
         expect(micButton, findsOneWidget);
 
-        // Turn 1: Agent speaks mandatory greeting
+        // Turn 1 Negative Test: Attempt with substring false-positive "matter" / "battery"
+        mockSpeech.simulatedTranscript =
+            'What is the matter with the battery alex?';
+        await tester.tap(micButton); // Start listening
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(micButton); // Stop & evaluate
+        await tester.pumpAndSettle();
+
+        // Must reject and remain on Turn 1 with error feedback
+        expect(
+          find.textContaining('Mandatory Greeting Incomplete'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('CURRENT PHASE: GREETING'), findsOneWidget);
+
+        // Turn 1 Positive Test: Agent speaks canonical mandatory greeting
         mockSpeech.simulatedTranscript = TrainingConstants.standardGreeting;
         await tester.tap(micButton); // Start listening
         await tester.pump(const Duration(milliseconds: 50));
@@ -670,10 +685,19 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify start daily workout button is ready
-        expect(
-          find.byKey(const Key('btn_start_daily_workout')),
-          findsOneWidget,
+        final startWorkoutBtn = find.byKey(
+          const Key('btn_start_daily_workout'),
         );
+        expect(startWorkoutBtn, findsOneWidget);
+
+        // Tap Start Workout button
+        await tester.tap(startWorkoutBtn);
+        await tester.pumpAndSettle();
+
+        // Verify the workout queue modal sheet renders
+        expect(find.textContaining('DAY 1 WORKOUT'), findsWidgets);
+        expect(find.textContaining('WORKOUT QUEUE'), findsOneWidget);
+        expect(find.text('START PRIMARY SCENARIO'), findsOneWidget);
       },
     );
   });

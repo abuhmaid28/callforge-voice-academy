@@ -104,6 +104,36 @@ class SalesScorecard {
     this.keyEvidenceSnippets = const [],
   });
 
+  SalesScorecard copyWith({
+    String? scenarioId,
+    DateTime? timestamp,
+    SalesOutcomeType? outcomeType,
+    bool? isNoSaleSuccess,
+    double? overallScore,
+    bool? passed,
+    List<ScorecardDimension>? dimensions,
+    List<String>? detectedProhibitedPromises,
+    String? tacticalArabicAdvice,
+    String? recommendedRephrasing,
+    List<String>? keyEvidenceSnippets,
+  }) {
+    return SalesScorecard(
+      scenarioId: scenarioId ?? this.scenarioId,
+      timestamp: timestamp ?? this.timestamp,
+      outcomeType: outcomeType ?? this.outcomeType,
+      isNoSaleSuccess: isNoSaleSuccess ?? this.isNoSaleSuccess,
+      overallScore: overallScore ?? this.overallScore,
+      passed: passed ?? this.passed,
+      dimensions: dimensions ?? this.dimensions,
+      detectedProhibitedPromises:
+          detectedProhibitedPromises ?? this.detectedProhibitedPromises,
+      tacticalArabicAdvice: tacticalArabicAdvice ?? this.tacticalArabicAdvice,
+      recommendedRephrasing:
+          recommendedRephrasing ?? this.recommendedRephrasing,
+      keyEvidenceSnippets: keyEvidenceSnippets ?? this.keyEvidenceSnippets,
+    );
+  }
+
   ScorecardDimension? dimension(String key) {
     for (final d in dimensions) {
       if (d.key == key) return d;
