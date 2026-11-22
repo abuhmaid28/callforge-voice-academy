@@ -10,11 +10,17 @@ class FloorSkillsScreen extends StatefulWidget {
   const FloorSkillsScreen({super.key});
 
   @override
-  State<FloorSkillsScreen> createState() => _FloorSkillsScreenState();
+  State<FloorSkillsScreen> createState() => FloorSkillsScreenState();
 }
 
-class _FloorSkillsScreenState extends State<FloorSkillsScreen> {
+class FloorSkillsScreenState extends State<FloorSkillsScreen> {
   late FloorSkillsController _controller;
+  FloorSkillsController get controller => _controller;
+
+  void resetAudioSession() {
+    _controller.resetAudioSession();
+  }
+
   final TextEditingController _numberInputController = TextEditingController();
 
   @override

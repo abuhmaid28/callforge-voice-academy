@@ -216,3 +216,28 @@ This document records the key architectural, technical, and domain decisions mad
   - Eliminates all progression loopholes, unauthorized promises, and false progress claims.
   - Guarantees complete data integrity and backward-compatible persistence.
   - Validated by 87 automated tests (0 failures), 0 analyzer warnings, and 100% clean formatting.
+
+---
+
+## ADR 014: Stop-Flushed Final Transcript Delivery, Active-Tab Audio Teardown, Complete History Versioning, and Removal of Uncalibrated WPM
+
+- **Status**: ACCEPTED (ADDED 2026-11-22)
+- **Context**: Independent PR #5 review (comment 7070116295) identified final voice reliability and metric precision requirements:
+  1. `stopListening()` race condition in `MultiTurnController`, `DisclosureController`, and `FloorSkillsController`: incrementing session generation tokens prior to awaiting `stopListening()` caused STT engines that flush final recognition results during `stopListening()` to discard their own final recognized transcripts.
+  2. Test harness lacked delayed-final STT test doubles: `MockSpeechService` only delivered final transcripts eagerly during `startListening()`, masking real-world platform channel flush behavior.
+  3. Tab switching away from active recording or TTS in `MainScaffold` cancelled background audio but left screen controllers (`DisclosureStudioScreen`, `FloorSkillsScreen`) in stuck recording/playback states inside the `IndexedStack`.
+  4. Unsupported WPM metrics remained visible in `HistoryScreen` (`${record.wpm} wpm`), making uncalibrated pace claims from word counts.
+  5. Failed practice attempts (disclosures, scenario final turns) were omitted from `AttemptRepository`, making them invisible in history and obscuring Egyptian Arabic coaching, while script versions were missing.
+- **Decision**:
+  1. **Split Session Generation & Safe Stop Token**: Decoupled general session generations from active listening session tokens (`_activeListenSession`). During `stopListening()`, controllers await buffer flush with the active token intact, allowing flushed final transcripts to be captured, and then immediately seal the session token before evaluation.
+  2. **Delayed-Final STT Test Double**: Added `deliverFinalOnStop` mode to `MockSpeechService` to deterministically simulate realistic STT engines where final transcripts arrive during `stopListening()`.
+  3. **Active-Tab Controller Teardown**: Added `GlobalKey` references and `resetAudioSession()` methods to `DisclosureStudioScreenState` and `FloorSkillsScreenState` in `MainScaffold`. Switching away from either tab now resets both the speech engine and the active screen controller to `idle`.
+  4. **Removal of Visible WPM**: Removed `${record.wpm} wpm` from `HistoryScreen`, replacing it with attempt badges (`TARGET MET` / `NEEDS PRACTICE`, attempt type chips) and script version tags. Set recorded `wpm: 0` in active controllers while maintaining backward-compatible model field serialization.
+  5. **Comprehensive Failed-Attempt History & Script Versions**: Added `scriptVersion` to `AttemptRecord`. Persist failed disclosure readings and failed scenario final turns in `AttemptRepository` (`passed: false`, `wpm: 0`) without inflating `totalDisclosuresCompleted` or `totalSimulationsCompleted` in `UserProgress`.
+  6. **Regression Coverage**: Added deterministic unit, widget, and integration tests covering delayed-final delivery, tab-switching cancellation, and WPM absence.
+- **Consequences**:
+  - Zero transcript loss regardless of whether STT delivers tokens during recording or stop buffer flush.
+  - Zero stuck controller states when switching tabs.
+  - 100% truthful metrics without uncalibrated acoustic pace claims.
+  - Full visibility into failed practice attempts and coaching without false progress increments.
+  - Validated by 96 automated tests with zero failures, zero analyzer warnings, and 100% clean formatting.

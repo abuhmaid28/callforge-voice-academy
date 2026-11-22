@@ -5,9 +5,9 @@
 **Current Branch**: `feat/c1-mega-disclosure-floor-skills` (C1-R1 MEGA Autonomous Recovery Campaign)  
 **Active PR**: [#5](https://github.com/abuhmaid28/callforge-voice-academy/pull/5)  
 **Active Issue**: [#6](https://github.com/abuhmaid28/callforge-voice-academy/issues/6) (C1-R1 MEGA Recovery: Adaptive Branching, Order-Safe Alignment, & Product Journeys)  
-**Active Milestone**: C1-R1 MEGA (M2 Disclosure Studio + M3 Floor Skills Remediation)  
-**Test Suite**: 87 automated tests passing (`flutter test`) | Static Analysis: Clean (`flutter analyze`) | Dart Format: 100% compliant  
-**Last Updated**: 2026-11-21
+**Active Milestone**: C1 Final Closeout (M2 Disclosure Studio + M3 Floor Skills Remediation)  
+**Test Suite**: 96 automated tests passing (`flutter test`) | Static Analysis: Clean (`flutter analyze`) | Dart Format: 100% compliant  
+**Last Updated**: 2026-11-22
 
 ---
 
@@ -58,6 +58,13 @@
   - **B6**: Centralized awaited teardown of speech/audio on navigation destination change in `MainScaffold`; session generation token guards in all controllers preventing cross-tab audio leaks.
   - **C1-05**: Added Negative & Recovery Journey integration test covering greeting gates, locked consent, and rapid tab switching across local smoke and hosted Android emulator suites.
   - 87 total automated tests passing cleanly with 0 static analysis issues and 100% formatted Dart code.
+- [x] **Phase 9 — C1 Final Closeout (Voice Reliability & History Metrics Remediation)**:
+  - **Stop-Flushed Final Transcript Delivery**: Eliminated `stopListening()` race condition in `MultiTurnController`, `DisclosureController`, and `FloorSkillsController`. Retained active session token while awaiting `stopListening()`, allowing buffer-flushed tokens to be captured before sealing session.
+  - **Delayed-Final STT Test Double**: Implemented `deliverFinalOnStop` mode on `MockSpeechService` to deterministically verify that transcripts delivered during `stopListening()` are evaluated without data loss.
+  - **Active-Tab Controller Teardown**: Implemented `resetAudioSession()` across `DisclosureStudioScreenState` and `FloorSkillsScreenState`, invoked via `GlobalKey` in `MainScaffold` on destination changes, cleanly returning screens to idle without stuck states.
+  - **Removal of Visible WPM**: Removed `${record.wpm} wpm` display from `HistoryScreen`, replacing with status badges and attempt type chips. Set `wpm: 0` in active controllers while preserving model fields for backward-compatible serialization.
+  - **Complete Failed-Attempt History & Script Versions**: Added `scriptVersion` to `AttemptRecord`. Persisted failed disclosure readings and failed scenario final turns in `AttemptRepository` (`passed: false`, `wpm: 0`) without inflating completion counters in `UserProgress`.
+  - 96 total automated tests passing cleanly with 0 static analysis issues and 100% formatted Dart code.
 
 ---
 

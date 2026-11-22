@@ -12,9 +12,11 @@ import 'package:callforge/data/repositories/progress_repository_impl.dart';
 import 'package:callforge/domain/repositories/attempt_repository.dart';
 import 'package:callforge/domain/repositories/disclosure_repository.dart';
 import 'package:callforge/domain/repositories/progress_repository.dart';
+import 'package:callforge/data/models/attempt_record.dart';
 import 'package:callforge/presentation/navigation/main_scaffold.dart';
 import 'package:callforge/presentation/screens/disclosure_studio_screen.dart';
 import 'package:callforge/presentation/screens/floor_skills_screen.dart';
+import 'package:callforge/presentation/screens/history_screen.dart';
 import 'package:callforge/presentation/screens/multi_turn_simulator_screen.dart';
 import 'package:callforge/presentation/screens/voice_arena_screen.dart';
 import 'package:flutter/material.dart';
@@ -151,5 +153,86 @@ void main() {
       expect(find.text('Fast Numbers'), findsOneWidget);
       expect(find.text('RECORD SENTENCE'), findsOneWidget);
     });
+
+    testWidgets(
+      'HistoryScreen does not display WPM and shows versioned attempt tags',
+      (tester) async {
+        final attemptRepo = ServiceLocator.get<IAttemptRepository>();
+        await attemptRepo.saveAttempt(
+          AttemptRecord(
+            id: 'test-att-001',
+            scenarioId: 'scen-01-first-bill',
+            timestamp: DateTime.now(),
+            transcript: 'Test spoken words',
+            accuracyPercentage: 92,
+            passed: true,
+            wpm: 125, // Model field preserved for backward compat
+            missingAnchors: const [],
+            pbErrors: const [],
+            arabicCoaching: 'ممتاز',
+            scriptTitle: 'AutoPay & Paperless Discount',
+            scriptSnapshot: 'Standard terms',
+            scriptVersion: 'catalog-v1.0',
+            attemptType: 'disclosure',
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: HistoryScreen(
+              repository: attemptRepo,
+              scenarioId: 'scen-01-first-bill',
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Practice History'), findsOneWidget);
+        // Verify WPM is completely absent from the UI
+        expect(find.textContaining('wpm'), findsNothing);
+        expect(find.textContaining('WPM'), findsNothing);
+
+        // Verify versioned attempt details are displayed
+        expect(find.text('DISCLOSURE'), findsOneWidget);
+        expect(find.text('AutoPay & Paperless Discount'), findsOneWidget);
+        expect(find.text('catalog-v1.0'), findsOneWidget);
+        expect(find.text('92% Text Match'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'MainScaffold tab switching resets active listening state in Disclosure Studio',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(theme: AppTheme.darkTheme, home: const MainScaffold()),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Switch to Disclosures tab
+        await tester.tap(find.byIcon(Icons.gavel_outlined));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('READ DISCLOSURE'), findsOneWidget);
+
+        // Tap READ DISCLOSURE to start listening
+        await tester.tap(find.text('READ DISCLOSURE'));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.text('STOP & EVALUATE'), findsOneWidget);
+
+        // Switch away to Floor Skills
+        await tester.tap(find.byIcon(Icons.tune_outlined));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('M3 Floor Skills & Drills'), findsOneWidget);
+
+        // Switch back to Disclosures tab
+        await tester.tap(find.byIcon(Icons.gavel_outlined));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // State must be cleanly reset to idle
+        expect(find.text('READ DISCLOSURE'), findsOneWidget);
+        expect(find.text('STOP & EVALUATE'), findsNothing);
+      },
+    );
   });
 }

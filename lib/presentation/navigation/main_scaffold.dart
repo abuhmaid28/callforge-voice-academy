@@ -22,6 +22,10 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   late int _currentIndex;
   late ProgressController _progressController;
+  final GlobalKey<DisclosureStudioScreenState> _disclosureKey =
+      GlobalKey<DisclosureStudioScreenState>();
+  final GlobalKey<FloorSkillsScreenState> _floorSkillsKey =
+      GlobalKey<FloorSkillsScreenState>();
 
   @override
   void initState() {
@@ -41,6 +45,12 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   Future<void> _handleDestinationSelected(int index) async {
     if (index != _currentIndex) {
+      if (_currentIndex == 2) {
+        _disclosureKey.currentState?.resetAudioSession();
+      } else if (_currentIndex == 3) {
+        _floorSkillsKey.currentState?.resetAudioSession();
+      }
+
       if (ServiceLocator.isRegistered<ISpeechService>()) {
         try {
           final speech = ServiceLocator.get<ISpeechService>();
@@ -64,8 +74,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     final screens = [
       HomeScreen(progressController: _progressController),
       const VoiceArenaScreen(),
-      const DisclosureStudioScreen(),
-      const FloorSkillsScreen(),
+      DisclosureStudioScreen(key: _disclosureKey),
+      FloorSkillsScreen(key: _floorSkillsKey),
       ProgressScreen(progressController: _progressController),
     ];
 

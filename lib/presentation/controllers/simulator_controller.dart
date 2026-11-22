@@ -132,10 +132,14 @@ class SimulatorController extends ChangeNotifier {
       transcript: transcript,
       accuracyPercentage: result.similarityPercentage,
       passed: result.scriptTargetMet,
-      wpm: result.estimatedWpm,
+      wpm: 0,
       missingAnchors: result.missingAnchors,
       pbErrors: result.detectedPbErrors,
       arabicCoaching: result.arabicCoachingFeedback,
+      scriptTitle: scenario.title,
+      scriptSnapshot: scenario.expectedResponse,
+      scriptVersion: 'greeting-v1.0',
+      attemptType: 'greeting',
     );
 
     await repository.saveAttempt(record);

@@ -150,5 +150,54 @@ void main() {
         expect(controller.state, equals(DisclosureState.idle));
       },
     );
+
+    test('delayed final transcript delivery during stopReadingAndEvaluate() evaluates successfully without loss', () async {
+      mockSpeech.deliverFinalOnStop = true;
+      mockSpeech.simulatedTranscript = controller.selectedScript!.scriptText;
+
+      await controller.startReading();
+      expect(controller.state, equals(DisclosureState.listening));
+      expect(controller.currentTranscript, isEmpty);
+
+      await controller.stopReadingAndEvaluate();
+      expect(controller.state, equals(DisclosureState.evaluated));
+      expect(
+        controller.currentTranscript,
+        equals(mockSpeech.simulatedTranscript),
+      );
+      expect(controller.latestResult, isNotNull);
+      expect(controller.latestResult!.isTargetMet, isTrue);
+    });
+
+    test('failed reading persists attempt record with passed=false and scriptVersion without inflating progress completions', () async {
+      mockSpeech.deliverFinalOnStop = false;
+      mockSpeech.simulatedTranscript =
+          'Unrelated text with no matching disclosure terms.';
+
+      await controller.startReading();
+      await controller.stopReadingAndEvaluate();
+
+      expect(controller.latestResult, isNotNull);
+      expect(controller.latestResult!.isTargetMet, isFalse);
+
+      final progress = await progressRepo.loadProgress();
+      expect(progress.totalDisclosuresCompleted, equals(0));
+
+      final attempts = await attemptRepo.getAttempts();
+      expect(attempts, isNotEmpty);
+      final last = attempts.first;
+      expect(last.passed, isFalse);
+      expect(last.scriptVersion, equals('catalog-v1.0'));
+      expect(last.attemptType, equals('disclosure'));
+    });
+
+    test('cancel aborts listening and restores idle state', () async {
+      await controller.startReading();
+      expect(controller.state, equals(DisclosureState.listening));
+
+      controller.cancel();
+      expect(controller.state, equals(DisclosureState.idle));
+      expect(controller.currentTranscript, isEmpty);
+    });
   });
 }

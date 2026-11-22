@@ -14,6 +14,8 @@ class MockSpeechService implements ISpeechService {
   bool shouldFailInit = false;
   bool shouldTimeoutWithSilence = false;
   bool shouldFailTts = false;
+  bool deliverFinalOnStop = false;
+  ResultCallback? _activeOnResult;
   int _sessionGeneration = 0;
 
   @override
@@ -112,20 +114,31 @@ class MockSpeechService implements ISpeechService {
       _transcriptController.add(simulatedTranscript);
     }
 
-    // Simulate completion
-    await Future.delayed(const Duration(milliseconds: 20));
-    if (currentSession != _sessionGeneration) return;
+    _activeOnResult = onResult;
 
-    _setState(VoiceEngineState.processing);
-    await onResult(simulatedTranscript);
-    if (currentSession == _sessionGeneration) {
-      _setState(VoiceEngineState.idle);
+    if (!deliverFinalOnStop) {
+      // Simulate completion eagerly (legacy mode)
+      await Future.delayed(const Duration(milliseconds: 20));
+      if (currentSession != _sessionGeneration) return;
+
+      _setState(VoiceEngineState.processing);
+      await onResult(simulatedTranscript);
+      if (currentSession == _sessionGeneration) {
+        _setState(VoiceEngineState.idle);
+      }
     }
   }
 
   @override
   Future<void> stopListening() async {
-    if (_state == VoiceEngineState.listeningToUser) {
+    if (_state == VoiceEngineState.listeningToUser ||
+        _state == VoiceEngineState.processing) {
+      if (deliverFinalOnStop && _activeOnResult != null) {
+        final callback = _activeOnResult;
+        _activeOnResult = null;
+        _setState(VoiceEngineState.processing);
+        await callback!(simulatedTranscript);
+      }
       _setState(VoiceEngineState.idle);
     }
   }
@@ -133,7 +146,9 @@ class MockSpeechService implements ISpeechService {
   @override
   Future<void> cancelListening() async {
     _sessionGeneration++;
-    if (_state == VoiceEngineState.listeningToUser) {
+    _activeOnResult = null;
+    if (_state == VoiceEngineState.listeningToUser ||
+        _state == VoiceEngineState.processing) {
       _setState(VoiceEngineState.idle);
     }
   }
@@ -141,6 +156,7 @@ class MockSpeechService implements ISpeechService {
   @override
   void dispose() {
     _sessionGeneration++;
+    _activeOnResult = null;
     _stateController.close();
     _transcriptController.close();
   }

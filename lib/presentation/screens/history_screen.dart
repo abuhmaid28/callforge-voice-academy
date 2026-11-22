@@ -124,6 +124,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (record.scriptTitle != null) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                record.scriptTitle!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (record.scriptVersion != null)
+                              Text(
+                                record.scriptVersion!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                      ],
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -156,7 +183,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  '${record.wpm} wpm',
+                                  record.attemptType != null
+                                      ? record.attemptType!.toUpperCase()
+                                      : (isPassed
+                                            ? 'TARGET MET'
+                                            : 'NEEDS PRACTICE'),
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textSecondary,

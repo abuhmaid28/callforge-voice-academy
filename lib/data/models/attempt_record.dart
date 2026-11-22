@@ -14,6 +14,7 @@ class AttemptRecord {
   final String arabicCoaching;
   final String? scriptTitle;
   final String? scriptSnapshot;
+  final String? scriptVersion;
   final String? attemptType;
 
   const AttemptRecord({
@@ -29,6 +30,7 @@ class AttemptRecord {
     required this.arabicCoaching,
     this.scriptTitle,
     this.scriptSnapshot,
+    this.scriptVersion,
     this.attemptType,
   });
 
@@ -46,6 +48,7 @@ class AttemptRecord {
       'arabicCoaching': arabicCoaching,
       if (scriptTitle != null) 'scriptTitle': scriptTitle,
       if (scriptSnapshot != null) 'scriptSnapshot': scriptSnapshot,
+      if (scriptVersion != null) 'scriptVersion': scriptVersion,
       if (attemptType != null) 'attemptType': attemptType,
     };
   }
@@ -64,6 +67,7 @@ class AttemptRecord {
       arabicCoaching: map['arabicCoaching'] as String,
       scriptTitle: map['scriptTitle'] as String?,
       scriptSnapshot: map['scriptSnapshot'] as String?,
+      scriptVersion: map['scriptVersion'] as String?,
       attemptType: map['attemptType'] as String?,
     );
   }

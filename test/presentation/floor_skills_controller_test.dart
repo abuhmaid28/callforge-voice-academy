@@ -79,5 +79,37 @@ void main() {
       expect(controller.isCorrect, isFalse);
       expect(controller.feedbackText, contains('غير متطابقة'));
     });
+
+    test('delayed final transcript delivery during stopPbRecordingAndEvaluate() evaluates successfully without loss', () async {
+      mockSpeech.deliverFinalOnStop = true;
+      mockSpeech.simulatedTranscript =
+          controller.currentPbItem.practiceSentence;
+
+      await controller.startPbRecording();
+      expect(controller.isListening, isTrue);
+      expect(controller.spokenTranscript, isEmpty);
+
+      await controller.stopPbRecordingAndEvaluate();
+      expect(controller.isListening, isFalse);
+      expect(
+        controller.spokenTranscript,
+        equals(mockSpeech.simulatedTranscript),
+      );
+      expect(controller.isCorrect, isTrue);
+      expect(controller.feedbackText, contains('نطق سليم'));
+    });
+
+    test(
+      'resetAudioSession cleanly stops recording and resets drill state',
+      () async {
+        await controller.startPbRecording();
+        expect(controller.isListening, isTrue);
+
+        controller.resetAudioSession();
+        expect(controller.isListening, isFalse);
+        expect(controller.spokenTranscript, isEmpty);
+        expect(controller.isCorrect, isNull);
+      },
+    );
   });
 }

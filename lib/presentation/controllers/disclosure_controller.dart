@@ -50,6 +50,7 @@ class DisclosureController extends ChangeNotifier {
 
   DateTime? _listeningStartTime;
   int _sessionGeneration = 0;
+  int _activeListenSession = 0;
   bool _isDisposed = false;
 
   DisclosureController({
@@ -82,6 +83,7 @@ class DisclosureController extends ChangeNotifier {
   }
 
   void selectScript(DisclosureScript script) {
+    _activeListenSession++;
     _sessionGeneration++;
     _selectedScript = script;
     _latestResult = null;
@@ -95,7 +97,7 @@ class DisclosureController extends ChangeNotifier {
 
   Future<void> startReading() async {
     if (_selectedScript == null) return;
-    final currentSession = ++_sessionGeneration;
+    final listenSession = ++_activeListenSession;
 
     _errorMessage = null;
     _latestResult = null;
@@ -109,19 +111,19 @@ class DisclosureController extends ChangeNotifier {
     try {
       await speechService.startListening(
         onResult: (text) {
-          if (_isDisposed || currentSession != _sessionGeneration) return;
+          if (_isDisposed || listenSession != _activeListenSession) return;
           _currentTranscript = text;
           notifyListeners();
         },
         onError: (err) {
-          if (_isDisposed || currentSession != _sessionGeneration) return;
+          if (_isDisposed || listenSession != _activeListenSession) return;
           _errorMessage = err;
           _state = DisclosureState.error;
           notifyListeners();
         },
       );
     } catch (e) {
-      if (_isDisposed || currentSession != _sessionGeneration) return;
+      if (_isDisposed || listenSession != _activeListenSession) return;
       _errorMessage = 'Audio capture failed: $e';
       _state = DisclosureState.error;
       notifyListeners();
@@ -130,7 +132,7 @@ class DisclosureController extends ChangeNotifier {
 
   Future<void> stopReadingAndEvaluate() async {
     if (_state != DisclosureState.listening || _selectedScript == null) return;
-    final currentSession = ++_sessionGeneration;
+    final targetSession = _activeListenSession;
 
     _state = DisclosureState.evaluating;
     notifyListeners();
@@ -138,6 +140,12 @@ class DisclosureController extends ChangeNotifier {
     try {
       await speechService.stopListening();
     } catch (_) {}
+
+    // Guard: ignore if session was cancelled or invalidated while stopping
+    if (_isDisposed || targetSession != _activeListenSession) return;
+
+    // Seal session token
+    _activeListenSession++;
 
     final duration = _listeningStartTime != null
         ? DateTime.now().difference(_listeningStartTime!)
@@ -149,8 +157,34 @@ class DisclosureController extends ChangeNotifier {
       duration: duration,
     );
 
-    if (_isDisposed || currentSession != _sessionGeneration) return;
     _state = DisclosureState.evaluated;
+
+    if (attemptRepository != null &&
+        _selectedScript != null &&
+        _latestResult != null) {
+      await attemptRepository!.saveAttempt(
+        AttemptRecord(
+          id: 'att-disc-${DateTime.now().millisecondsSinceEpoch}',
+          scenarioId: _selectedScript!.id,
+          timestamp: DateTime.now(),
+          transcript: _currentTranscript,
+          accuracyPercentage: (_latestResult!.similarityScore * 100).round(),
+          passed: _latestResult!.isTargetMet,
+          wpm: 0,
+          missingAnchors: _latestResult!.missingCriticalTerms
+              .map((t) => t.term)
+              .toList(),
+          pbErrors: _latestResult!.detectedPbErrors,
+          arabicCoaching: _latestResult!.arabicCoaching,
+          scriptTitle: _selectedScript!.title,
+          scriptSnapshot: _selectedScript!.scriptText,
+          scriptVersion: _selectedScript!.isCustomUserDraft
+              ? 'draft-v1'
+              : 'catalog-v1.0',
+          attemptType: 'disclosure',
+        ),
+      );
+    }
 
     if (_latestResult != null && _latestResult!.isTargetMet) {
       if (_selectedScript!.customerResponses.isNotEmpty) {
@@ -161,28 +195,6 @@ class DisclosureController extends ChangeNotifier {
         await progressRepository!.recordDisclosureCompletion(
           scriptId: _selectedScript!.id,
           score: _latestResult!.similarityScore * 100,
-        );
-      }
-
-      if (attemptRepository != null) {
-        await attemptRepository!.saveAttempt(
-          AttemptRecord(
-            id: 'att-disc-${DateTime.now().millisecondsSinceEpoch}',
-            scenarioId: _selectedScript!.id,
-            timestamp: DateTime.now(),
-            transcript: _currentTranscript,
-            accuracyPercentage: (_latestResult!.similarityScore * 100).round(),
-            passed: _latestResult!.isTargetMet,
-            wpm: _latestResult!.estimatedWpm,
-            missingAnchors: _latestResult!.missingCriticalTerms
-                .map((t) => t.term)
-                .toList(),
-            pbErrors: _latestResult!.detectedPbErrors,
-            arabicCoaching: _latestResult!.arabicCoaching,
-            scriptTitle: _selectedScript!.title,
-            scriptSnapshot: _selectedScript!.scriptText,
-            attemptType: 'disclosure',
-          ),
         );
       }
     }
@@ -316,6 +328,7 @@ class DisclosureController extends ChangeNotifier {
   }
 
   void cancel() {
+    _activeListenSession++;
     _sessionGeneration++;
     speechService.cancelListening();
     speechService.stopSpeaking();
@@ -326,6 +339,7 @@ class DisclosureController extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _activeListenSession++;
     _sessionGeneration++;
     speechService.cancelListening();
     speechService.stopSpeaking();

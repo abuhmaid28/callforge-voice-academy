@@ -67,6 +67,7 @@ class MultiTurnController extends ChangeNotifier {
   int _agentTurnsCount = 0;
 
   int _sessionGeneration = 0;
+  int _activeListenSession = 0;
   bool _hasRecordedCompletion = false;
   bool _isDisposed = false;
 
@@ -84,6 +85,7 @@ class MultiTurnController extends ChangeNotifier {
   }
 
   void startScenario(Scenario scenario) {
+    _activeListenSession++;
     _sessionGeneration++;
     _activeScenario = scenario;
     _conversationHistory.clear();
@@ -108,7 +110,7 @@ class MultiTurnController extends ChangeNotifier {
     if (_currentTurn == null || _currentTurn!.speaker != TurnSpeaker.agent) {
       return;
     }
-    final currentSession = ++_sessionGeneration;
+    final listenSession = ++_activeListenSession;
 
     _errorMessage = null;
     _liveTranscript = '';
@@ -118,19 +120,19 @@ class MultiTurnController extends ChangeNotifier {
     try {
       await speechService.startListening(
         onResult: (text) {
-          if (_isDisposed || currentSession != _sessionGeneration) return;
+          if (_isDisposed || listenSession != _activeListenSession) return;
           _liveTranscript = text;
           notifyListeners();
         },
         onError: (err) {
-          if (_isDisposed || currentSession != _sessionGeneration) return;
+          if (_isDisposed || listenSession != _activeListenSession) return;
           _errorMessage = err;
           _state = MultiTurnState.error;
           notifyListeners();
         },
       );
     } catch (e) {
-      if (_isDisposed || currentSession != _sessionGeneration) return;
+      if (_isDisposed || listenSession != _activeListenSession) return;
       _errorMessage = 'Microphone recording error: $e';
       _state = MultiTurnState.error;
       notifyListeners();
@@ -139,7 +141,7 @@ class MultiTurnController extends ChangeNotifier {
 
   Future<void> stopAgentListeningAndEvaluate() async {
     if (_state != MultiTurnState.agentListening || _currentTurn == null) return;
-    final currentSession = ++_sessionGeneration;
+    final targetSession = _activeListenSession;
 
     _state = MultiTurnState.agentEvaluating;
     notifyListeners();
@@ -148,13 +150,17 @@ class MultiTurnController extends ChangeNotifier {
       await speechService.stopListening();
     } catch (_) {}
 
+    // Guard: ignore if session was cancelled or invalidated while stopping
+    if (_isDisposed || targetSession != _activeListenSession) return;
+
+    // Seal session token so late callbacks cannot alter transcript
+    _activeListenSession++;
+
     final bool hasAudio = _liveTranscript.trim().isNotEmpty;
     final eval = MultiTurnEvaluator.evaluateTurn(
       turn: _currentTurn!,
       agentTranscript: _liveTranscript,
     );
-
-    if (_isDisposed || currentSession != _sessionGeneration) return;
 
     _latestEvaluation = eval;
     _accumulatedScore += eval.score;
@@ -177,6 +183,28 @@ class MultiTurnController extends ChangeNotifier {
         // Failed final turn: do not mark completed, do not record progress
         _state = MultiTurnState.idle;
         notifyListeners();
+
+        // Persist failed attempt record for historical visibility without inflating completions
+        if (attemptRepository != null && _activeScenario != null) {
+          attemptRepository!.saveAttempt(
+            AttemptRecord(
+              id: 'att-scen-fail-${DateTime.now().millisecondsSinceEpoch}',
+              scenarioId: _activeScenario!.id,
+              timestamp: DateTime.now(),
+              transcript: _liveTranscript,
+              accuracyPercentage: eval.score.round(),
+              passed: false,
+              wpm: 0,
+              missingAnchors: eval.missingKeywords,
+              pbErrors: eval.pbConfusions,
+              arabicCoaching: eval.trainerFeedbackArabic,
+              scriptTitle: _activeScenario!.title,
+              scriptSnapshot: _currentTurn!.spokenText,
+              scriptVersion: 'scenario-v1.0',
+              attemptType: 'scenario',
+            ),
+          );
+        }
       }
       return;
     }
@@ -306,6 +334,7 @@ class MultiTurnController extends ChangeNotifier {
           arabicCoaching: _latestEvaluation?.trainerFeedbackArabic ?? '',
           scriptTitle: _activeScenario!.title,
           scriptSnapshot: _activeScenario!.customerResponse,
+          scriptVersion: 'scenario-v1.0',
           attemptType: 'scenario',
         ),
       );
@@ -322,6 +351,7 @@ class MultiTurnController extends ChangeNotifier {
   }
 
   void retryCurrentTurn() {
+    _activeListenSession++;
     _sessionGeneration++;
     _liveTranscript = '';
     _latestEvaluation = null;
@@ -331,9 +361,20 @@ class MultiTurnController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetAudioSession() {
+    _activeListenSession++;
+    _sessionGeneration++;
+    _liveTranscript = '';
+    speechService.cancelListening();
+    speechService.stopSpeaking();
+    _state = MultiTurnState.idle;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _isDisposed = true;
+    _activeListenSession++;
     _sessionGeneration++;
     speechService.cancelListening();
     speechService.stopSpeaking();

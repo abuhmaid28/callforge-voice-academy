@@ -23,11 +23,11 @@ This document defines the automated quality gates, acceptance criteria, and veri
 - **Active PR**: [#5](https://github.com/abuhmaid28/callforge-voice-academy/pull/5)
 - **Target Issue**: [#6](https://github.com/abuhmaid28/callforge-voice-academy/issues/6) (C1-R1 MEGA Autonomous Recovery Campaign)
 - **Base Commit**: `40f2c0438c415b53b961d353a7c67b62494266a0` (Approved M1 Squash Merge on `main`)
-- **Total Automated Tests**: **87 / 87 PASSING**
+- **Total Automated Tests**: **96 / 96 PASSING**
 - **Static Analysis**: **0 issues found** (`flutter analyze`)
 - **Code Formatting**: **100% compliant** (`dart format --set-exit-if-changed .`)
 
-### Test Suite Execution Summary (87 Tests)
+### Test Suite Execution Summary (96 Tests)
 
 | Test Suite File | Scope & Target Capabilities | Tests Passed | Status |
 | :--- | :--- | :--- | :--- |
@@ -38,12 +38,12 @@ This document defines the automated quality gates, acceptance criteria, and veri
 | `test/data/attempt_repository_test.dart` | Local attempt storage, retrieval ordering, data clearing | 3 | `PASS` |
 | `test/data/progress_repository_test.dart` | User progress persistence, consecutive calendar-day streak calculation (same-day, next-day, multi-day gap reset, month/year boundaries), moving average skill mastery, data reset | 10 | `PASS` |
 | `test/presentation/simulator_controller_test.dart` | M1 Simulator lifecycle, audio state machine, error handling, retry | 10 | `PASS` |
-| `test/presentation/disclosure_controller_test.dart` | Disclosure Studio controller, script selection, listening, locked consent simulation (Finding B3), versioned attempt snapshot saving (Finding B5), custom draft CRUD, reference audio | 8 | `PASS` |
-| `test/presentation/multi_turn_controller_test.dart` | Multi-turn scenario orchestration, Turn 1 mandatory opening gate (Finding B1), final turn completion safety (Finding B2), versioned attempt recording (Finding B5), customer TTS turn, adaptive branching | 6 | `PASS` |
-| `test/presentation/floor_skills_controller_test.dart` | Spoken P/B contrast drill evaluation against target vs contrast word, fast number audio playback, digit precision verification | 5 | `PASS` |
-| `test/presentation/screens_widget_test.dart` | MainScaffold 5-tab navigation, VoiceArenaScreen, MultiTurnSimulatorScreen, DisclosureStudioScreen, FloorSkillsScreen | 5 | `PASS` |
+| `test/presentation/disclosure_controller_test.dart` | Disclosure Studio controller, script selection, listening, locked consent simulation (Finding B3), versioned attempt snapshot saving (Finding B5), custom draft CRUD, reference audio, delayed-final STT transcript capture without loss, failed attempt persistence with scriptVersion, cancel listening reset | 11 | `PASS` |
+| `test/presentation/multi_turn_controller_test.dart` | Multi-turn scenario orchestration, Turn 1 mandatory opening gate (Finding B1), final turn completion safety (Finding B2), versioned attempt recording (Finding B5), customer TTS turn, adaptive branching, delayed-final STT transcript capture without loss, resetAudioSession cancellation | 8 | `PASS` |
+| `test/presentation/floor_skills_controller_test.dart` | Spoken P/B contrast drill evaluation against target vs contrast word, fast number audio playback, digit precision verification, delayed-final STT transcript capture without loss, resetAudioSession | 7 | `PASS` |
+| `test/presentation/screens_widget_test.dart` | MainScaffold 5-tab navigation, VoiceArenaScreen, MultiTurnSimulatorScreen, DisclosureStudioScreen, FloorSkillsScreen, HistoryScreen WPM absence and versioned attempt badges, MainScaffold tab switching active-listening teardown | 7 | `PASS` |
 | `test/widget_test.dart` | SimulatorScreen M1 greeting rendering and voice drill loop | 2 | `PASS` |
-| `test/integration/app_smoke_test.dart` | Headless app smoke integration lifecycle tests (ST-01..06, ST-10, ST-02, ST-11), C1 full product journeys (C1-01..04), and C1-05 Negative & Recovery Journey | 8 | `PASS` |
+| `test/integration/app_smoke_test.dart` | Headless app smoke integration lifecycle tests (ST-01..06, ST-10, ST-02, ST-11), C1 full product journeys (C1-01..04), and C1-05 Negative & Recovery Journey with active-listening tab teardown | 8 | `PASS` |
 
 ---
 

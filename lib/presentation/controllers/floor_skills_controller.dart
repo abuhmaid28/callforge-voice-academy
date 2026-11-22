@@ -144,6 +144,7 @@ class FloorSkillsController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   int _sessionGeneration = 0;
+  int _activeListenSession = 0;
   bool _isDisposed = false;
 
   FloorSkillsController({required this.speechService, this.progressRepository});
@@ -157,6 +158,7 @@ class FloorSkillsController extends ChangeNotifier {
 
   void selectDrillType(FloorDrillType type) {
     _sessionGeneration++;
+    _activeListenSession++;
     _activeDrillType = type;
     _resetDrillState();
     notifyListeners();
@@ -164,6 +166,7 @@ class FloorSkillsController extends ChangeNotifier {
 
   void _resetDrillState() {
     _sessionGeneration++;
+    _activeListenSession++;
     _spokenTranscript = '';
     _inputDigits = '';
     _isCorrect = null;
@@ -178,7 +181,7 @@ class FloorSkillsController extends ChangeNotifier {
   // --- P/B Contrast Drill Actions ---
 
   Future<void> startPbRecording() async {
-    final currentSession = ++_sessionGeneration;
+    final listenSession = ++_activeListenSession;
     _spokenTranscript = '';
     _isCorrect = null;
     _feedbackText = '';
@@ -190,19 +193,19 @@ class FloorSkillsController extends ChangeNotifier {
     try {
       await speechService.startListening(
         onResult: (text) {
-          if (_isDisposed || currentSession != _sessionGeneration) return;
+          if (_isDisposed || listenSession != _activeListenSession) return;
           _spokenTranscript = text;
           notifyListeners();
         },
         onError: (err) {
-          if (_isDisposed || currentSession != _sessionGeneration) return;
+          if (_isDisposed || listenSession != _activeListenSession) return;
           _errorMessage = err;
           _isListening = false;
           notifyListeners();
         },
       );
     } catch (e) {
-      if (_isDisposed || currentSession != _sessionGeneration) return;
+      if (_isDisposed || listenSession != _activeListenSession) return;
       _errorMessage = 'Audio error: $e';
       _isListening = false;
       notifyListeners();
@@ -211,13 +214,18 @@ class FloorSkillsController extends ChangeNotifier {
 
   Future<void> stopPbRecordingAndEvaluate() async {
     if (!_isListening) return;
-    _sessionGeneration++;
+    final targetSession = _activeListenSession;
     _isListening = false;
     notifyListeners();
 
     try {
       await speechService.stopListening();
     } catch (_) {}
+
+    if (_isDisposed || targetSession != _activeListenSession) return;
+
+    // Seal session token so late callbacks cannot alter transcript
+    _activeListenSession++;
 
     final normalized = SpeechEvaluator.normalize(_spokenTranscript);
     final pbErrors = SpeechEvaluator.detectPbErrors(normalized);
@@ -341,9 +349,17 @@ class FloorSkillsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetAudioSession() {
+    _activeListenSession++;
+    _sessionGeneration++;
+    _resetDrillState();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _isDisposed = true;
+    _activeListenSession++;
     _sessionGeneration++;
     speechService.cancelListening();
     speechService.stopSpeaking();

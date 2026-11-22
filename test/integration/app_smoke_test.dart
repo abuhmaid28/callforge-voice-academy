@@ -496,9 +496,21 @@ void main() {
         );
         expect(find.text('AGREED'), findsNothing);
 
-        // 3. Tab switching safety: rapidly switch tabs
+        // 3. Tab switching safety with active listening reset
+        await tester.tap(find.text('READ DISCLOSURE'));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.text('STOP & EVALUATE'), findsOneWidget);
+
+        // Rapidly switch tabs while listening was active
         await tester.tap(find.text('Floor Skills'));
         await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.text('Disclosures'));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Controller state must have cleanly reset to idle
+        expect(find.text('READ DISCLOSURE'), findsOneWidget);
+        expect(find.text('STOP & EVALUATE'), findsNothing);
+
         await tester.tap(find.text('Progress'));
         await tester.pump(const Duration(milliseconds: 50));
         await tester.tap(find.text('Today'));

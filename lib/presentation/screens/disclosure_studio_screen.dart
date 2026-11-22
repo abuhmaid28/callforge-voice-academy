@@ -14,11 +14,16 @@ class DisclosureStudioScreen extends StatefulWidget {
   const DisclosureStudioScreen({super.key});
 
   @override
-  State<DisclosureStudioScreen> createState() => _DisclosureStudioScreenState();
+  State<DisclosureStudioScreen> createState() => DisclosureStudioScreenState();
 }
 
-class _DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
+class DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
   late DisclosureController _controller;
+  DisclosureController get controller => _controller;
+
+  void resetAudioSession() {
+    _controller.cancel();
+  }
 
   @override
   void initState() {

@@ -173,5 +173,44 @@ void main() {
       expect(controller.latestEvaluation, isNull);
       expect(controller.state, equals(MultiTurnState.idle));
     });
+
+    test('delayed final transcript delivery during stopListening() evaluates successfully without loss', () async {
+      mockSpeech.deliverFinalOnStop = true;
+      mockSpeech.simulatedTranscript = 'Hello thank you for calling AT&T. This is Alex. May I have your first and last name please?';
+
+      controller.startScenario(scenario);
+      await controller.startAgentListening();
+      expect(controller.state, equals(MultiTurnState.agentListening));
+      // In delayed final mode, transcript is not delivered during startListening
+      expect(controller.liveTranscript, isEmpty);
+
+      await controller.stopAgentListeningAndEvaluate();
+
+      // Transcript was flushed on stop and evaluated
+      expect(
+        controller.conversationHistory.first.text,
+        equals(mockSpeech.simulatedTranscript),
+      );
+      expect(controller.latestEvaluation, isNotNull);
+      expect(controller.latestEvaluation!.isTargetMet, isTrue);
+    });
+
+    test('resetAudioSession cancels speech and returns controller to idle without executing late callbacks', () async {
+      mockSpeech.deliverFinalOnStop = true;
+      mockSpeech.simulatedTranscript = 'Some pending speech';
+
+      controller.startScenario(scenario);
+      await controller.startAgentListening();
+      expect(controller.state, equals(MultiTurnState.agentListening));
+
+      controller.resetAudioSession();
+      expect(controller.state, equals(MultiTurnState.idle));
+      expect(controller.liveTranscript, isEmpty);
+
+      // Now even if stop is attempted, late callbacks are ignored
+      await mockSpeech.stopListening();
+      expect(controller.liveTranscript, isEmpty);
+      expect(controller.latestEvaluation, isNull);
+    });
   });
 }
