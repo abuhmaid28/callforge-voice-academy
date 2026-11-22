@@ -55,8 +55,8 @@ abstract class ObjectionDrillsCatalog {
       customerObjection: 'Every time a phone rep promises me a rate, I end up getting hit with ten hidden fees and taxes on the next bill.',
       requiredResponseKeywords: ['transparent', 'breakdown', 'taxes', 'fees'],
       prohibitedResponsePhrases: ['guarantee zero taxes', 'no fees ever'],
-      modelResponseEnglish: 'I completely appreciate your concern for transparency. While standard government taxes and regulatory fees still apply, our plan rate and equipment pricing are fixed with no surprise surcharges.',
-      coachingArabic: 'وضح بشفافية إن الضرائب الحكومية موجودة ومحدش يقدر يلغيها، لكن سعر الباقة والراوتر ثابتين بدون رسوم خفية.',
+      modelResponseEnglish: 'I completely appreciate your concern for transparency. In this simulated offer, standard monthly taxes and regulatory surcharges apply, and we provide an upfront itemized bill breakdown so you see every charge clearly before any change.',
+      coachingArabic: 'وضح بشفافية إن الضرائب والرسوم التنظيمية موجودة، وقدم تفصيل كامل وواضح للفاتورة (Itemized Breakdown) قبل ما العميل يوافق على أي باقة.',
     ),
 
     // 4. Happy with Cable

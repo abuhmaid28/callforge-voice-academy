@@ -229,7 +229,7 @@ class SalesSimulatorController extends ChangeNotifier {
 
     // Check if turn was final
     if (_currentTurn!.isFinal) {
-      _completeCall(
+      await _completeCall(
         _currentTurn!.resultingOutcome ?? SalesOutcomeType.qualifiedAccept,
       );
       return;
@@ -360,37 +360,50 @@ class SalesSimulatorController extends ChangeNotifier {
         .text;
     final normPrev = SpeechEvaluator.normalize(previousAgentText);
 
-    // 1. Check for decline / no-sale branch
-    if (normPrev.contains('respect') ||
-        normPrev.contains('no problem') ||
-        normPrev.contains('keep') ||
+    // 1. Check for decline / no-sale branch (budget_decline, decline, no_sale)
+    if (normPrev.contains('respect your') ||
+        normPrev.contains('respect that') ||
+        normPrev.contains('keep your') ||
+        normPrev.contains('keep you on') ||
         normPrev.contains('leave as is') ||
-        normPrev.contains('completely understand')) {
-      final declineBranch = customerTurn.branches.firstWhere(
+        normPrev.contains('leave your') ||
+        normPrev.contains('station wi fi') ||
+        normPrev.contains('free wi fi') ||
+        normPrev.contains('no changes')) {
+      final declineBranch = customerTurn.branches.where(
         (b) =>
+            b.conditionKey == 'budget_decline' ||
             b.conditionKey == 'decline' ||
             b.conditionKey == 'no_sale' ||
+            b.conditionKey.contains('decline') ||
             b.conditionKey.contains('no_sale'),
-        orElse: () => customerTurn.branches.first,
       );
-      return declineBranch.nextTurnId;
+      if (declineBranch.isNotEmpty) {
+        return declineBranch.first.nextTurnId;
+      }
     }
 
-    // 2. Check for verification branch
+    // 2. Check for verification / eligibility branch (verify, needs_check, check)
     if (normPrev.contains('verify') ||
         normPrev.contains('check') ||
         normPrev.contains('address') ||
         normPrev.contains('specifications') ||
         normPrev.contains('coverage') ||
-        normPrev.contains('look up')) {
-      final verifyBranch = customerTurn.branches.firstWhere(
+        normPrev.contains('look up') ||
+        normPrev.contains('confirm') ||
+        normPrev.contains('review your billing') ||
+        normPrev.contains('permission') ||
+        normPrev.contains('status first')) {
+      final verifyBranch = customerTurn.branches.where(
         (b) =>
-            b.conditionKey == 'verify' ||
             b.conditionKey == 'needs_check' ||
-            b.conditionKey.contains('check'),
-        orElse: () => customerTurn.branches.first,
+            b.conditionKey == 'verify' ||
+            b.conditionKey.contains('check') ||
+            b.conditionKey.contains('verify'),
       );
-      return verifyBranch.nextTurnId;
+      if (verifyBranch.isNotEmpty) {
+        return verifyBranch.first.nextTurnId;
+      }
     }
 
     // 3. Check for friction / objection if response is very short/unclear
@@ -406,15 +419,21 @@ class SalesSimulatorController extends ChangeNotifier {
       }
     }
 
-    // 4. Default to accept branch if present
-    final acceptBranch = customerTurn.branches.firstWhere(
-      (b) => b.conditionKey == 'accept' || b.conditionKey == 'default',
-      orElse: () => customerTurn.branches.first,
+    // 4. Default / accept / high_value branch
+    final highValueBranch = customerTurn.branches.firstWhere(
+      (b) =>
+          b.conditionKey == 'high_value' ||
+          b.conditionKey == 'qualified' ||
+          b.conditionKey == 'accept',
+      orElse: () => customerTurn.branches.firstWhere(
+        (b) => b.conditionKey == 'default',
+        orElse: () => customerTurn.branches.first,
+      ),
     );
-    return acceptBranch.nextTurnId;
+    return highValueBranch.nextTurnId;
   }
 
-  void _completeCall(SalesOutcomeType outcome) {
+  Future<void> _completeCall(SalesOutcomeType outcome) async {
     if (_hasRecordedCompletion || _activeScenario == null) return;
     _hasRecordedCompletion = true;
 
@@ -429,7 +448,7 @@ class SalesSimulatorController extends ChangeNotifier {
     SalesOutcomeType validatedOutcome = outcome;
 
     // Ethical conversion gate:
-    // If proposed outcome is qualifiedAccept, verify discovery and disclosure prerequisites
+    // If proposed outcome is qualifiedAccept, verify discovery, disclosures, and consent prerequisites
     if (validatedOutcome == SalesOutcomeType.qualifiedAccept) {
       final allAgentText = _agentTurnTranscripts.values.join(' ').toLowerCase();
       final normalizedAll = SpeechEvaluator.normalize(allAgentText);
@@ -450,7 +469,19 @@ class SalesSimulatorController extends ChangeNotifier {
             r'\b(who|what|where|when|why|how|which|tell me|could you|would you|can you|do you|are you)\b',
           ).hasMatch(normalizedAll);
 
-      if (hasProhibited || !hasDiscovery) {
+      // Check scenario mandatory disclosures coverage
+      final hasDisclosures = _hasMandatoryDisclosuresCovered(
+        _activeScenario!,
+        normalizedAll,
+      );
+
+      // Explicit consent check: customer outcome must have been qualifiedAccept
+      final hasCustomerConsent = outcome == SalesOutcomeType.qualifiedAccept;
+
+      if (hasProhibited ||
+          !hasDiscovery ||
+          !hasDisclosures ||
+          !hasCustomerConsent) {
         validatedOutcome = SalesOutcomeType.needsVerification;
       }
     }
@@ -474,9 +505,9 @@ class SalesSimulatorController extends ChangeNotifier {
     _state = SalesSimulatorState.callCompleted;
     notifyListeners();
 
-    // Save AttemptRecord
+    // Save AttemptRecord (awaited)
     if (attemptRepository != null) {
-      attemptRepository!.saveAttempt(
+      await attemptRepository!.saveAttempt(
         AttemptRecord(
           id: 'att-sales-${DateTime.now().millisecondsSinceEpoch}',
           scenarioId: _activeScenario!.id,
@@ -502,9 +533,9 @@ class SalesSimulatorController extends ChangeNotifier {
       );
     }
 
-    // Record progress in ProgressRepository
+    // Record progress in ProgressRepository (awaited)
     if (progressRepository != null) {
-      progressRepository!.recordSalesSimulationCompletion(
+      await progressRepository!.recordSalesSimulationCompletion(
         scenarioId: _activeScenario!.id,
         skillTags: _activeScenario!.skillTags,
         score: scorecard.overallScore,
@@ -513,12 +544,70 @@ class SalesSimulatorController extends ChangeNotifier {
 
       // Award curriculum day completion ONLY when passed
       if (curriculumDay != null && scorecard.passed) {
-        progressRepository!.recordCurriculumDayCompletion(
+        await progressRepository!.recordCurriculumDayCompletion(
           dayNumber: curriculumDay!,
           score: scorecard.overallScore,
         );
       }
     }
+  }
+
+  static bool _hasMandatoryDisclosuresCovered(
+    SalesScenario scenario,
+    String normalizedAllAgentText,
+  ) {
+    if (scenario.mandatoryDisclosures.isEmpty) return true;
+    for (final disc in scenario.mandatoryDisclosures) {
+      final words = disc
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^\w\s]'), '')
+          .split(' ')
+          .where((w) => w.length >= 4 && !_isStopWord(w))
+          .toList();
+      if (words.isEmpty) continue;
+      final matchedCount = words
+          .where((w) => normalizedAllAgentText.contains(w))
+          .length;
+      if (matchedCount == 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static bool _isStopWord(String word) {
+    const stopWords = {
+      'that',
+      'this',
+      'with',
+      'from',
+      'your',
+      'have',
+      'been',
+      'will',
+      'would',
+      'could',
+      'should',
+      'their',
+      'there',
+      'about',
+      'after',
+      'before',
+      'where',
+      'which',
+      'other',
+      'under',
+      'while',
+      'these',
+      'those',
+      'being',
+      'until',
+      'also',
+      'into',
+      'onto',
+      'upon',
+    };
+    return stopWords.contains(word);
   }
 
   void cancelListening() {

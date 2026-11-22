@@ -212,5 +212,84 @@ void main() {
       expect(controller.liveTranscript, isEmpty);
       expect(controller.latestEvaluation, isNull);
     });
+
+    test('P0-1: Care scenario with curriculumDay records completion and advances curriculum day when passed', () async {
+      final dayController = MultiTurnController(
+        speechService: mockSpeech,
+        progressRepository: progressRepo,
+        attemptRepository: attemptRepo,
+        curriculumDay: 1,
+      );
+
+      dayController.startScenario(scenario);
+
+      // Turn 1: Pass
+      mockSpeech.simulatedTranscript = 'Hello thank you for calling AT&T. This is Alex. May I have your first and last name please?';
+      await dayController.startAgentListening();
+      await dayController.stopAgentListeningAndEvaluate();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Turn 3: Pass
+      mockSpeech.simulatedTranscript = 'I completely understand your surprise, Marcus. Let me look right into your bill breakdown so you know exactly what is charged and when your ongoing rate applies.';
+      await dayController.startAgentListening();
+      await dayController.stopAgentListeningAndEvaluate();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Final Turn 5A: Pass
+      mockSpeech.simulatedTranscript = 'Exactly Marcus, once your autopay discount applies, your regular monthly bill will be 140 dollars. Is there anything else I can assist you with today?';
+      await dayController.startAgentListening();
+      await dayController.stopAgentListeningAndEvaluate();
+
+      expect(dayController.isCallCompleted, isTrue);
+      expect(dayController.isPassed, isTrue);
+
+      final progress = await progressRepo.loadProgress();
+      expect(progress.completedCurriculumDays, contains(1));
+      expect(progress.currentCurriculumDay, equals(2));
+
+      final attempts = await attemptRepo.getAttempts();
+      final dayAttempt = attempts.firstWhere(
+        (a) => a.scenarioId == scenario.id && a.passed,
+      );
+      expect(dayAttempt.curriculumDay, equals(1));
+
+      dayController.dispose();
+    });
+
+    test('P0-1: Care scenario with curriculumDay does not record curriculum day completion when failed', () async {
+      final dayController = MultiTurnController(
+        speechService: mockSpeech,
+        progressRepository: progressRepo,
+        attemptRepository: attemptRepo,
+        curriculumDay: 1,
+      );
+
+      dayController.startScenario(scenario);
+
+      // Turn 1: Pass
+      mockSpeech.simulatedTranscript = 'Hello thank you for calling AT&T. This is Alex. May I have your first and last name please?';
+      await dayController.startAgentListening();
+      await dayController.stopAgentListeningAndEvaluate();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Turn 3: Pass
+      mockSpeech.simulatedTranscript = 'I completely understand your surprise, Marcus. Let me look right into your bill breakdown so you know exactly what is charged and when your ongoing rate applies.';
+      await dayController.startAgentListening();
+      await dayController.stopAgentListeningAndEvaluate();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Final Turn 5A: Fail
+      mockSpeech.simulatedTranscript = '';
+      await dayController.startAgentListening();
+      await dayController.stopAgentListeningAndEvaluate();
+
+      expect(dayController.isCallCompleted, isFalse);
+
+      final progress = await progressRepo.loadProgress();
+      expect(progress.completedCurriculumDays.contains(1), isFalse);
+      expect(progress.currentCurriculumDay, equals(1));
+
+      dayController.dispose();
+    });
   });
 }

@@ -355,7 +355,7 @@ class FloorSkillsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void verifyFastNumbers() {
+  Future<void> verifyFastNumbers() async {
     final cleanInput = _inputDigits.replaceAll(RegExp(r'[^\d.]'), '');
     final cleanExpected = currentNumberItem.expectedDigits.replaceAll(
       RegExp(r'[^\d.]'),
@@ -368,7 +368,7 @@ class FloorSkillsController extends ChangeNotifier {
     if (correct) {
       _feedbackText = 'تطابق كامل 100%! تم التقاط الأرقام بدقة وسرعة عالية.';
       if (progressRepository != null) {
-        progressRepository!.recordDrillCompletion(
+        await progressRepository!.recordDrillCompletion(
           drillType: 'fast_numbers',
           score: 100.0,
         );
