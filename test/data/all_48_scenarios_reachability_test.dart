@@ -121,12 +121,11 @@ void main() {
       }
     });
 
-    test('48 Scenarios: All 48 scenarios execute through SalesSimulatorController to reach qualified outcomes', () async {
+    test('48 Scenarios: All 48 scenarios execute through SalesSimulatorController on Path B (Decline -> Respectful No-Sale)', () async {
       final mockSpeech = MockSpeechService();
       final allScenarios = SalesScenarioCatalog.allScenarios;
 
       for (final scenario in allScenarios) {
-        // Path B: Respectful No-Sale
         final controller = SalesSimulatorController(speechService: mockSpeech);
         controller.startScenario(scenario);
 
@@ -142,7 +141,7 @@ void main() {
           }
           await controller.startListening();
           await controller.stopListening();
-          await Future.delayed(const Duration(milliseconds: 25));
+          await Future.delayed(const Duration(milliseconds: 15));
         }
 
         expect(
@@ -158,6 +157,131 @@ void main() {
           ),
           reason:
               '${scenario.id} must conclude with ethical closure or verification',
+        );
+
+        controller.dispose();
+      }
+    });
+
+    test('48 Scenarios: All 48 scenarios execute through SalesSimulatorController on Path C (Clarification -> Needs Verification)', () async {
+      final mockSpeech = MockSpeechService();
+      final allScenarios = SalesScenarioCatalog.allScenarios;
+
+      for (final scenario in allScenarios) {
+        final controller = SalesSimulatorController(speechService: mockSpeech);
+        controller.startScenario(scenario);
+
+        int safetySteps = 0;
+        while (!controller.isCallCompleted &&
+            controller.currentTurn != null &&
+            safetySteps < 12) {
+          safetySteps++;
+          if (controller.currentTurn!.phase == SalesPhase.greeting) {
+            mockSpeech.simulatedTranscript = 'Hello thank you for calling AT&T this is Alex may I have your first and last name please';
+          } else {
+            mockSpeech.simulatedTranscript = 'I understand. Let me verify your account permissions and check your address and eligibility status first before looking into any plan changes.';
+          }
+          await controller.startListening();
+          await controller.stopListening();
+          await Future.delayed(const Duration(milliseconds: 15));
+        }
+
+        expect(
+          controller.isCallCompleted,
+          isTrue,
+          reason: '${scenario.id} did not complete on verification path',
+        );
+        expect(
+          controller.latestScorecard?.outcomeType,
+          equals(SalesOutcomeType.needsVerification),
+          reason:
+              '${scenario.id} must conclude with needsVerification on account check path',
+        );
+
+        controller.dispose();
+      }
+    });
+
+    test('48 Scenarios: All 48 scenarios execute through SalesSimulatorController on Path A (Offer + Disclosures -> Qualified Accept)', () async {
+      final mockSpeech = MockSpeechService();
+      final allScenarios = SalesScenarioCatalog.allScenarios;
+
+      for (final scenario in allScenarios) {
+        final controller = SalesSimulatorController(speechService: mockSpeech);
+        controller.startScenario(scenario);
+
+        int safetySteps = 0;
+        while (!controller.isCallCompleted &&
+            controller.currentTurn != null &&
+            safetySteps < 12) {
+          safetySteps++;
+          final turn = controller.currentTurn!;
+          if (turn.phase == SalesPhase.greeting) {
+            mockSpeech.simulatedTranscript = 'Hello thank you for calling AT&T this is Alex may I have your first and last name please';
+          } else {
+            // Supply turn model response + required keywords + mandatory disclosures + eligibility verification to fulfill closing terms
+            final modelResp = turn.usEnglishModelResponse;
+            final keywords = turn.requiredKeywords.join(' ');
+            final disclosures = scenario.mandatoryDisclosures.join(' ');
+            mockSpeech.simulatedTranscript =
+                '$modelResp $keywords $disclosures Your address qualifies for fiber availability, device condition is verified, and number porting is confirmed. Under this simulated plan change would you like to proceed with this offer?';
+          }
+          await controller.startListening();
+          await controller.stopListening();
+          await Future.delayed(const Duration(milliseconds: 15));
+        }
+
+        expect(
+          controller.isCallCompleted,
+          isTrue,
+          reason: '${scenario.id} did not complete on accept path',
+        );
+        expect(
+          controller.latestScorecard?.outcomeType,
+          equals(SalesOutcomeType.qualifiedAccept),
+          reason:
+              '${scenario.id} must conclude with qualifiedAccept when disclosures and consent are covered',
+        );
+
+        controller.dispose();
+      }
+    });
+
+    test('48 Scenarios: Omitting mandatory disclosures strictly downgrades Path A to needsVerification', () async {
+      final mockSpeech = MockSpeechService();
+      final allScenarios = SalesScenarioCatalog.allScenarios;
+
+      for (final scenario in allScenarios) {
+        final controller = SalesSimulatorController(speechService: mockSpeech);
+        controller.startScenario(scenario);
+
+        int safetySteps = 0;
+        while (!controller.isCallCompleted &&
+            controller.currentTurn != null &&
+            safetySteps < 12) {
+          safetySteps++;
+          final turn = controller.currentTurn!;
+          if (turn.phase == SalesPhase.greeting) {
+            mockSpeech.simulatedTranscript = 'Hello thank you for calling AT&T this is Alex may I have your first and last name please';
+          } else {
+            // Only generic conversational words with NO mandatory disclosures
+            mockSpeech.simulatedTranscript = 'I recommend our upgrade plan option device. It is really great and fits your budget. Would you like to proceed?';
+          }
+          await controller.startListening();
+          await controller.stopListening();
+          await Future.delayed(const Duration(milliseconds: 15));
+        }
+
+        expect(
+          controller.isCallCompleted,
+          isTrue,
+          reason: '${scenario.id} did not complete',
+        );
+        expect(
+          controller.latestScorecard?.outcomeType,
+          equals(SalesOutcomeType.needsVerification),
+          reason:
+              '${scenario.id} without mandatory disclosures must downgrade to needsVerification',
         );
 
         controller.dispose();

@@ -46,6 +46,17 @@ class FloorSkillsController extends ChangeNotifier {
   final ISpeechService speechService;
   final IProgressRepository? progressRepository;
   final IAttemptRepository? attemptRepository;
+  final String? workoutStepId;
+
+  FloorSkillsController({
+    required this.speechService,
+    this.progressRepository,
+    this.attemptRepository,
+    this.workoutStepId,
+  });
+
+  AttemptRecord? _lastSavedAttempt;
+  AttemptRecord? get lastSavedAttempt => _lastSavedAttempt;
 
   FloorDrillType _activeDrillType = FloorDrillType.pbContrast;
   FloorDrillType get activeDrillType => _activeDrillType;
@@ -172,12 +183,6 @@ class FloorSkillsController extends ChangeNotifier {
   int _sessionGeneration = 0;
   int _activeListenSession = 0;
   bool _isDisposed = false;
-
-  FloorSkillsController({
-    required this.speechService,
-    this.progressRepository,
-    this.attemptRepository,
-  });
 
   @override
   void notifyListeners() {
@@ -319,24 +324,25 @@ class FloorSkillsController extends ChangeNotifier {
     }
 
     if (attemptRepository != null && normalized.isNotEmpty) {
-      await attemptRepository!.saveAttempt(
-        AttemptRecord(
-          id: 'att-floor-${DateTime.now().millisecondsSinceEpoch}',
-          scenarioId: currentPbItem.id,
-          timestamp: DateTime.now(),
-          transcript: _spokenTranscript,
-          accuracyPercentage: score.round(),
-          passed: score >= 70.0,
-          wpm: 0,
-          missingAnchors: const [],
-          pbErrors: (hasContrast || pbErrors.isNotEmpty)
-              ? [currentPbItem.wordB]
-              : const [],
-          arabicCoaching: _feedbackText,
-          scriptTitle: currentPbItem.practiceSentence,
-          attemptType: 'drill',
-        ),
+      final attempt = AttemptRecord(
+        id: 'att-floor-${DateTime.now().millisecondsSinceEpoch}',
+        scenarioId: currentPbItem.id,
+        timestamp: DateTime.now(),
+        transcript: _spokenTranscript,
+        accuracyPercentage: score.round(),
+        passed: score >= 70.0,
+        wpm: 0,
+        missingAnchors: const [],
+        pbErrors: (hasContrast || pbErrors.isNotEmpty)
+            ? [currentPbItem.wordB]
+            : const [],
+        arabicCoaching: _feedbackText,
+        scriptTitle: currentPbItem.practiceSentence,
+        attemptType: 'drill',
+        workoutStepId: workoutStepId,
       );
+      _lastSavedAttempt = attempt;
+      await attemptRepository!.saveAttempt(attempt);
     }
     notifyListeners();
   }
@@ -407,22 +413,23 @@ class FloorSkillsController extends ChangeNotifier {
     }
 
     if (attemptRepository != null && cleanInput.isNotEmpty) {
-      await attemptRepository!.saveAttempt(
-        AttemptRecord(
-          id: 'att-floor-${DateTime.now().millisecondsSinceEpoch}',
-          scenarioId: currentNumberItem.id,
-          timestamp: DateTime.now(),
-          transcript: _inputDigits,
-          accuracyPercentage: correct ? 100 : 0,
-          passed: correct,
-          wpm: 0,
-          missingAnchors: const [],
-          pbErrors: const [],
-          arabicCoaching: _feedbackText,
-          scriptTitle: currentNumberItem.label,
-          attemptType: 'drill',
-        ),
+      final attempt = AttemptRecord(
+        id: 'att-floor-${DateTime.now().millisecondsSinceEpoch}',
+        scenarioId: currentNumberItem.id,
+        timestamp: DateTime.now(),
+        transcript: _inputDigits,
+        accuracyPercentage: correct ? 100 : 0,
+        passed: correct,
+        wpm: 0,
+        missingAnchors: const [],
+        pbErrors: const [],
+        arabicCoaching: _feedbackText,
+        scriptTitle: currentNumberItem.label,
+        attemptType: 'drill',
+        workoutStepId: workoutStepId,
       );
+      _lastSavedAttempt = attempt;
+      await attemptRepository!.saveAttempt(attempt);
     }
     notifyListeners();
   }
