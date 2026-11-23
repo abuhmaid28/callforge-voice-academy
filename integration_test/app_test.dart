@@ -22,6 +22,7 @@ import 'package:callforge/presentation/controllers/simulator_controller.dart';
 import 'package:callforge/presentation/navigation/main_scaffold.dart';
 import 'package:callforge/presentation/screens/history_screen.dart';
 import 'package:callforge/presentation/screens/multi_turn_simulator_screen.dart';
+import 'package:callforge/presentation/screens/workout_session_screen.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -698,6 +699,45 @@ void main() {
         expect(find.textContaining('DAY 1 WORKOUT'), findsWidgets);
         expect(find.textContaining('WORKOUT QUEUE'), findsOneWidget);
         expect(find.text('START PRIMARY SCENARIO'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'C3-01: Today screen launches full WorkoutSessionScreen with queue and step deck',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const CallForgeApp(home: MainScaffold(initialIndex: 0)),
+        );
+        await tester.pumpAndSettle();
+
+        final startWorkoutBtn = find.byKey(
+          const Key('btn_start_daily_workout'),
+        );
+        await tester.tap(startWorkoutBtn);
+        await tester.pumpAndSettle();
+
+        final startSessionBtn = find.byKey(
+          const Key('btn_start_full_workout_session'),
+        );
+        expect(startSessionBtn, findsOneWidget);
+
+        await tester.tap(startSessionBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(WorkoutSessionScreen), findsOneWidget);
+        expect(find.textContaining('DAY 1 WORKOUT SESSION'), findsOneWidget);
+        expect(find.textContaining('WORKOUT QUEUE'), findsOneWidget);
+        expect(
+          find.byKey(const Key('btn_launch_workout_step')),
+          findsOneWidget,
+        );
       },
     );
   });

@@ -11,8 +11,13 @@ import '../widgets/waveform_indicator.dart';
 
 class MultiTurnSimulatorScreen extends StatefulWidget {
   final Scenario scenario;
+  final int? curriculumDay;
 
-  const MultiTurnSimulatorScreen({super.key, required this.scenario});
+  const MultiTurnSimulatorScreen({
+    super.key,
+    required this.scenario,
+    this.curriculumDay,
+  });
 
   @override
   State<MultiTurnSimulatorScreen> createState() =>
@@ -38,6 +43,7 @@ class _MultiTurnSimulatorScreenState extends State<MultiTurnSimulatorScreen> {
       speechService: speechService,
       progressRepository: progressRepo,
       attemptRepository: attemptRepo,
+      curriculumDay: widget.curriculumDay,
     );
     _controller.addListener(_onControllerUpdate);
     _controller.startScenario(widget.scenario);

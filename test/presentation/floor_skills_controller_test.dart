@@ -59,22 +59,22 @@ void main() {
       expect(controller.feedbackText, contains('تم رصد تبديل صوتي'));
     });
 
-    test('fast numbers verifies exact digit matching', () {
+    test('fast numbers verifies exact digit matching', () async {
       controller.selectDrillType(FloorDrillType.fastNumbers);
       final item = controller.currentNumberItem;
 
       controller.setInputDigits(item.expectedDigits);
-      controller.verifyFastNumbers();
+      await controller.verifyFastNumbers();
 
       expect(controller.isCorrect, isTrue);
       expect(controller.feedbackText, contains('تطابق كامل 100%'));
     });
 
-    test('fast numbers flags digit mismatch', () {
+    test('fast numbers flags digit mismatch', () async {
       controller.selectDrillType(FloorDrillType.fastNumbers);
 
       controller.setInputDigits('000000000');
-      controller.verifyFastNumbers();
+      await controller.verifyFastNumbers();
 
       expect(controller.isCorrect, isFalse);
       expect(controller.feedbackText, contains('غير متطابقة'));

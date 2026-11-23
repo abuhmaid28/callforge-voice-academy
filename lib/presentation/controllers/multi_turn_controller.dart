@@ -39,6 +39,7 @@ class MultiTurnController extends ChangeNotifier {
   final ISpeechService speechService;
   final IProgressRepository? progressRepository;
   final IAttemptRepository? attemptRepository;
+  final int? curriculumDay;
 
   MultiTurnState _state = MultiTurnState.idle;
   MultiTurnState get state => _state;
@@ -63,8 +64,17 @@ class MultiTurnController extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  double _accumulatedScore = 0.0;
-  int _agentTurnsCount = 0;
+  final Map<String, MultiTurnEvaluationResult> _turnEvaluations = {};
+  Map<String, MultiTurnEvaluationResult> get turnEvaluations =>
+      Map.unmodifiable(_turnEvaluations);
+
+  double get averageScore {
+    if (_turnEvaluations.isEmpty) return 0.0;
+    final total = _turnEvaluations.values.fold(0.0, (sum, e) => sum + e.score);
+    return total / _turnEvaluations.length;
+  }
+
+  bool get isPassed => averageScore >= 70.0;
 
   int _sessionGeneration = 0;
   int _activeListenSession = 0;
@@ -75,6 +85,7 @@ class MultiTurnController extends ChangeNotifier {
     required this.speechService,
     this.progressRepository,
     this.attemptRepository,
+    this.curriculumDay,
   });
 
   @override
@@ -89,11 +100,10 @@ class MultiTurnController extends ChangeNotifier {
     _sessionGeneration++;
     _activeScenario = scenario;
     _conversationHistory.clear();
+    _turnEvaluations.clear();
     _liveTranscript = '';
     _latestEvaluation = null;
     _errorMessage = null;
-    _accumulatedScore = 0.0;
-    _agentTurnsCount = 0;
     _hasRecordedCompletion = false;
 
     if (scenario.turns.isNotEmpty) {
@@ -163,8 +173,7 @@ class MultiTurnController extends ChangeNotifier {
     );
 
     _latestEvaluation = eval;
-    _accumulatedScore += eval.score;
-    _agentTurnsCount += 1;
+    _turnEvaluations[_currentTurn!.id] = eval;
 
     _conversationHistory.add(
       ConversationBubbleItem(
@@ -178,7 +187,7 @@ class MultiTurnController extends ChangeNotifier {
     // GATE 1: Final turn completion gate (Finding B2)
     if (_currentTurn!.isFinal) {
       if (eval.isTargetMet && hasAudio) {
-        _completeCall();
+        await _completeCall();
       } else {
         // Failed final turn: do not mark completed, do not record progress
         _state = MultiTurnState.idle;
@@ -186,7 +195,7 @@ class MultiTurnController extends ChangeNotifier {
 
         // Persist failed attempt record for historical visibility without inflating completions
         if (attemptRepository != null && _activeScenario != null) {
-          attemptRepository!.saveAttempt(
+          await attemptRepository!.saveAttempt(
             AttemptRecord(
               id: 'att-scen-fail-${DateTime.now().millisecondsSinceEpoch}',
               scenarioId: _activeScenario!.id,
@@ -202,6 +211,7 @@ class MultiTurnController extends ChangeNotifier {
               scriptSnapshot: _currentTurn!.spokenText,
               scriptVersion: 'scenario-v1.0',
               attemptType: 'scenario',
+              curriculumDay: curriculumDay,
             ),
           );
         }
@@ -299,26 +309,33 @@ class MultiTurnController extends ChangeNotifier {
     }
   }
 
-  void _completeCall() {
+  Future<void> _completeCall() async {
     if (_hasRecordedCompletion) return;
     _hasRecordedCompletion = true;
 
     _state = MultiTurnState.callCompleted;
     notifyListeners();
 
+    final avgScore = _turnEvaluations.isNotEmpty ? averageScore : 75.0;
+    final callPassed = avgScore >= 70.0;
+
     if (progressRepository != null && _activeScenario != null) {
-      final avgScore = _agentTurnsCount > 0
-          ? _accumulatedScore / _agentTurnsCount
-          : 75.0;
-      progressRepository!.recordSimulationCompletion(
+      await progressRepository!.recordSimulationCompletion(
         scenarioId: _activeScenario!.id,
         skillTags: _activeScenario!.skillTags,
         score: avgScore,
       );
+
+      if (curriculumDay != null && callPassed) {
+        await progressRepository!.recordCurriculumDayCompletion(
+          dayNumber: curriculumDay!,
+          score: avgScore,
+        );
+      }
     }
 
     if (attemptRepository != null && _activeScenario != null) {
-      attemptRepository!.saveAttempt(
+      await attemptRepository!.saveAttempt(
         AttemptRecord(
           id: 'att-scen-${DateTime.now().millisecondsSinceEpoch}',
           scenarioId: _activeScenario!.id,
@@ -326,8 +343,8 @@ class MultiTurnController extends ChangeNotifier {
           transcript: _liveTranscript,
           accuracyPercentage: _latestEvaluation != null
               ? _latestEvaluation!.score.round()
-              : 80,
-          passed: true,
+              : avgScore.round(),
+          passed: callPassed,
           wpm: 0,
           missingAnchors: _latestEvaluation?.missingKeywords ?? [],
           pbErrors: _latestEvaluation?.pbConfusions ?? [],
@@ -336,6 +353,7 @@ class MultiTurnController extends ChangeNotifier {
           scriptSnapshot: _activeScenario!.customerResponse,
           scriptVersion: 'scenario-v1.0',
           attemptType: 'scenario',
+          curriculumDay: curriculumDay,
         ),
       );
     }
@@ -355,6 +373,9 @@ class MultiTurnController extends ChangeNotifier {
     _sessionGeneration++;
     _liveTranscript = '';
     _latestEvaluation = null;
+    if (_currentTurn != null) {
+      _turnEvaluations.remove(_currentTurn!.id);
+    }
     speechService.cancelListening();
     speechService.stopSpeaking();
     _state = MultiTurnState.idle;

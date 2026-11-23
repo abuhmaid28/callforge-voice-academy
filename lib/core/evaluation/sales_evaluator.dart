@@ -401,6 +401,62 @@ abstract class SalesEvaluator {
       ),
     );
 
+    // Dimension 8: Mandatory Disclosures & Terms Transparency
+    final missingDisclosures = <String>[];
+    for (final disc in scenario.mandatoryDisclosures) {
+      final words = disc
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^\w\s]'), '')
+          .split(' ')
+          .where((w) => w.length >= 4 && !_isStopWord(w))
+          .toList();
+      final matchCount = words.where((w) => normalizedAll.contains(w)).length;
+      if (words.isNotEmpty && matchCount == 0) {
+        missingDisclosures.add(disc);
+      }
+    }
+
+    ScorecardRating disclosureRating;
+    String disclosureFeedbackEn;
+    String disclosureFeedbackAr;
+
+    if (scenario.mandatoryDisclosures.isEmpty) {
+      disclosureRating = ScorecardRating.notAssessed;
+      disclosureFeedbackEn = 'No scenario-specific disclosures required.';
+      disclosureFeedbackAr = 'لا توجد إفصاحات خاصة مطلوبة لهذا السيناريو.';
+    } else if (missingDisclosures.isEmpty) {
+      disclosureRating = ScorecardRating.exemplary;
+      disclosureFeedbackEn = 'Full disclosure coverage: all required terms and limitations were stated.';
+      disclosureFeedbackAr =
+          'شفافية كاملة: تم ذكر جميع الشروط والقيود الإلزامية بوضوح.';
+    } else if (missingDisclosures.length <
+        scenario.mandatoryDisclosures.length) {
+      disclosureRating = ScorecardRating.proficient;
+      disclosureFeedbackEn =
+          'Partial disclosure coverage: stated core features, but omitted ${missingDisclosures.first}.';
+      disclosureFeedbackAr =
+          'إفصاح جزئي: وضحت بعض الميزات لكن نسيت: ${missingDisclosures.first}.';
+    } else {
+      disclosureRating = ScorecardRating.developing;
+      disclosureFeedbackEn =
+          'Critical omission: failed to communicate mandatory disclosures (${missingDisclosures.join("; ")}).';
+      disclosureFeedbackAr = 'إغفال جسيم: لم تذكر الشروط والإفصاحات الإلزامية المطلوبة قبل إنهاء العرض.';
+    }
+
+    dimensions.add(
+      ScorecardDimension(
+        key: 'mandatory_disclosures',
+        label: 'Mandatory Disclosures & Terms',
+        labelArabic: 'الإفصاحات والشروط الإلزامية',
+        rating: disclosureRating,
+        evidenceSnippet: missingDisclosures.isEmpty
+            ? 'All mandatory disclosures covered.'
+            : 'Missing: ${missingDisclosures.join("; ")}',
+        feedbackEnglish: disclosureFeedbackEn,
+        feedbackArabic: disclosureFeedbackAr,
+      ),
+    );
+
     // Calculate Overall Score (average of assessed dimensions)
     final assessedDims = dimensions.where((d) => d.isAssessed).toList();
     double totalWeight = 0.0;
@@ -467,5 +523,40 @@ abstract class SalesEvaluator {
       }
     }
     return utterances.isNotEmpty ? utterances.first.trim() : '';
+  }
+
+  static bool _isStopWord(String word) {
+    const stopWords = {
+      'that',
+      'this',
+      'with',
+      'from',
+      'your',
+      'have',
+      'been',
+      'will',
+      'would',
+      'could',
+      'should',
+      'their',
+      'there',
+      'about',
+      'after',
+      'before',
+      'where',
+      'which',
+      'other',
+      'under',
+      'while',
+      'these',
+      'those',
+      'being',
+      'until',
+      'also',
+      'into',
+      'onto',
+      'upon',
+    };
+    return stopWords.contains(word);
   }
 }

@@ -18,6 +18,7 @@ import 'objection_drill_screen.dart';
 import 'sales_lab_screen.dart';
 import 'sales_simulator_screen.dart';
 import 'voice_arena_screen.dart';
+import 'workout_session_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ProgressController progressController;
@@ -91,7 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => MultiTurnSimulatorScreen(scenario: arenaScenario),
+          builder: (_) => MultiTurnSimulatorScreen(
+            scenario: arenaScenario,
+            curriculumDay: dayNumber,
+          ),
         ),
       ).then((_) => _refreshAll());
       return;
@@ -418,10 +422,40 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
+                      key: const Key('btn_start_full_workout_session'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: const Color(0xFF00A3E0),
+                        backgroundColor: const Color(0xFF0D47A1),
                         foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.playlist_play_rounded),
+                      label: const Text(
+                        'START FULL WORKOUT SESSION',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                WorkoutSessionScreen(workout: workout),
+                          ),
+                        ).then((_) => _refreshAll());
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        foregroundColor: const Color(0xFF00A3E0),
+                        side: const BorderSide(color: Color(0xFF00A3E0)),
                       ),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text(

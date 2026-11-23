@@ -1137,16 +1137,11 @@ abstract class RetentionScenariosCatalog {
           id: 'turn-ret45-05',
           turnNumber: 5,
           speaker: TurnSpeaker.agent,
-          spokenText: 'Great news! 742 Evergreen Terrace is fully wired for AT&T Fiber. We can schedule a technician for next Saturday morning, transfer your account with zero disconnect fees, and preserve your twenty percent wireless bundle discount.',
+          spokenText: 'Under our relocation policy, 742 Evergreen Terrace is verified for AT&T Fiber. We can schedule a technician for next Saturday morning, transfer your service without early termination penalties, and preserve your twenty percent wireless bundle discount.',
           phase: SalesPhase.valueBridge,
-          requiredKeywords: [
-            'fully wired',
-            'technician',
-            'zero disconnect fees',
-            'preserve',
-          ],
-          trainerGuidanceArabic: 'بشرى سارة: العنوان الجديد مجهز بالفايبر. حجز موعد لنقل الخدمة مجاناً مع الحفاظ على خصم الباقة المدمجة 20%.',
-          usEnglishModelResponse: '742 Evergreen Terrace is 100% Fiber-ready! We can set up a seamless move for Saturday, waive all transfer costs, and keep your twenty percent bundle discount intact.',
+          requiredKeywords: ['fiber', 'technician', 'transfer', 'preserve'],
+          trainerGuidanceArabic: 'العنوان الجديد مجهز بالفايبر. احجز موعداً لنقل الخدمة وتفادي غرامات الإلغاء المبكر مع الحفاظ على خصم الباقة المدمجة.',
+          usEnglishModelResponse: '742 Evergreen Terrace is verified for AT&T Fiber. We can set up a transfer for Saturday, move your active account without early termination penalties, and keep your twenty percent bundle discount intact.',
           branches: [
             ScenarioBranch(
               conditionKey: 'accept',
