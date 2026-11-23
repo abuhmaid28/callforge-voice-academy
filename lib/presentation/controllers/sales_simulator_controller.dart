@@ -419,7 +419,42 @@ class SalesSimulatorController extends ChangeNotifier {
       }
     }
 
-    // 4. Default / accept / high_value branch
+    // 4. Default / accept / high_value branch if agent gave consultative recommendation
+    final hasConsultativeRecommendation =
+        normPrev.contains('recommend') ||
+        normPrev.contains('upgrade') ||
+        normPrev.contains('plan') ||
+        normPrev.contains('extra') ||
+        normPrev.contains('premium') ||
+        normPrev.contains('gigabit') ||
+        normPrev.contains('fiber') ||
+        normPrev.contains('hotspot') ||
+        normPrev.contains('speed') ||
+        normPrev.contains('tether') ||
+        normPrev.contains('tethering') ||
+        normPrev.contains('option') ||
+        normPrev.contains('allowance') ||
+        normPrev.contains('switch') ||
+        normPrev.contains('line') ||
+        normPrev.contains('device') ||
+        normPrev.contains('benefit') ||
+        normPrev.contains('fit');
+
+    if (!hasConsultativeRecommendation) {
+      // Ambiguous / unclear agent response: route to needs_check or friction if available
+      final fallbackBranch = customerTurn.branches.where(
+        (b) =>
+            b.conditionKey == 'needs_check' ||
+            b.conditionKey == 'verify' ||
+            b.conditionKey == 'friction' ||
+            b.conditionKey == 'objection' ||
+            b.conditionKey == 'retry',
+      );
+      if (fallbackBranch.isNotEmpty) {
+        return fallbackBranch.first.nextTurnId;
+      }
+    }
+
     final highValueBranch = customerTurn.branches.firstWhere(
       (b) =>
           b.conditionKey == 'high_value' ||
@@ -475,13 +510,23 @@ class SalesSimulatorController extends ChangeNotifier {
         normalizedAll,
       );
 
-      // Explicit consent check: customer outcome must have been qualifiedAccept
-      final hasCustomerConsent = outcome == SalesOutcomeType.qualifiedAccept;
+      // Explicit consent check: customer utterance must confirm affirmative consent
+      final hasCustomerConsent = _hasCustomerConsentCovered(
+        _conversationHistory,
+        normalizedAll,
+      );
+
+      // Eligibility / Qualification check:
+      final hasEligibility = _hasEligibilityCovered(
+        _activeScenario!,
+        normalizedAll,
+      );
 
       if (hasProhibited ||
           !hasDiscovery ||
           !hasDisclosures ||
-          !hasCustomerConsent) {
+          !hasCustomerConsent ||
+          !hasEligibility) {
         validatedOutcome = SalesOutcomeType.needsVerification;
       }
     }
@@ -552,27 +597,169 @@ class SalesSimulatorController extends ChangeNotifier {
     }
   }
 
+  static bool _hasCustomerConsentCovered(
+    List<SalesConversationBubble> history,
+    String normalizedAllAgentText,
+  ) {
+    final customerTurns = history
+        .where((b) => b.speaker == TurnSpeaker.customer)
+        .toList();
+    if (customerTurns.isEmpty) return false;
+
+    final lastCustomerText = customerTurns.last.text.toLowerCase();
+
+    // Check for explicit refusal or hesitation
+    final hasRefusal =
+        lastCustomerText.contains('no thanks') ||
+        lastCustomerText.contains('not interested') ||
+        lastCustomerText.contains('leave it') ||
+        lastCustomerText.contains('keep my') ||
+        lastCustomerText.contains('cancel') ||
+        lastCustomerText.contains('too expensive') ||
+        lastCustomerText.contains('cannot afford') ||
+        lastCustomerText.contains('do not want');
+
+    if (hasRefusal) return false;
+
+    // Check for affirmative customer consent
+    final hasCustomerAffirmation =
+        lastCustomerText.contains('go ahead') ||
+        lastCustomerText.contains('let us') ||
+        lastCustomerText.contains('lets') ||
+        lastCustomerText.contains('sounds good') ||
+        lastCustomerText.contains('sounds great') ||
+        lastCustomerText.contains('works great') ||
+        lastCustomerText.contains('works for me') ||
+        lastCustomerText.contains('switch my') ||
+        lastCustomerText.contains('switch our') ||
+        lastCustomerText.contains('sign me up') ||
+        lastCustomerText.contains('set it up') ||
+        lastCustomerText.contains('order it') ||
+        lastCustomerText.contains('upgrade') ||
+        lastCustomerText.contains('agree') ||
+        lastCustomerText.contains('yes') ||
+        lastCustomerText.contains('perfect');
+
+    // Agent must also have sought consent or presented closing terms
+    final hasAgentClosingInquiry =
+        normalizedAllAgentText.contains('permission') ||
+        normalizedAllAgentText.contains('proceed') ||
+        normalizedAllAgentText.contains('switch') ||
+        normalizedAllAgentText.contains('change') ||
+        normalizedAllAgentText.contains('order') ||
+        normalizedAllAgentText.contains('move forward') ||
+        normalizedAllAgentText.contains('set this up') ||
+        normalizedAllAgentText.contains('would you like') ||
+        normalizedAllAgentText.contains('shall we') ||
+        normalizedAllAgentText.contains('confirm') ||
+        normalizedAllAgentText.contains('authorize') ||
+        normalizedAllAgentText.contains('carlos') ||
+        normalizedAllAgentText.contains('today');
+
+    return hasCustomerAffirmation && hasAgentClosingInquiry;
+  }
+
+  static bool _hasEligibilityCovered(
+    SalesScenario scenario,
+    String normalizedAllAgentText,
+  ) {
+    if (scenario.id.contains('fiber')) {
+      return normalizedAllAgentText.contains('address') ||
+          normalizedAllAgentText.contains('qualify') ||
+          normalizedAllAgentText.contains('check') ||
+          normalizedAllAgentText.contains('available') ||
+          normalizedAllAgentText.contains('serviceability');
+    }
+    if (scenario.id.contains('trade-in') || scenario.id.contains('trade_in')) {
+      return normalizedAllAgentText.contains('condition') ||
+          normalizedAllAgentText.contains('screen') ||
+          normalizedAllAgentText.contains('damage') ||
+          normalizedAllAgentText.contains('crack') ||
+          normalizedAllAgentText.contains('turn on') ||
+          normalizedAllAgentText.contains('device');
+    }
+    if (scenario.id.contains('landline')) {
+      return normalizedAllAgentText.contains('port') ||
+          normalizedAllAgentText.contains('keep') ||
+          normalizedAllAgentText.contains('number') ||
+          normalizedAllAgentText.contains('address') ||
+          normalizedAllAgentText.contains('check');
+    }
+    return true;
+  }
+
   static bool _hasMandatoryDisclosuresCovered(
     SalesScenario scenario,
     String normalizedAllAgentText,
   ) {
     if (scenario.mandatoryDisclosures.isEmpty) return true;
+
     for (final disc in scenario.mandatoryDisclosures) {
-      final words = disc
-          .toLowerCase()
+      final lowerDisc = disc.toLowerCase();
+
+      // Contradiction / Negation checks
+      if ((lowerDisc.contains('fee') ||
+              lowerDisc.contains('taxes') ||
+              lowerDisc.contains('surcharges')) &&
+          (normalizedAllAgentText.contains('no fees') ||
+              normalizedAllAgentText.contains('zero fees') ||
+              normalizedAllAgentText.contains('free of charge') ||
+              normalizedAllAgentText.contains('no taxes') ||
+              normalizedAllAgentText.contains('never charged'))) {
+        return false;
+      }
+
+      if ((lowerDisc.contains('slowed') ||
+              lowerDisc.contains('128kbps') ||
+              lowerDisc.contains('speeds reduce')) &&
+          (normalizedAllAgentText.contains('never slowed') ||
+              normalizedAllAgentText.contains(
+                'unlimited high speed with no reduction',
+              ) ||
+              normalizedAllAgentText.contains('no slowdown'))) {
+        return false;
+      }
+
+      final informativeWords = lowerDisc
           .replaceAll(RegExp(r'[^\w\s]'), '')
           .split(' ')
-          .where((w) => w.length >= 4 && !_isStopWord(w))
+          .where((w) => w.length >= 4 && !_isStopWord(w) && !_isTrivialWord(w))
+          .toSet()
           .toList();
-      if (words.isEmpty) continue;
-      final matchedCount = words
+
+      if (informativeWords.isEmpty) continue;
+
+      final matchedWords = informativeWords
           .where((w) => normalizedAllAgentText.contains(w))
-          .length;
-      if (matchedCount == 0) {
+          .toList();
+
+      final ratio = matchedWords.length / informativeWords.length;
+      if (ratio < 0.3) {
+        return false;
+      }
+      if (informativeWords.length >= 2 && matchedWords.length < 2) {
+        return false;
+      }
+      if (informativeWords.length == 1 && matchedWords.isEmpty) {
         return false;
       }
     }
     return true;
+  }
+
+  static bool _isTrivialWord(String word) {
+    const trivialWords = {
+      'monthly',
+      'service',
+      'account',
+      'customer',
+      'please',
+      'about',
+      'today',
+      'line',
+      'plan',
+    };
+    return trivialWords.contains(word);
   }
 
   static bool _isStopWord(String word) {

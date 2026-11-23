@@ -740,5 +740,63 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'C3-02: WorkoutSessionScreen handles step skip, primary scenario execution, and honest completion gate',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const CallForgeApp(home: MainScaffold(initialIndex: 0)),
+        );
+        await tester.pumpAndSettle();
+
+        // Open workout bottom sheet
+        final startWorkoutBtn = find.byKey(
+          const Key('btn_start_daily_workout'),
+        );
+        await tester.tap(startWorkoutBtn);
+        await tester.pumpAndSettle();
+
+        // Launch full workout session
+        final startSessionBtn = find.byKey(
+          const Key('btn_start_full_workout_session'),
+        );
+        await tester.tap(startSessionBtn);
+        await tester.pumpAndSettle();
+
+        // 1. Skip warmup step
+        final skipBtn = find.text('Skip this step');
+        expect(skipBtn, findsOneWidget);
+        await tester.tap(skipBtn);
+        await tester.pumpAndSettle();
+
+        // 2. Now on primary scenario step
+        expect(find.text('ENTER SPOKEN SIMULATION'), findsOneWidget);
+
+        // 3. Navigate to review step directly (step 3)
+        await tester.tap(find.textContaining('Pedagogical Review'));
+        await tester.pumpAndSettle();
+
+        // 4. Honest gate: since primary scenario was not executed/passed,
+        // it must show partial/incomplete status, NOT premature completion!
+        expect(
+          find.textContaining('Primary scenario has not been completed'),
+          findsOneWidget,
+        );
+        expect(find.text('SAVE PROGRESS & EXIT (PARTIAL)'), findsOneWidget);
+
+        // 5. Exit partial
+        await tester.tap(find.text('SAVE PROGRESS & EXIT (PARTIAL)'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(WorkoutSessionScreen), findsNothing);
+      },
+    );
   });
 }

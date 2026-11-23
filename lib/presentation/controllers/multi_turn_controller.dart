@@ -316,7 +316,7 @@ class MultiTurnController extends ChangeNotifier {
     _state = MultiTurnState.callCompleted;
     notifyListeners();
 
-    final avgScore = _turnEvaluations.isNotEmpty ? averageScore : 75.0;
+    final avgScore = _turnEvaluations.isNotEmpty ? averageScore : 0.0;
     final callPassed = avgScore >= 70.0;
 
     if (progressRepository != null && _activeScenario != null) {
@@ -335,15 +335,20 @@ class MultiTurnController extends ChangeNotifier {
     }
 
     if (attemptRepository != null && _activeScenario != null) {
+      final combinedAgentTranscript = _conversationHistory
+          .where((b) => b.speaker == TurnSpeaker.agent)
+          .map((b) => b.text)
+          .join('\n');
+
       await attemptRepository!.saveAttempt(
         AttemptRecord(
           id: 'att-scen-${DateTime.now().millisecondsSinceEpoch}',
           scenarioId: _activeScenario!.id,
           timestamp: DateTime.now(),
-          transcript: _liveTranscript,
-          accuracyPercentage: _latestEvaluation != null
-              ? _latestEvaluation!.score.round()
-              : avgScore.round(),
+          transcript: combinedAgentTranscript.isNotEmpty
+              ? combinedAgentTranscript
+              : _liveTranscript,
+          accuracyPercentage: avgScore.round(),
           passed: callPassed,
           wpm: 0,
           missingAnchors: _latestEvaluation?.missingKeywords ?? [],

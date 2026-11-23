@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/audio/speech_service.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/di/service_locator.dart';
 import '../../data/datasources/sales_scenario_catalog.dart';
 import '../../data/datasources/sales_scenarios/objection_drills.dart';
+import '../../data/models/attempt_record.dart';
+import '../../domain/repositories/attempt_repository.dart';
 
 class ObjectionDrillScreen extends StatefulWidget {
   final ISpeechService speechService;
@@ -84,12 +87,34 @@ class _ObjectionDrillScreenState extends State<ObjectionDrillScreen> {
         matchedCount++;
       }
     }
+    final passed =
+        matchedCount >= 2 ||
+        (_currentDrill.requiredResponseKeywords.isNotEmpty &&
+            matchedCount >= 1);
     setState(() {
-      _isTargetMet =
-          matchedCount >= 2 ||
-          (_currentDrill.requiredResponseKeywords.isNotEmpty &&
-              matchedCount >= 1);
+      _isTargetMet = passed;
     });
+
+    if (ServiceLocator.isRegistered<IAttemptRepository>() &&
+        _transcript.trim().isNotEmpty) {
+      final repo = ServiceLocator.get<IAttemptRepository>();
+      repo.saveAttempt(
+        AttemptRecord(
+          id: 'att-obj-${DateTime.now().millisecondsSinceEpoch}',
+          scenarioId: _currentDrill.id,
+          timestamp: DateTime.now(),
+          transcript: _transcript,
+          accuracyPercentage: passed ? 85 : 40,
+          passed: passed,
+          wpm: 0,
+          missingAnchors: const [],
+          pbErrors: const [],
+          arabicCoaching: _currentDrill.coachingArabic,
+          scriptTitle: _currentDrill.title,
+          attemptType: 'objection_drill',
+        ),
+      );
+    }
   }
 
   void _nextDrill() {

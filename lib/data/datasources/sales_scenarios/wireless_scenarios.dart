@@ -137,7 +137,7 @@ abstract class WirelessScenariosCatalog {
           phase: SalesPhase.objectionHandling,
           branches: [
             ScenarioBranch(conditionKey: 'accept', nextTurnId: 'turn-w01-07A'),
-            ScenarioBranch(conditionKey: 'decline', nextTurnId: 'turn-w01-07B'),
+            ScenarioBranch(conditionKey: 'decline', nextTurnId: 'turn-w01-05B'),
           ],
         ),
 
