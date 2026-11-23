@@ -15,12 +15,14 @@ class SalesSimulatorScreen extends StatefulWidget {
   final SalesScenario scenario;
   final int? curriculumDay;
   final SalesSimulatorController? controller;
+  final String? workoutStepId;
 
   const SalesSimulatorScreen({
     super.key,
     required this.scenario,
     this.curriculumDay,
     this.controller,
+    this.workoutStepId,
   });
 
   @override
@@ -50,6 +52,7 @@ class _SalesSimulatorScreenState extends State<SalesSimulatorScreen> {
         progressRepository: progressRepo,
         attemptRepository: attemptRepo,
         curriculumDay: widget.curriculumDay,
+        workoutStepId: widget.workoutStepId,
       );
     }
 
@@ -89,40 +92,56 @@ class _SalesSimulatorScreenState extends State<SalesSimulatorScreen> {
   @override
   Widget build(BuildContext context) {
     if (_controller.isCallCompleted && _controller.latestScorecard != null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Call Evaluation Scorecard'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          Navigator.of(context).pop(_controller.lastSavedAttempt);
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Call Evaluation Scorecard'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () =>
+                  Navigator.pop(context, _controller.lastSavedAttempt),
+            ),
           ),
-        ),
-        body: SalesScorecardView(
-          scorecard: _controller.latestScorecard!,
-          onDismiss: () => Navigator.pop(context),
+          body: SalesScorecardView(
+            scorecard: _controller.latestScorecard!,
+            onDismiss: () =>
+                Navigator.pop(context, _controller.lastSavedAttempt),
+          ),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.scenario.title),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _controller.startScenario(widget.scenario),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildProfileBanner(),
-            _buildPhaseIndicator(),
-            Expanded(child: _buildConversationList()),
-            if (_controller.errorMessage != null) _buildErrorBanner(),
-            _buildBottomControls(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pop(_controller.lastSavedAttempt);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.scenario.title),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => _controller.startScenario(widget.scenario),
+            ),
           ],
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildProfileBanner(),
+              _buildPhaseIndicator(),
+              Expanded(child: _buildConversationList()),
+              if (_controller.errorMessage != null) _buildErrorBanner(),
+              _buildBottomControls(),
+            ],
+          ),
         ),
       ),
     );

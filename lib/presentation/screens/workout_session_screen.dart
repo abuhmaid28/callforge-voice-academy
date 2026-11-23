@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/audio/speech_service.dart';
 import '../../core/di/service_locator.dart';
+import '../../data/models/attempt_record.dart';
 import '../../data/datasources/sales_scenario_catalog.dart';
 import '../../data/datasources/scenario_catalog.dart';
 import '../../domain/entities/adaptive_curriculum.dart';
@@ -113,46 +114,57 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     IAttemptRepository? attemptRepo,
   ) async {
     final speech = ServiceLocator.get<ISpeechService>();
-    final stepStartTime = DateTime.now();
+    final priorAttemptIds = attemptRepo != null
+        ? (await attemptRepo.getAttempts(scenarioId: step.targetId))
+              .map((a) => a.id)
+              .toSet()
+        : <String>{};
 
+    if (!mounted) return;
+
+    dynamic popResult;
     if (step.drillType == 'discovery') {
-      await Navigator.push(
+      popResult = await Navigator.push<dynamic>(
         context,
         MaterialPageRoute(
           builder: (_) => DiscoveryDrillScreen(
             speechService: speech,
             initialDrillId: step.targetId,
+            workoutStepId: step.id,
           ),
         ),
       );
     } else if (step.drillType == 'objection') {
-      await Navigator.push(
+      popResult = await Navigator.push<dynamic>(
         context,
         MaterialPageRoute(
           builder: (_) => ObjectionDrillScreen(
             speechService: speech,
             initialDrillId: step.targetId,
+            workoutStepId: step.id,
           ),
         ),
       );
     } else if (step.drillType == 'fast_numbers') {
-      await Navigator.push(
+      popResult = await Navigator.push<dynamic>(
         context,
         MaterialPageRoute(
           builder: (_) => FloorSkillsScreen(
             initialDrillType: FloorDrillType.fastNumbers,
             initialDrillId: step.targetId,
+            workoutStepId: step.id,
           ),
         ),
       );
     } else {
       // Default: pb_contrast
-      await Navigator.push(
+      popResult = await Navigator.push<dynamic>(
         context,
         MaterialPageRoute(
           builder: (_) => FloorSkillsScreen(
             initialDrillType: FloorDrillType.pbContrast,
             initialDrillId: step.targetId,
+            workoutStepId: step.id,
           ),
         ),
       );
@@ -160,34 +172,44 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
     if (!mounted) return;
 
-    // Check for fresh attempt executed after step started
-    if (attemptRepo != null) {
-      final attempts = await attemptRepo.getAttempts(scenarioId: step.targetId);
-      final fresh = attempts
-          .where(
-            (a) => a.timestamp.isAfter(
-              stepStartTime.subtract(const Duration(seconds: 2)),
-            ),
-          )
-          .toList();
-      if (fresh.isNotEmpty) {
-        final last = fresh.first;
-        await _controller.recordStepResult(
-          stepIndex: stepIndex,
-          result: WorkoutStepResult(
-            stepId: step.id,
-            type: step.type,
-            title: step.title,
-            score: last.accuracyPercentage.toDouble(),
-            passed: last.passed,
-            transcript: last.transcript,
-            arabicCoaching: last.arabicCoaching,
-            missingAnchors: last.missingAnchors,
-            pbErrors: last.pbErrors,
-          ),
-        );
-        return;
+    // Check for fresh attempt tied to this step execution
+    AttemptRecord? freshAttempt;
+    if (popResult is AttemptRecord &&
+        (popResult.workoutStepId == null ||
+            popResult.workoutStepId == step.id)) {
+      freshAttempt = popResult;
+    } else if (attemptRepo != null) {
+      final currentAttempts = await attemptRepo.getAttempts(
+        scenarioId: step.targetId,
+      );
+      final newAttempts = currentAttempts.where((a) {
+        if (priorAttemptIds.contains(a.id)) return false;
+        if (a.workoutStepId != null && a.workoutStepId != step.id) {
+          return false;
+        }
+        return true;
+      }).toList();
+      if (newAttempts.isNotEmpty) {
+        freshAttempt = newAttempts.first;
       }
+    }
+
+    if (freshAttempt != null) {
+      await _controller.recordStepResult(
+        stepIndex: stepIndex,
+        result: WorkoutStepResult(
+          stepId: step.id,
+          type: step.type,
+          title: step.title,
+          score: freshAttempt.accuracyPercentage.toDouble(),
+          passed: freshAttempt.passed,
+          transcript: freshAttempt.transcript,
+          arabicCoaching: freshAttempt.arabicCoaching,
+          missingAnchors: freshAttempt.missingAnchors,
+          pbErrors: freshAttempt.pbErrors,
+        ),
+      );
+      return;
     }
 
     // No fresh attempt recorded: user pressed Back or cancelled drill
@@ -207,28 +229,37 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     int stepIndex,
     IAttemptRepository? attemptRepo,
   ) async {
-    final stepStartTime = DateTime.now();
+    final priorAttemptIds = attemptRepo != null
+        ? (await attemptRepo.getAttempts(scenarioId: step.targetId))
+              .map((a) => a.id)
+              .toSet()
+        : <String>{};
 
+    if (!mounted) return;
+
+    dynamic popResult;
     final salesScenario = SalesScenarioCatalog.findById(step.targetId);
     if (salesScenario != null) {
-      await Navigator.push(
+      popResult = await Navigator.push<dynamic>(
         context,
         MaterialPageRoute(
           builder: (_) => SalesSimulatorScreen(
             scenario: salesScenario,
             curriculumDay: widget.workout.day.dayNumber,
+            workoutStepId: step.id,
           ),
         ),
       );
     } else {
       final arenaScenario = ScenarioCatalog.findById(step.targetId);
       if (arenaScenario != null) {
-        await Navigator.push(
+        popResult = await Navigator.push<dynamic>(
           context,
           MaterialPageRoute(
             builder: (_) => MultiTurnSimulatorScreen(
               scenario: arenaScenario,
               curriculumDay: widget.workout.day.dayNumber,
+              workoutStepId: step.id,
             ),
           ),
         );
@@ -237,36 +268,46 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
     if (!mounted) return;
 
-    // Check for fresh attempt executed after step started
-    if (attemptRepo != null) {
-      final attempts = await attemptRepo.getAttempts(scenarioId: step.targetId);
-      final fresh = attempts
-          .where(
-            (a) => a.timestamp.isAfter(
-              stepStartTime.subtract(const Duration(seconds: 2)),
-            ),
-          )
-          .toList();
-      if (fresh.isNotEmpty) {
-        final last = fresh.first;
-        await _controller.recordStepResult(
-          stepIndex: stepIndex,
-          result: WorkoutStepResult(
-            stepId: step.id,
-            type: step.type,
-            title: step.title,
-            score: last.accuracyPercentage.toDouble(),
-            passed: last.passed,
-            transcript: last.transcript,
-            missingAnchors: last.missingAnchors,
-            pbErrors: last.pbErrors,
-            arabicCoaching: last.arabicCoaching,
-            salesOutcomeType: last.salesOutcomeType,
-            salesScorecard: last.salesScorecard,
-          ),
-        );
-        return;
+    // Check for fresh attempt tied to this step execution
+    AttemptRecord? freshAttempt;
+    if (popResult is AttemptRecord &&
+        (popResult.workoutStepId == null ||
+            popResult.workoutStepId == step.id)) {
+      freshAttempt = popResult;
+    } else if (attemptRepo != null) {
+      final currentAttempts = await attemptRepo.getAttempts(
+        scenarioId: step.targetId,
+      );
+      final newAttempts = currentAttempts.where((a) {
+        if (priorAttemptIds.contains(a.id)) return false;
+        if (a.workoutStepId != null && a.workoutStepId != step.id) {
+          return false;
+        }
+        return true;
+      }).toList();
+      if (newAttempts.isNotEmpty) {
+        freshAttempt = newAttempts.first;
       }
+    }
+
+    if (freshAttempt != null) {
+      await _controller.recordStepResult(
+        stepIndex: stepIndex,
+        result: WorkoutStepResult(
+          stepId: step.id,
+          type: step.type,
+          title: step.title,
+          score: freshAttempt.accuracyPercentage.toDouble(),
+          passed: freshAttempt.passed,
+          transcript: freshAttempt.transcript,
+          missingAnchors: freshAttempt.missingAnchors,
+          pbErrors: freshAttempt.pbErrors,
+          arabicCoaching: freshAttempt.arabicCoaching,
+          salesOutcomeType: freshAttempt.salesOutcomeType,
+          salesScorecard: freshAttempt.salesScorecard,
+        ),
+      );
+      return;
     }
 
     // No fresh attempt recorded: user pressed Back or cancelled simulation

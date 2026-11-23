@@ -2,20 +2,16 @@
 
 ## Current execution checkpoint (2026-11-23)
 - **Repository**: `https://github.com/abuhmaid28/callforge-voice-academy`
-- **Current milestone**: **C3-FINAL** — Training Evidence Hardening, Durable Workout Persistence & Verified Consent
-- **Implementation issue**: https://github.com/abuhmaid28/callforge-voice-academy/issues/13
-- **Current feature branch**: `feat/c3-final-training-evidence`
-- **Draft PR**: [#14](https://github.com/abuhmaid28/callforge-voice-academy/pull/14)
-- **Base merge commit**: `ff83dacdced92534be45226d225e2ee5b907532d` (approved C3-MEGA squash merge)
-- **C3-FINAL implementation status**: **COMPLETED**.
-  - A1: Zero Phantom Scores on Drill/Scenario Back/Cancel: Eliminating unconditional 85%/75% fallback scores and requiring fresh attempts after `stepStartTime`.
-  - A2: Honest Workout Completion Gating: Gating session completion behind `session.canCompleteWorkout`, requiring the primary scenario to pass and all steps to be completed or skipped; warning on partial review.
-  - A3: Durable Workout Persistence Across Restarts: `WorkoutSessionLocalDataSource` backed by `SharedPreferences` (`callforge_active_workout_session_v1`), `toJson`/`fromJson` on `WorkoutSessionState`, automatic cold-restart rehydration.
-  - A4: Independent Ethical Sales Consent & Disclosure Verification: Decoupled consent verification checking affirmative customer confirmation and absence of refusal; mandatory disclosure evaluation requiring contradiction/negation detection and >= 30% distinct informative vocabulary match; routing ambiguous utterances to `needs_check` or `friction`.
-  - A5: 48×3 Sales Scenarios Trajectory & Reachability: Fixed branch target typo in `sales-01` (`turn-w01-05B`), exhaustive validation and execution loop in `test/data/all_48_scenarios_reachability_test.dart` proving zero dead ends, cycle safety, and full reachability across all 48 scenarios.
-  - A6: Full-Call Scoring Truth in History: Recording `accuracyPercentage: avgScore.round()` matching `callPassed` threshold, and joining all agent turn transcripts in `MultiTurnController`.
-  - Hosted Integration & E2E Verification: Added `C3-02` integration test to `test/integration/app_smoke_test.dart` and `integration_test/app_test.dart`.
-  - Verification & Hosted Android CI: 164 automated tests passing (0 failures), 0 static analysis issues (`flutter analyze`), 100% formatted (`dart format`), debug APK built in 37.9s.
+- **Current milestone**: **RC1** — Release Candidate Stabilization (Practice Evidence & Sales Consent)
+- **Implementation issue**: https://github.com/abuhmaid28/callforge-voice-academy/issues/15
+- **Current feature branch**: `fix/rc1-practice-evidence-and-consent`
+- **Base merge commit**: `63efe62900d53056f8effdd6c0ab86906f3440d6` (approved C3-FINAL squash merge)
+- **RC1 implementation status**: **COMPLETED**.
+  - R1: Unique Per-Step Attempt Evidence: Eliminated timestamp proximity and stale attempt reuse. Added `workoutStepId` to `AttemptRecord`, controllers, and screens. Screens wrapped in `PopScope(canPop: false)` returning `_lastSavedAttempt`. `WorkoutSessionScreen` tracks `priorAttemptIds` before step start and strictly checks `!priorAttemptIds.contains(a.id) && a.workoutStepId == step.id`. `saveAttempt` properly awaited in all drills.
+  - R2: Contextual Affirmative Consent & Strict Refusal Guardrails: Phrase/turn-aware regex with word boundaries, affirmative transaction verbs (`lets add`, `order the`, `book the technician`, `let us activate`), strict refusal guardrails (`no thanks`, `leave it`, `do not upgrade`, `why would i`), conditional hesitation rejection (`but not`, `but wait`), and actionable agent closing proposal requirement. Excluded non-refusal idioms like "no-brainer", "no problem", "cannot wait".
+  - R3: 48×3 Sales Scenarios Trajectory & Controller Execution: Automated simulation test suite in `all_48_scenarios_reachability_test.dart` executing all 48 scenarios through `SalesSimulatorController` across Path A (`qualifiedAccept`), Path B (`respectfulNoSale`), Path C (`needsVerification`), and mandatory disclosure omission downgrades (6/6 tests passing).
+  - R4: Hosted Emulator Journeys (C3-03..05): Added `C3-03` (full 20-min passing workout advancing Day 1 to Day 2), `C3-04` (cold-start session resumption), and `C3-05` (Sales Simulator UI execution) in `app_smoke_test.dart` and `integration_test/app_test.dart`.
+  - R5: CI, Analysis & Packaging: 174 automated tests passing (0 failures), 0 static analysis issues (`flutter analyze`), 100% formatted (`dart format`), debug APK built in 41.6s.
 - **Binding verification strategy**: No personal Android phone, Windows local emulator, local ADB/USB scans, paid APIs, unverified real AT&T offers, proprietary scripts or real customer PII. Native audio remains simulated.
 - **Product Owner's authorization**: Complete autonomous execution without routine approvals; standing squash merge authorization granted upon 100% green CI.
 
@@ -31,7 +27,7 @@
 | **GitHub CLI** | `VERIFIED` | Authenticated as `abuhmaid28` via git operations protocol HTTPS |
 | **Hardware Environment**| `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
 | **Verification Strategy**| `VERIFIED` | Phone-free hosted Linux CI (GitHub Actions) & Android Emulator integration tests (ADR 010) |
-| **Automated Tests** | `VERIFIED` | 164 tests passing (unit, widget, integration) with 0 static analysis issues |
+| **Automated Tests** | `VERIFIED` | 174 tests passing (unit, widget, integration) with 0 static analysis issues |
 
 ---
 

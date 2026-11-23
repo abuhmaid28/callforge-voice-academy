@@ -1,6 +1,6 @@
 # QA_ACCEPTANCE.md — Quality Assurance, Governance Gates, & Hosted CI Evidence
 
-This document defines the automated quality gates, acceptance criteria, and verification evidence for CALLFORGE across M1 through M5 and C3-FINAL.
+This document defines the automated quality gates, acceptance criteria, and verification evidence for CALLFORGE across M1 through M5, C3-FINAL, and RC1 (Release Candidate 1).
 
 ---
 
@@ -16,24 +16,25 @@ This document defines the automated quality gates, acceptance criteria, and veri
 
 ---
 
-## 🏆 C3-FINAL Automated Verification Evidence
+## 🏆 RC1 (Release Candidate 1) Automated Verification Evidence
 
 - **Repository**: `abuhmaid28/callforge-voice-academy`
-- **Active Branch**: `feat/c3-final-training-evidence`
-- **Active PR**: [#14](https://github.com/abuhmaid28/callforge-voice-academy/pull/14)
-- **Target Issue**: [#13](https://github.com/abuhmaid28/callforge-voice-academy/issues/13) (C3-FINAL Post-Merge Training Evidence & Hardening)
-- **Base Commit**: `ff83dacdced92534be45226d225e2ee5b907532d` (Approved C3-MEGA Squash Merge on `main`)
-- **Total Automated Tests**: **164 / 164 PASSING** (0 failures, 0 skips)
+- **Active Branch**: `fix/rc1-practice-evidence-and-consent`
+- **Target Issue**: [#15](https://github.com/abuhmaid28/callforge-voice-academy/issues/15) (RC1 Release Candidate Stabilization)
+- **Base Commit**: `63efe62900d53056f8effdd6c0ab86906f3440d6` (Approved C3-FINAL Squash Merge on `main`)
+- **Total Automated Tests**: **174 / 174 PASSING** (0 failures, 0 skips)
 - **Static Analysis**: **0 issues found** (`flutter analyze`)
 - **Code Formatting**: **100% compliant** (`dart format --output=none --set-exit-if-changed .`)
-- **Debug APK Build**: **Built successfully in 37.9s** (`build/app/outputs/flutter-apk/app-debug.apk`)
+- **Debug APK Build**: **Built successfully in 41.6s** (`build/app/outputs/flutter-apk/app-debug.apk`)
 
-### Test Suite Execution Summary (164 Tests)
+### Test Suite Execution Summary (174 Tests)
 
 | Test Suite File | Scope & Target Capabilities | Tests Passed | Status |
 | :--- | :--- | :--- | :--- |
+| `test/core/rc1_stabilization_test.dart` | RC1 Core Stabilization: R1 unique attempt evidence (stale attempt rejection, mismatched workoutStepId rejection) and R2 contextual consent (rejection of "yesterday", "carlos", refusal phrases "do not upgrade", "yes but not yet") | 4 | `PASS` |
+| `test/data/all_48_scenarios_reachability_test.dart` | R3 48×3 Sales Scenarios: Zero dead ends, cycle safety, directed path existence, Path B decline execution, Path C verification inquiry execution, Path A qualified accept execution, and mandatory disclosure omission downgrade across all 48 scenarios | 6 | `PASS` |
+| `test/integration/app_smoke_test.dart` | R4 Headless app smoke integration lifecycle tests (ST-01..11, C1-01..05, C2-01..03, C3-01..02, C3-03 full passing 20-min workout advancing Day 1 to 2, C3-04 cold-restart resumption, C3-05 Sales Simulator UI execution) | 17 | `PASS` |
 | `test/core/c3_final_regression_test.dart` | C3-FINAL Regression: Zero phantom scores on unperformed steps, durable WorkoutSessionState cold restart persistence, full-call accuracyPercentage truth | 3 | `PASS` |
-| `test/data/all_48_scenarios_reachability_test.dart` | 48 Sales Scenarios: Zero dead-ends, cycle safety, 3 reachable terminal outcomes per scenario, complete execution loop via SalesSimulatorController | 3 | `PASS` |
 | `test/core/c3_mega_acceptance_test.dart` | C3 Acceptance: Day 30 to 31 Care-to-Sales phase transition, Day 90 completion and program graduation, 6-category representative adaptive branching reachability, cold-restart persistence of attempts & progress | 4 | `PASS` |
 | `test/presentation/workout_session_controller_test.dart` | WorkoutSessionController: queue initialization, step status progression, auto-advance, step skipping, honest session completion gate, score accumulation | 6 | `PASS` |
 | `test/presentation/workout_session_screen_test.dart` | WorkoutSessionScreen: interactive workstation, queue navigation, drill/scenario launch decks, evidence-based scorecard/coaching review | 2 | `PASS` |
@@ -85,6 +86,21 @@ This document defines the automated quality gates, acceptance criteria, and veri
 | **C2-03** | **90-Day Adaptive Academy & Duration Selection** | Headless smoke & Emulator<br>`integration_test/app_test.dart` | Verifies 90-day syllabus header, phase progression bar, Day 1 workout details, and duration pill selection (10/20/30 min). | `PASS` |
 | **C3-01** | **Today Screen Launches Full WorkoutSessionScreen** | Headless smoke & Emulator<br>`integration_test/app_test.dart` | Launches `WorkoutSessionScreen` from Today workout bottom sheet, verifies queue navigation, interactive step deck, auto-advancing, and evidence-based scorecard/coaching review. | `PASS` |
 | **C3-02** | **Workout Session Step Skip & Honest Completion Gate** | Headless smoke & Emulator<br>`integration_test/app_test.dart` | Launches workout session, skips initial drill step, executes primary scenario, verifies honest completion gating and progress recording. | `PASS` |
+| **C3-03** | **Full Passing 20-min Workout & Curriculum Progression** | Headless smoke & Emulator<br>`integration_test/app_test.dart` | Executes full 20-min workout, records honest per-step attempt evidence, advances currentCurriculumDay from Day 1 to Day 2 and persists completed days. | `PASS` |
+| **C3-04** | **Mid-Workout Session Rehydration Across Cold Restart** | Headless smoke & Emulator<br>`integration_test/app_test.dart` | Verifies step status, index, and results persist in `WorkoutSessionLocalDataSource` across simulated app restart without state corruption. | `PASS` |
+| **C3-05** | **Sales Simulator UI Execution on Mock Engine** | Headless smoke & Emulator<br>`integration_test/app_test.dart` | Launches SalesSimulatorScreen, executes Turn 1 greeting, Turn 3 value bridge, Turn 5A closing offer, and Turn 7A disclosures, achieving qualifiedAccept. | `PASS` |
+
+---
+
+## 🔍 Independent Audit Findings Verification (RC1 Audit Resolution)
+
+| Finding | Audit Finding Description | RC1 Implementation & Verification | Status |
+| :--- | :--- | :--- | :--- |
+| **R1. Unique Per-Step Attempt Evidence (No Timestamp Proximity / Stale Reuse)** | Attempt records were previously queried by timestamp proximity or scenario ID alone, risking stale attempt reuse or phantom credit if a user exited via Back. | Added `workoutStepId` to `AttemptRecord`, passed `workoutStepId` into controllers/screens, captured `priorAttemptIds` before step start, wrapped screens in `PopScope(canPop: false)` returning `lastSavedAttempt`, awaited `saveAttempt` in discovery/objection drills, and strictly required `!priorAttemptIds.contains(a.id) && a.workoutStepId == step.id`. Verified in `rc1_stabilization_test.dart`. | `RESOLVED & VERIFIED` |
+| **R2. Contextual Affirmative Consent & Strict Refusal Guardrails** | Consent check previously allowed affirmative words like "yes" to match substrings like "yesterday", and did not reliably guard against refusals ("do not upgrade", "yes but not yet") or filler words ("carlos", "today"). | Implemented phrase/turn-aware regex with word boundaries, affirmative transaction verbs (`lets add`, `order the`, `book the technician`, `let us activate`), strict refusal guardrails (`no thanks`, `leave it`, `do not upgrade`, `why would i`), conditional hesitation rejection (`but not`, `but wait`), and actionable agent closing proposal requirement. Idioms like "no-brainer", "no problem", "cannot wait" are correctly preserved. Verified in `rc1_stabilization_test.dart`. | `RESOLVED & VERIFIED` |
+| **R3. 48×3 Sales Scenarios Trajectory & Controller Execution** | The 48 scenarios had only static enum reachability checks, but actual execution through `SalesSimulatorController` was not systematically tested on all paths. | Implemented automated simulation runs across all 48 scenarios in `test/data/all_48_scenarios_reachability_test.dart` for Path A (`qualifiedAccept`), Path B (`respectfulNoSale`), Path C (`needsVerification`), and negative disclosure omission downgrades. Tuned branch conditions (`hasVerificationInquiry`, `hasDeclineIntent`) to prevent premature routing. | `RESOLVED & VERIFIED` |
+| **R4. End-to-End Hosted Emulator Journeys (C3-03..05)** | Integration suite lacked full passing workout progression from Day 1 to Day 2 and mid-workout session resumption. | Added `C3-03` (full 20-min passing workout advancing Day 1 to Day 2), `C3-04` (cold-start session resumption), and `C3-05` (Sales Simulator UI execution) in `app_smoke_test.dart` and `integration_test/app_test.dart`. | `RESOLVED & VERIFIED` |
+| **R5. CI, Analysis & Release Readiness** | Zero analyzer warnings, complete formatting, and clean debug APK build required for release candidate tag. | Ran `flutter analyze` (0 issues), `dart format` (100% compliant), `flutter test` (174/174 passing), and `flutter build apk --debug` (built in 41.6s). | `RESOLVED & VERIFIED` |
 
 ---
 

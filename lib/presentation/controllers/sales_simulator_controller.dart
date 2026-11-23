@@ -43,6 +43,18 @@ class SalesSimulatorController extends ChangeNotifier {
   final IProgressRepository? progressRepository;
   final IAttemptRepository? attemptRepository;
   final int? curriculumDay;
+  final String? workoutStepId;
+
+  SalesSimulatorController({
+    required this.speechService,
+    this.progressRepository,
+    this.attemptRepository,
+    this.curriculumDay,
+    this.workoutStepId,
+  });
+
+  AttemptRecord? _lastSavedAttempt;
+  AttemptRecord? get lastSavedAttempt => _lastSavedAttempt;
 
   SalesSimulatorState _state = SalesSimulatorState.idle;
   SalesSimulatorState get state => _state;
@@ -75,13 +87,6 @@ class SalesSimulatorController extends ChangeNotifier {
   int _activeListenSession = 0;
   bool _hasRecordedCompletion = false;
   bool _isDisposed = false;
-
-  SalesSimulatorController({
-    required this.speechService,
-    this.progressRepository,
-    this.attemptRepository,
-    this.curriculumDay,
-  });
 
   @override
   void notifyListeners() {
@@ -363,12 +368,18 @@ class SalesSimulatorController extends ChangeNotifier {
     // 1. Check for decline / no-sale branch (budget_decline, decline, no_sale)
     if (normPrev.contains('respect your') ||
         normPrev.contains('respect that') ||
-        normPrev.contains('keep your') ||
         normPrev.contains('keep you on') ||
+        normPrev.contains('keep your current plan') ||
+        normPrev.contains('keep your existing plan') ||
+        normPrev.contains('keep your existing service') ||
         normPrev.contains('leave as is') ||
-        normPrev.contains('leave your') ||
+        normPrev.contains('leave everything as is') ||
+        normPrev.contains('leave your plan') ||
+        normPrev.contains('leave your account') ||
+        normPrev.contains('leave your service') ||
         normPrev.contains('station wi fi') ||
         normPrev.contains('free wi fi') ||
+        normPrev.contains('zero changes') ||
         normPrev.contains('no changes')) {
       final declineBranch = customerTurn.branches.where(
         (b) =>
@@ -384,16 +395,19 @@ class SalesSimulatorController extends ChangeNotifier {
     }
 
     // 2. Check for verification / eligibility branch (verify, needs_check, check)
-    if (normPrev.contains('verify') ||
-        normPrev.contains('check') ||
-        normPrev.contains('address') ||
-        normPrev.contains('specifications') ||
-        normPrev.contains('coverage') ||
-        normPrev.contains('look up') ||
-        normPrev.contains('confirm') ||
-        normPrev.contains('review your billing') ||
-        normPrev.contains('permission') ||
-        normPrev.contains('status first')) {
+    final hasVerificationInquiry =
+        normPrev.contains('status first') ||
+        normPrev.contains('check your address first') ||
+        normPrev.contains('check your coverage first') ||
+        normPrev.contains('check your account') ||
+        normPrev.contains('verify your account') ||
+        normPrev.contains('verify permissions') ||
+        normPrev.contains('we must verify') ||
+        normPrev.contains('let me verify') ||
+        normPrev.contains('review your billing profile') ||
+        normPrev.contains('check eligibility first');
+
+    if (hasVerificationInquiry) {
       final verifyBranch = customerTurn.branches.where(
         (b) =>
             b.conditionKey == 'needs_check' ||
@@ -552,30 +566,31 @@ class SalesSimulatorController extends ChangeNotifier {
 
     // Save AttemptRecord (awaited)
     if (attemptRepository != null) {
-      await attemptRepository!.saveAttempt(
-        AttemptRecord(
-          id: 'att-sales-${DateTime.now().millisecondsSinceEpoch}',
-          scenarioId: _activeScenario!.id,
-          timestamp: DateTime.now(),
-          transcript: _agentTurnTranscripts.values.join(' '),
-          accuracyPercentage: scorecard.overallScore.round(),
-          passed: scorecard.passed,
-          wpm: 0,
-          missingAnchors: const [],
-          pbErrors: const [],
-          arabicCoaching: scorecard.dimensions.isNotEmpty
-              ? scorecard.dimensions.first.feedbackArabic
-              : '',
-          scriptTitle: _activeScenario!.title,
-          scriptSnapshot: _activeScenario!.contextNotes,
-          scriptVersion: 'sales-v2.0',
-          attemptType: 'sales',
-          salesOutcomeType: validatedOutcome.name,
-          isNoSaleSuccess: scorecard.isNoSaleSuccess,
-          curriculumDay: curriculumDay,
-          salesScorecard: scorecard.toJson(),
-        ),
+      final attempt = AttemptRecord(
+        id: 'att-sales-${DateTime.now().millisecondsSinceEpoch}',
+        scenarioId: _activeScenario!.id,
+        timestamp: DateTime.now(),
+        transcript: _agentTurnTranscripts.values.join(' '),
+        accuracyPercentage: scorecard.overallScore.round(),
+        passed: scorecard.passed,
+        wpm: 0,
+        missingAnchors: const [],
+        pbErrors: const [],
+        arabicCoaching: scorecard.dimensions.isNotEmpty
+            ? scorecard.dimensions.first.feedbackArabic
+            : '',
+        scriptTitle: _activeScenario!.title,
+        scriptSnapshot: _activeScenario!.contextNotes,
+        scriptVersion: 'sales-v2.0',
+        attemptType: 'sales',
+        salesOutcomeType: validatedOutcome.name,
+        isNoSaleSuccess: scorecard.isNoSaleSuccess,
+        curriculumDay: curriculumDay,
+        workoutStepId: workoutStepId,
+        salesScorecard: scorecard.toJson(),
       );
+      _lastSavedAttempt = attempt;
+      await attemptRepository!.saveAttempt(attempt);
     }
 
     // Record progress in ProgressRepository (awaited)
@@ -608,53 +623,51 @@ class SalesSimulatorController extends ChangeNotifier {
 
     final lastCustomerText = customerTurns.last.text.toLowerCase();
 
-    // Check for explicit refusal or hesitation
-    final hasRefusal =
-        lastCustomerText.contains('no thanks') ||
-        lastCustomerText.contains('not interested') ||
-        lastCustomerText.contains('leave it') ||
-        lastCustomerText.contains('keep my') ||
-        lastCustomerText.contains('cancel') ||
-        lastCustomerText.contains('too expensive') ||
-        lastCustomerText.contains('cannot afford') ||
-        lastCustomerText.contains('do not want');
+    // 1. Refusal, cancellation, or hesitation phrases immediately invalidate consent.
+    // Note: Exclude non-refusal idioms like "no-brainer", "no problem", "no doubt", "no ping spikes", "no lag", "cannot wait", "no idea".
+    final refusalRegex = RegExp(
+      r'(\b(no thanks|no thank you|no i dont|no i do not|no we dont|no we do not|no need|no way|not interested|leave it|keep my|cancel|too expensive|cannot afford|can not afford|do not want|dont want|do not upgrade|dont upgrade|not yet|never mind|never want|never upgrade|never switch|maybe later|think about it|not ready|not sure|dont think so|do not think so|lets wait|let us wait|want to wait|need to wait|wait for now|wait a minute|wait until|please wait)\b|\bno\b(?!\s*(-|brainer|problem|doubt|worries|question|ping|lag|delay|idea|catch|hesitation)))',
+      caseSensitive: false,
+    );
+    if (refusalRegex.hasMatch(lastCustomerText)) return false;
 
-    if (hasRefusal) return false;
+    // Check for conditional hesitation (e.g. "yes, but not yet", "yes but wait")
+    if (lastCustomerText.contains('but not') ||
+        lastCustomerText.contains('but wait') ||
+        lastCustomerText.contains('maybe later') ||
+        lastCustomerText.contains('why would i')) {
+      return false;
+    }
 
-    // Check for affirmative customer consent
-    final hasCustomerAffirmation =
-        lastCustomerText.contains('go ahead') ||
-        lastCustomerText.contains('let us') ||
-        lastCustomerText.contains('lets') ||
-        lastCustomerText.contains('sounds good') ||
-        lastCustomerText.contains('sounds great') ||
-        lastCustomerText.contains('works great') ||
-        lastCustomerText.contains('works for me') ||
-        lastCustomerText.contains('switch my') ||
-        lastCustomerText.contains('switch our') ||
-        lastCustomerText.contains('sign me up') ||
-        lastCustomerText.contains('set it up') ||
-        lastCustomerText.contains('order it') ||
-        lastCustomerText.contains('upgrade') ||
-        lastCustomerText.contains('agree') ||
-        lastCustomerText.contains('yes') ||
-        lastCustomerText.contains('perfect');
+    // 2. Affirmative customer consent tied to the transaction.
+    // Word boundary \b guarantees standalone words like "yes" do NOT match "yesterday", "eyes", etc.
+    final affirmationRegex = RegExp(
+      r'(\b(let us|lets)\s+(add|port|activate|set up|switch|proceed|transfer|go ahead|schedule|order|install|do it|process|make that|do the|book|get)\b|'
+      r'\b(schedule|book|process|order|set up|setup|ship|add|activate|switch|upgrade|transfer|port)\s+(the|our|my|us|it|that|this|a|an)?\s*(line|order|installation|technician|appointment|plan|esim|sim|account|service|switch|gateway|phone)?\b|'
+      r'\b(schedule the installation|get it ordered|process the order|do the trade-in|order that one|switch it today|do it|book the technician|book an appointment|book the|set that up|set up the|make that switch|process the order|add the line|ship the)\b|'
+      r'\b(get\s+(this|that|it)\s+set\s+up|set\s+(this|that|it)\s+up|help\s+me\s+get\s+this\s+set\s+up)\b|'
+      r'\b(go ahead|sounds good|sounds great|works great|works for me|sign me up|set it up|order it|please proceed|please add|please activate|yes please|yes let us|yes lets)\b|'
+      r'\b(please upgrade|upgrade my|switch my|switch our|switch us|switch me|switch it)\b|'
+      r'\b(i accept|accept that|accept this|thank you for fixing|fixing this|fixed this|audited my account)\b|'
+      r'\b(yes|yeah|yep|sure|absolutely|correct|i agree)\b)',
+      caseSensitive: false,
+    );
 
-    // Agent must also have sought consent or presented closing terms
-    final hasAgentClosingInquiry =
-        normalizedAllAgentText.contains('permission') ||
-        normalizedAllAgentText.contains('proceed') ||
-        normalizedAllAgentText.contains('switch') ||
-        normalizedAllAgentText.contains('change') ||
-        normalizedAllAgentText.contains('order') ||
-        normalizedAllAgentText.contains('move forward') ||
-        normalizedAllAgentText.contains('set this up') ||
-        normalizedAllAgentText.contains('would you like') ||
-        normalizedAllAgentText.contains('shall we') ||
-        normalizedAllAgentText.contains('confirm') ||
-        normalizedAllAgentText.contains('authorize') ||
-        normalizedAllAgentText.contains('carlos') ||
-        normalizedAllAgentText.contains('today');
+    final hasCustomerAffirmation = customerTurns.any(
+      (b) => affirmationRegex.hasMatch(b.text.toLowerCase()),
+    );
+    if (!hasCustomerAffirmation) return false;
+
+    // 3. Agent must have presented an actionable closing offer, proposal, or authorization inquiry.
+    // Exclude mere filler or customer names like 'carlos' or 'today'.
+    final agentClosingRegex = RegExp(
+      r'\b(permission|proceed|shall we|would you like|can we go ahead|ready to|confirm|authorize|set this up|order this|switch your|upgrade your|add this line|get this started|plan change|terms|difference|surcharges|proration)\b',
+      caseSensitive: false,
+    );
+
+    final hasAgentClosingInquiry = agentClosingRegex.hasMatch(
+      normalizedAllAgentText,
+    );
 
     return hasCustomerAffirmation && hasAgentClosingInquiry;
   }

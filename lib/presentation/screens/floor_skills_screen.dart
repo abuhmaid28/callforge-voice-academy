@@ -10,11 +10,13 @@ import '../widgets/waveform_indicator.dart';
 class FloorSkillsScreen extends StatefulWidget {
   final FloorDrillType? initialDrillType;
   final String? initialDrillId;
+  final String? workoutStepId;
 
   const FloorSkillsScreen({
     super.key,
     this.initialDrillType,
     this.initialDrillId,
+    this.workoutStepId,
   });
 
   @override
@@ -46,6 +48,7 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
       speechService: speechService,
       progressRepository: progressRepo,
       attemptRepository: attemptRepo,
+      workoutStepId: widget.workoutStepId,
     );
 
     if (widget.initialDrillType != null && widget.initialDrillId != null) {
@@ -78,48 +81,55 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('M3 Floor Skills & Drills')),
-      body: Column(
-        children: [
-          // Drill Category Selector
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: theme.cardColor,
-            child: Row(
-              children: [
-                Expanded(
-                  child: SegmentedButton<FloorDrillType>(
-                    segments: const [
-                      ButtonSegment(
-                        value: FloorDrillType.pbContrast,
-                        label: Text('P/B Drills'),
-                        icon: Icon(Icons.record_voice_over_rounded, size: 16),
-                      ),
-                      ButtonSegment(
-                        value: FloorDrillType.fastNumbers,
-                        label: Text('Fast Numbers'),
-                        icon: Icon(Icons.dialpad_rounded, size: 16),
-                      ),
-                    ],
-                    selected: {_controller.activeDrillType},
-                    onSelectionChanged: (val) {
-                      _controller.selectDrillType(val.first);
-                      _numberInputController.clear();
-                    },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pop(_controller.lastSavedAttempt);
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('M3 Floor Skills & Drills')),
+        body: Column(
+          children: [
+            // Drill Category Selector
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: theme.cardColor,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SegmentedButton<FloorDrillType>(
+                      segments: const [
+                        ButtonSegment(
+                          value: FloorDrillType.pbContrast,
+                          label: Text('P/B Drills'),
+                          icon: Icon(Icons.record_voice_over_rounded, size: 16),
+                        ),
+                        ButtonSegment(
+                          value: FloorDrillType.fastNumbers,
+                          label: Text('Fast Numbers'),
+                          icon: Icon(Icons.dialpad_rounded, size: 16),
+                        ),
+                      ],
+                      selected: {_controller.activeDrillType},
+                      onSelectionChanged: (val) {
+                        _controller.selectDrillType(val.first);
+                        _numberInputController.clear();
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Main Drill Workspace
-          Expanded(
-            child: _controller.activeDrillType == FloorDrillType.pbContrast
-                ? _buildPbDrillView(context)
-                : _buildFastNumbersView(context),
-          ),
-        ],
+            // Main Drill Workspace
+            Expanded(
+              child: _controller.activeDrillType == FloorDrillType.pbContrast
+                  ? _buildPbDrillView(context)
+                  : _buildFastNumbersView(context),
+            ),
+          ],
+        ),
       ),
     );
   }

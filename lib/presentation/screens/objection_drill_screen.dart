@@ -11,11 +11,13 @@ import '../../domain/repositories/attempt_repository.dart';
 class ObjectionDrillScreen extends StatefulWidget {
   final ISpeechService speechService;
   final String? initialDrillId;
+  final String? workoutStepId;
 
   const ObjectionDrillScreen({
     super.key,
     required this.speechService,
     this.initialDrillId,
+    this.workoutStepId,
   });
 
   @override
@@ -28,6 +30,7 @@ class _ObjectionDrillScreenState extends State<ObjectionDrillScreen> {
   bool _isSpeaking = false;
   String _transcript = '';
   bool _isTargetMet = false;
+  AttemptRecord? _lastSavedAttempt;
 
   List<ObjectionDrillItem> get _drills =>
       SalesScenarioCatalog.allObjectionDrills;
@@ -58,8 +61,10 @@ class _ObjectionDrillScreenState extends State<ObjectionDrillScreen> {
   Future<void> _toggleListening() async {
     if (_isListening) {
       await widget.speechService.stopListening();
-      setState(() => _isListening = false);
-      _evaluateSpokenResponse();
+      if (mounted) {
+        setState(() => _isListening = false);
+        await _evaluateSpokenResponse();
+      }
     } else {
       setState(() {
         _isListening = true;
@@ -79,7 +84,7 @@ class _ObjectionDrillScreenState extends State<ObjectionDrillScreen> {
     }
   }
 
-  void _evaluateSpokenResponse() {
+  Future<void> _evaluateSpokenResponse() async {
     final lower = _transcript.toLowerCase();
     int matchedCount = 0;
     for (final anchor in _currentDrill.requiredResponseKeywords) {
@@ -98,22 +103,23 @@ class _ObjectionDrillScreenState extends State<ObjectionDrillScreen> {
     if (ServiceLocator.isRegistered<IAttemptRepository>() &&
         _transcript.trim().isNotEmpty) {
       final repo = ServiceLocator.get<IAttemptRepository>();
-      repo.saveAttempt(
-        AttemptRecord(
-          id: 'att-obj-${DateTime.now().millisecondsSinceEpoch}',
-          scenarioId: _currentDrill.id,
-          timestamp: DateTime.now(),
-          transcript: _transcript,
-          accuracyPercentage: passed ? 85 : 40,
-          passed: passed,
-          wpm: 0,
-          missingAnchors: const [],
-          pbErrors: const [],
-          arabicCoaching: _currentDrill.coachingArabic,
-          scriptTitle: _currentDrill.title,
-          attemptType: 'objection_drill',
-        ),
+      final attempt = AttemptRecord(
+        id: 'att-obj-${DateTime.now().millisecondsSinceEpoch}',
+        scenarioId: _currentDrill.id,
+        timestamp: DateTime.now(),
+        transcript: _transcript,
+        accuracyPercentage: passed ? 85 : 40,
+        passed: passed,
+        wpm: 0,
+        missingAnchors: const [],
+        pbErrors: const [],
+        arabicCoaching: _currentDrill.coachingArabic,
+        scriptTitle: _currentDrill.title,
+        attemptType: 'objection_drill',
+        workoutStepId: widget.workoutStepId,
       );
+      _lastSavedAttempt = attempt;
+      await repo.saveAttempt(attempt);
     }
   }
 
@@ -134,214 +140,225 @@ class _ObjectionDrillScreenState extends State<ObjectionDrillScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Objection Drill ${_currentIndex + 1}/${_drills.length}'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.surfaceElevated),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.warning.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _currentDrill.skillTag.toUpperCase(),
-                          style: const TextStyle(
-                            color: AppColors.warning,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          _isSpeaking
-                              ? Icons.volume_up
-                              : Icons.volume_up_outlined,
-                          color: _isSpeaking
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                        ),
-                        onPressed: _playCustomerObjection,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _currentDrill.title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Customer Objection:',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '"${_currentDrill.customerObjection}"',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Target rephrase recommendation
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Recommended Spoken Counter-Framing:',
-                    style: TextStyle(
-                      color: AppColors.primaryLight,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _currentDrill.modelResponseEnglish,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Egyptian Arabic Coaching:',
-                    style: TextStyle(
-                      color: Color(0xFFFDE68A),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _currentDrill.coachingArabic,
-                    textDirection: TextDirection.rtl,
-                    style: const TextStyle(
-                      color: Color(0xFFFDE68A),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Speech Recording Section
-            if (_transcript.isNotEmpty) ...[
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pop(_lastSavedAttempt);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Objection Drill ${_currentIndex + 1}/${_drills.length}'),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _isTargetMet ? AppColors.success : AppColors.warning,
-                  ),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.surfaceElevated),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          _isTargetMet ? Icons.check_circle : Icons.info,
-                          color: _isTargetMet
-                              ? AppColors.success
-                              : AppColors.warning,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _isTargetMet
-                              ? 'TARGET PHRASING DETECTED'
-                              : 'PRACTICE REPHRASING',
-                          style: TextStyle(
-                            color: _isTargetMet
-                                ? AppColors.success
-                                : AppColors.warning,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _currentDrill.skillTag.toUpperCase(),
+                            style: const TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            _isSpeaking
+                                ? Icons.volume_up
+                                : Icons.volume_up_outlined,
+                            color: _isSpeaking
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                          onPressed: _playCustomerObjection,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
-                      _transcript,
+                      _currentDrill.title,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 13,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Customer Objection:',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '"${_currentDrill.customerObjection}"',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-            ],
-            // Push to talk button
-            Center(
-              child: ElevatedButton.icon(
-                key: const Key('btn_record_objection'),
-                onPressed: _toggleListening,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isListening
-                      ? AppColors.error
-                      : AppColors.primary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
+              // Target rephrase recommendation
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                icon: Icon(_isListening ? Icons.stop : Icons.mic),
-                label: Text(
-                  _isListening ? 'Stop & Evaluate' : 'Practice Spoken Response',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Recommended Spoken Counter-Framing:',
+                      style: TextStyle(
+                        color: AppColors.primaryLight,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _currentDrill.modelResponseEnglish,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Egyptian Arabic Coaching:',
+                      style: TextStyle(
+                        color: Color(0xFFFDE68A),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _currentDrill.coachingArabic,
+                      textDirection: TextDirection.rtl,
+                      style: const TextStyle(
+                        color: Color(0xFFFDE68A),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            OutlinedButton(
-              onPressed: _nextDrill,
-              child: const Text('Next Objection Drill →'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              // Speech Recording Section
+              if (_transcript.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isTargetMet
+                          ? AppColors.success
+                          : AppColors.warning,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _isTargetMet ? Icons.check_circle : Icons.info,
+                            color: _isTargetMet
+                                ? AppColors.success
+                                : AppColors.warning,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isTargetMet
+                                ? 'TARGET PHRASING DETECTED'
+                                : 'PRACTICE REPHRASING',
+                            style: TextStyle(
+                              color: _isTargetMet
+                                  ? AppColors.success
+                                  : AppColors.warning,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _transcript,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              // Push to talk button
+              Center(
+                child: ElevatedButton.icon(
+                  key: const Key('btn_record_objection'),
+                  onPressed: _toggleListening,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isListening
+                        ? AppColors.error
+                        : AppColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 14,
+                    ),
+                  ),
+                  icon: Icon(_isListening ? Icons.stop : Icons.mic),
+                  label: Text(
+                    _isListening
+                        ? 'Stop & Evaluate'
+                        : 'Practice Spoken Response',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton(
+                onPressed: _nextDrill,
+                child: const Text('Next Objection Drill →'),
+              ),
+            ],
+          ),
         ),
       ),
     );

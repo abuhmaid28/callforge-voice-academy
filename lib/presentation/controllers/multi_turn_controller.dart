@@ -40,6 +40,18 @@ class MultiTurnController extends ChangeNotifier {
   final IProgressRepository? progressRepository;
   final IAttemptRepository? attemptRepository;
   final int? curriculumDay;
+  final String? workoutStepId;
+
+  MultiTurnController({
+    required this.speechService,
+    this.progressRepository,
+    this.attemptRepository,
+    this.curriculumDay,
+    this.workoutStepId,
+  });
+
+  AttemptRecord? _lastSavedAttempt;
+  AttemptRecord? get lastSavedAttempt => _lastSavedAttempt;
 
   MultiTurnState _state = MultiTurnState.idle;
   MultiTurnState get state => _state;
@@ -80,13 +92,6 @@ class MultiTurnController extends ChangeNotifier {
   int _activeListenSession = 0;
   bool _hasRecordedCompletion = false;
   bool _isDisposed = false;
-
-  MultiTurnController({
-    required this.speechService,
-    this.progressRepository,
-    this.attemptRepository,
-    this.curriculumDay,
-  });
 
   @override
   void notifyListeners() {
@@ -340,27 +345,28 @@ class MultiTurnController extends ChangeNotifier {
           .map((b) => b.text)
           .join('\n');
 
-      await attemptRepository!.saveAttempt(
-        AttemptRecord(
-          id: 'att-scen-${DateTime.now().millisecondsSinceEpoch}',
-          scenarioId: _activeScenario!.id,
-          timestamp: DateTime.now(),
-          transcript: combinedAgentTranscript.isNotEmpty
-              ? combinedAgentTranscript
-              : _liveTranscript,
-          accuracyPercentage: avgScore.round(),
-          passed: callPassed,
-          wpm: 0,
-          missingAnchors: _latestEvaluation?.missingKeywords ?? [],
-          pbErrors: _latestEvaluation?.pbConfusions ?? [],
-          arabicCoaching: _latestEvaluation?.trainerFeedbackArabic ?? '',
-          scriptTitle: _activeScenario!.title,
-          scriptSnapshot: _activeScenario!.customerResponse,
-          scriptVersion: 'scenario-v1.0',
-          attemptType: 'scenario',
-          curriculumDay: curriculumDay,
-        ),
+      final attempt = AttemptRecord(
+        id: 'att-scen-${DateTime.now().millisecondsSinceEpoch}',
+        scenarioId: _activeScenario!.id,
+        timestamp: DateTime.now(),
+        transcript: combinedAgentTranscript.isNotEmpty
+            ? combinedAgentTranscript
+            : _liveTranscript,
+        accuracyPercentage: avgScore.round(),
+        passed: callPassed,
+        wpm: 0,
+        missingAnchors: _latestEvaluation?.missingKeywords ?? [],
+        pbErrors: _latestEvaluation?.pbConfusions ?? [],
+        arabicCoaching: _latestEvaluation?.trainerFeedbackArabic ?? '',
+        scriptTitle: _activeScenario!.title,
+        scriptSnapshot: _activeScenario!.customerResponse,
+        scriptVersion: 'scenario-v1.0',
+        attemptType: 'scenario',
+        curriculumDay: curriculumDay,
+        workoutStepId: workoutStepId,
       );
+      _lastSavedAttempt = attempt;
+      await attemptRepository!.saveAttempt(attempt);
     }
   }
 

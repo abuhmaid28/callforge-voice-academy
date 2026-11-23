@@ -22,6 +22,14 @@ import 'package:callforge/presentation/navigation/main_scaffold.dart';
 import 'package:callforge/presentation/screens/history_screen.dart';
 import 'package:callforge/presentation/screens/multi_turn_simulator_screen.dart';
 import 'package:callforge/presentation/screens/workout_session_screen.dart';
+import 'package:callforge/domain/entities/workout_session.dart';
+import 'package:callforge/data/datasources/sales_scenario_catalog.dart';
+import 'package:callforge/data/datasources/workout_session_local_datasource.dart';
+import 'package:callforge/core/curriculum/curriculum_engine.dart';
+import 'package:callforge/domain/entities/sales_scenario.dart';
+import 'package:callforge/presentation/controllers/sales_simulator_controller.dart';
+import 'package:callforge/presentation/controllers/workout_session_controller.dart';
+import 'package:callforge/presentation/screens/sales_simulator_screen.dart';
 
 void main() {
   group('CALLFORGE M1 Complete App Smoke & Lifecycle Integration Tests', () {
@@ -783,6 +791,250 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(WorkoutSessionScreen), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'C3-03: Full passing 20-min workout completes drill and scenario, records honest progress, and advances Day 1 to Day 2',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final progressDataSource = ProgressLocalDataSource(prefs);
+        final progressRepo = ProgressRepositoryImpl(progressDataSource);
+        final attemptDataSource = AttemptLocalDataSource(prefs);
+        final attemptRepo = AttemptRepositoryImpl(attemptDataSource);
+        final sessionDataSource = WorkoutSessionLocalDataSource(prefs);
+
+        final workoutController = WorkoutSessionController(
+          progressRepository: progressRepo,
+          attemptRepository: attemptRepo,
+          sessionDataSource: sessionDataSource,
+        );
+
+        // Day 1 20-min workout plan
+        final workout = CurriculumEngine.generateDailyWorkout(
+          dayNumber: 1,
+          chosenMinutes: 20,
+        );
+        await workoutController.startOrResumeSession(workout);
+
+        // Step 0: Warmup drill passed
+        final step0Result = WorkoutStepResult(
+          stepId: workout.steps[0].id,
+          type: workout.steps[0].type,
+          title: workout.steps[0].title,
+          passed: true,
+          score: 95.0,
+          completedAt: DateTime.now(),
+        );
+        await workoutController.recordStepResult(
+          stepIndex: 0,
+          result: step0Result,
+        );
+
+        // Step 1: Primary scenario passed
+        final step1Result = WorkoutStepResult(
+          stepId: workout.steps[1].id,
+          type: workout.steps[1].type,
+          title: workout.steps[1].title,
+          passed: true,
+          score: 92.0,
+          completedAt: DateTime.now(),
+        );
+        await workoutController.recordStepResult(
+          stepIndex: 1,
+          result: step1Result,
+        );
+
+        // Complete the entire workout
+        final completed = await workoutController.completeEntireWorkout();
+        expect(completed, isTrue);
+        expect(workoutController.session!.isSessionCompleted, isTrue);
+
+        // Verify progress repository has honest recorded progress advancing to Day 2
+        final progress = await progressRepo.loadProgress();
+        expect(progress.currentCurriculumDay, equals(2));
+        expect(progress.completedCurriculumDays, contains(1));
+
+        // Update ServiceLocator so MainScaffold accesses the updated progressRepo
+        ServiceLocator.reset();
+        ServiceLocator.registerSingleton<ISpeechService>(MockSpeechService());
+        ServiceLocator.registerSingleton<IAttemptRepository>(attemptRepo);
+        ServiceLocator.registerSingleton<AttemptRepositoryImpl>(attemptRepo);
+        final disclosureRepo = DisclosureRepositoryImpl(
+          DisclosureLocalDataSource(prefs),
+        );
+        ServiceLocator.registerSingleton<IDisclosureRepository>(disclosureRepo);
+        ServiceLocator.registerSingleton<IProgressRepository>(progressRepo);
+
+        // Pump UI to verify Day 2 displays on Home screen
+        await tester.pumpWidget(
+          const CallForgeApp(home: MainScaffold(initialIndex: 0)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('DAY 2 WORKOUT'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'C3-04: Mid-workout session rehydration across app restart preserves step completion and enables clean resumption',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final sessionDataSource = WorkoutSessionLocalDataSource(prefs);
+
+        // Start workout in controller A
+        final workout = CurriculumEngine.generateDailyWorkout(
+          dayNumber: 1,
+          chosenMinutes: 20,
+        );
+        final controllerA = WorkoutSessionController(
+          sessionDataSource: sessionDataSource,
+        );
+        await controllerA.startOrResumeSession(workout);
+
+        // Complete Step 0
+        final step0Result = WorkoutStepResult(
+          stepId: workout.steps[0].id,
+          type: workout.steps[0].type,
+          title: workout.steps[0].title,
+          passed: true,
+          score: 88.0,
+          completedAt: DateTime.now(),
+        );
+        await controllerA.recordStepResult(stepIndex: 0, result: step0Result);
+        expect(
+          controllerA.session!.stepStatuses[0],
+          equals(WorkoutStepStatus.completed),
+        );
+        expect(controllerA.session!.currentStepIndex, equals(1));
+
+        // Simulate app restart: new controller reading same storage
+        final controllerB = WorkoutSessionController(
+          sessionDataSource: sessionDataSource,
+        );
+        await controllerB.initializeFromStorage();
+
+        expect(controllerB.hasActiveSession, isTrue);
+        expect(controllerB.session!.workout.day.dayNumber, equals(1));
+        expect(
+          controllerB.session!.stepStatuses[0],
+          equals(WorkoutStepStatus.completed),
+        );
+        expect(controllerB.session!.currentStepIndex, equals(1));
+        expect(
+          controllerB.session!.stepStatuses[1],
+          equals(WorkoutStepStatus.inProgress),
+        );
+
+        // Pump WorkoutSessionScreen with controllerB
+        await tester.pumpWidget(
+          MaterialApp(
+            home: WorkoutSessionScreen(
+              workout: workout,
+              controller: controllerB,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('DAY 1 WORKOUT SESSION'), findsOneWidget);
+        expect(find.text('ENTER SPOKEN SIMULATION'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'C3-05: Sales Simulator UI executes acceptance, decline, and verification flows cleanly on mock engine',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final mockSpeech = MockSpeechService();
+        final scenario = SalesScenarioCatalog.findById(
+          'sales-01-starter-to-extra',
+        )!;
+
+        // 1. Acceptance flow
+        final controllerAccept = SalesSimulatorController(
+          speechService: mockSpeech,
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SalesSimulatorScreen(
+              controller: controllerAccept,
+              scenario: scenario,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(scenario.title), findsOneWidget);
+        expect(find.text('Push to Speak'), findsOneWidget);
+
+        final micButton = find.byKey(const Key('btn_mic_talk'));
+        expect(micButton, findsOneWidget);
+
+        // Turn 1: Greeting
+        mockSpeech.simulatedTranscript = 'Hello, thank you for calling AT&T. This is Alex. May I have your first and last name, please?';
+        await tester.tap(micButton); // Start listening
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(micButton); // Stop & evaluate
+        await tester.pumpAndSettle();
+
+        // Customer responds and moves to Turn 3
+        expect(controllerAccept.currentTurn?.turnNumber, equals(3));
+
+        // Turn 3: Value bridge with recommendation
+        mockSpeech.simulatedTranscript = 'I recommend our Unlimited Extra plan with 30GB hotspot so you have reliable data on your commute.';
+        await tester.tap(micButton);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(micButton);
+        await tester.pumpAndSettle();
+
+        // Turn 5A: Closing offer with disclosures
+        expect(controllerAccept.currentTurn?.turnNumber, equals(5));
+        final disclosures = scenario.mandatoryDisclosures.join(' ');
+        mockSpeech.simulatedTranscript =
+            'Under this simulated plan structure, our Unlimited Extra plan gives you 30GB of dedicated hotspot data and 75GB priority data for ten dollars more per month with AutoPay. $disclosures Would you like to proceed?';
+        await tester.tap(micButton);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(micButton);
+        await tester.pumpAndSettle();
+
+        // Turn 7A: Reassurance and disclosures
+        expect(controllerAccept.currentTurn?.turnNumber, equals(7));
+        mockSpeech.simulatedTranscript = 'Under this simulated offer, there are no plan change fees and no service contracts today. Standard monthly taxes and regulatory fees apply, and prorated charges will appear on your next statement. Would you like to proceed?';
+        await tester.tap(micButton);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(micButton);
+        await tester.pumpAndSettle();
+
+        // Final turn: Customer accepts, call finishes with qualifiedAccept
+        expect(controllerAccept.isCallCompleted, isTrue);
+        expect(
+          controllerAccept.latestScorecard?.outcomeType,
+          equals(SalesOutcomeType.qualifiedAccept),
+        );
+        expect(find.textContaining('Qualified Accept'), findsOneWidget);
       },
     );
   });

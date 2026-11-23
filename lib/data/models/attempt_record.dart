@@ -20,6 +20,7 @@ class AttemptRecord {
   final bool? isNoSaleSuccess;
   final int? curriculumDay;
   final Map<String, dynamic>? salesScorecard;
+  final String? workoutStepId;
 
   const AttemptRecord({
     required this.id,
@@ -40,6 +41,7 @@ class AttemptRecord {
     this.isNoSaleSuccess,
     this.curriculumDay,
     this.salesScorecard,
+    this.workoutStepId,
   });
 
   Map<String, dynamic> toMap() {
@@ -62,6 +64,7 @@ class AttemptRecord {
       if (isNoSaleSuccess != null) 'isNoSaleSuccess': isNoSaleSuccess,
       if (curriculumDay != null) 'curriculumDay': curriculumDay,
       if (salesScorecard != null) 'salesScorecard': salesScorecard,
+      if (workoutStepId != null) 'workoutStepId': workoutStepId,
     };
   }
 
@@ -84,6 +87,7 @@ class AttemptRecord {
       salesOutcomeType: map['salesOutcomeType'] as String?,
       isNoSaleSuccess: map['isNoSaleSuccess'] as bool?,
       curriculumDay: map['curriculumDay'] as int?,
+      workoutStepId: map['workoutStepId'] as String?,
       salesScorecard: map['salesScorecard'] != null
           ? Map<String, dynamic>.from(map['salesScorecard'] as Map)
           : null,
