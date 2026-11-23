@@ -125,18 +125,47 @@ void main() {
       );
     });
 
-    test(
-      'completeEntireWorkout marks all steps completed and sets completedAt',
-      () async {
-        controller.startOrResumeSession(workoutPlan);
-        await controller.completeEntireWorkout();
+    test('completeEntireWorkout requires executed evidence and marks completed only when passed', () async {
+      controller.startOrResumeSession(workoutPlan);
 
-        final session = controller.session!;
-        expect(session.isSessionCompleted, isTrue);
-        expect(session.completedAt, isNotNull);
-        expect(session.completedStepsCount, equals(workoutPlan.steps.length));
-      },
-    );
+      // 1. Without performing steps, completion must be rejected
+      final rejected = await controller.completeEntireWorkout();
+      expect(rejected, isFalse);
+      expect(controller.session!.isSessionCompleted, isFalse);
+
+      // 2. Complete warmup step
+      await controller.recordStepResult(
+        stepIndex: 0,
+        result: WorkoutStepResult(
+          stepId: workoutPlan.steps[0].id,
+          type: workoutPlan.steps[0].type,
+          title: workoutPlan.steps[0].title,
+          score: 88.0,
+          passed: true,
+        ),
+      );
+
+      // 3. Complete primary scenario
+      await controller.recordStepResult(
+        stepIndex: 1,
+        result: WorkoutStepResult(
+          stepId: workoutPlan.steps[1].id,
+          type: workoutPlan.steps[1].type,
+          title: workoutPlan.steps[1].title,
+          score: 85.0,
+          passed: true,
+        ),
+      );
+
+      // 4. Now completeEntireWorkout succeeds
+      final accepted = await controller.completeEntireWorkout();
+      expect(accepted, isTrue);
+
+      final session = controller.session!;
+      expect(session.isSessionCompleted, isTrue);
+      expect(session.completedAt, isNotNull);
+      expect(session.completedStepsCount, equals(workoutPlan.steps.length));
+    });
 
     test(
       'startOrResumeSession resumes an in-progress session without data loss',

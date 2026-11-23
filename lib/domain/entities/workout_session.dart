@@ -127,6 +127,82 @@ class WorkoutSessionState {
     return null;
   }
 
+  /// Whether the session meets all objective criteria to be certified as completed:
+  /// 1. The mandatory primary scenario has been executed and PASSED.
+  /// 2. All required exercise steps are completed or explicitly skipped (none pending).
+  /// 3. At least one exercise was completed (not all skipped).
+  bool get canCompleteWorkout {
+    final primary = primaryScenarioResult;
+    if (primary == null || !primary.passed) return false;
+
+    for (int i = 0; i < workout.steps.length; i++) {
+      final step = workout.steps[i];
+      if (step.type == WorkoutStepType.coachingReview) continue;
+      final status = stepStatuses[i];
+      if (status != WorkoutStepStatus.completed &&
+          status != WorkoutStepStatus.skipped) {
+        return false;
+      }
+    }
+
+    final completedCount = stepStatuses.values
+        .where((s) => s == WorkoutStepStatus.completed)
+        .length;
+    return completedCount > 0;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'version': 1,
+    'workout': workout.toJson(),
+    'currentStepIndex': currentStepIndex,
+    'stepStatuses': stepStatuses.map((k, v) => MapEntry(k.toString(), v.name)),
+    'stepResults': stepResults.map(
+      (k, v) => MapEntry(k.toString(), v.toJson()),
+    ),
+    'isSessionCompleted': isSessionCompleted,
+    'startedAt': startedAt.toIso8601String(),
+    if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
+  };
+
+  factory WorkoutSessionState.fromJson(Map<String, dynamic> json) {
+    final rawStatuses = json['stepStatuses'] as Map<String, dynamic>? ?? {};
+    final stepStatuses = <int, WorkoutStepStatus>{};
+    rawStatuses.forEach((k, v) {
+      final idx = int.tryParse(k);
+      if (idx != null) {
+        stepStatuses[idx] = WorkoutStepStatus.values.firstWhere(
+          (s) => s.name == v,
+          orElse: () => WorkoutStepStatus.pending,
+        );
+      }
+    });
+
+    final rawResults = json['stepResults'] as Map<String, dynamic>? ?? {};
+    final stepResults = <int, WorkoutStepResult>{};
+    rawResults.forEach((k, v) {
+      final idx = int.tryParse(k);
+      if (idx != null && v is Map<String, dynamic>) {
+        stepResults[idx] = WorkoutStepResult.fromJson(v);
+      }
+    });
+
+    return WorkoutSessionState(
+      workout: DailyWorkoutPlan.fromJson(
+        json['workout'] as Map<String, dynamic>,
+      ),
+      currentStepIndex: json['currentStepIndex'] as int? ?? 0,
+      stepStatuses: stepStatuses,
+      stepResults: stepResults,
+      isSessionCompleted: json['isSessionCompleted'] as bool? ?? false,
+      startedAt: json['startedAt'] != null
+          ? DateTime.parse(json['startedAt'] as String)
+          : null,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
+    );
+  }
+
   WorkoutSessionState copyWith({
     DailyWorkoutPlan? workout,
     int? currentStepIndex,

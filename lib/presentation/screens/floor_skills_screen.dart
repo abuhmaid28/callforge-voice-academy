@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/di/service_locator.dart';
+import '../../domain/repositories/attempt_repository.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../../core/audio/speech_service.dart';
 import '../controllers/floor_skills_controller.dart';
@@ -37,10 +38,14 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
     final progressRepo = ServiceLocator.isRegistered<IProgressRepository>()
         ? ServiceLocator.get<IProgressRepository>()
         : null;
+    final attemptRepo = ServiceLocator.isRegistered<IAttemptRepository>()
+        ? ServiceLocator.get<IAttemptRepository>()
+        : null;
 
     _controller = FloorSkillsController(
       speechService: speechService,
       progressRepository: progressRepo,
+      attemptRepository: attemptRepo,
     );
 
     if (widget.initialDrillType != null && widget.initialDrillId != null) {

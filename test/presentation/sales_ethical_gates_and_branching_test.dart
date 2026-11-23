@@ -57,7 +57,7 @@ void main() {
       expect(controller.currentTurn?.id, equals('turn-w01-05A'));
 
       // Turn 5A: Value Bridge with disclosures
-      mockSpeech.simulatedTranscript = 'Our Unlimited Extra plan gives you 30GB of dedicated high-speed mobile hotspot and 75GB of priority data, for an estimated ten dollars more monthly with active AutoPay discount. Thirty gigabyte monthly hotspot allowance per line on Unlimited Extra, and speeds reduce to 128Kbps after thirty gigabytes.';
+      mockSpeech.simulatedTranscript = 'Our Unlimited Extra plan gives you 30GB of dedicated high-speed mobile hotspot and 75GB of priority data, for an estimated ten dollars more monthly with active AutoPay discount. Thirty gigabyte monthly hotspot allowance per line on Unlimited Extra, and speeds reduce to 128Kbps after thirty gigabytes. AutoPay and paperless billing enrollment required for ten dollar discount.';
       await controller.startListening();
       await controller.stopListening();
       await Future.delayed(const Duration(milliseconds: 50));

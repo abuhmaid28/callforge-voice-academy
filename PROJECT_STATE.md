@@ -2,19 +2,20 @@
 
 ## Current execution checkpoint (2026-11-23)
 - **Repository**: `https://github.com/abuhmaid28/callforge-voice-academy`
-- **Current milestone**: **C3-MEGA** — Voice Journeys Integrity, Resumable Workout Engine & Ethical Qualification Gates
-- **Implementation issue**: https://github.com/abuhmaid28/callforge-voice-academy/issues/11
-- **Current feature branch**: `feat/c3-mega-voice-journeys-integrity`
-- **Draft PR**: [#12](https://github.com/abuhmaid28/callforge-voice-academy/pull/12)
-- **Base merge commit**: `38496aec5292ec31fbe04cff7f4b80682e505a0d` (approved C2-R1 squash merge)
-- **C3-MEGA implementation status**: **COMPLETED**.
-  - P0-1: Care Days 1–30 Completion & Progression: `curriculumDay` propagation in `MultiTurnSimulatorScreen` and `MultiTurnController`; `recordCurriculumDayCompletion` strictly gated on `score >= 70.0` without streak inflation; Day 30 to Day 31 Care-to-Sales phase transition verified.
-  - P0-2: Executable, Resumable Multi-Step Workout Session Engine: `WorkoutSessionState`, `WorkoutStepResult`, `WorkoutSessionController`, and `WorkoutSessionScreen` interactive workstation tracking pending/in_progress/completed/skipped steps, auto-advancing across drills/scenarios, and rendering evidence-based scorecard review with Egyptian Arabic coaching and missing anchors.
-  - P0-3: Fictional Content & Disclosure Guardrails: Complete audit of 48 sales scenarios, 8 objection drills, 12 discovery drills, and 30 care cases; elimination of hard unverified pricing/rate-lock promises (e.g. `sales-01` Turns 5A & 7A, `obj-03`, `retention_scenarios` Turn 5); replacement with conditional practice framing (`[Fictional / Simulation Only]`); strict adherence to operational truth prohibiting supervisor callbacks.
-  - P0-4: Ethical Sales Outcome Gates: Mandatory disclosure coverage (`SalesScenario.mandatoryDisclosures`), eligibility checks, and explicit customer consent verified before awarding `qualifiedAccept`; missing disclosures or unconfirmed consent strictly downgraded to `needsVerification`.
-  - P0-5: Adaptive Multi-Condition Sales Branching: `_evaluateCustomerBranch` in `SalesSimulatorController` handles all condition keys (`high_value`, `budget_decline`, `needs_check`, `accept`, `decline`, `verify`); verified 3 distinct reachable terminal outcomes across scenarios via automated speech evidence tests.
-  - P0-6: Awaited, Idempotent Persistence & Migrations: Fully awaited `_completeCall` across all controllers (`SalesSimulatorController`, `MultiTurnController`, `FloorSkillsController`); attempt saving and progress recording serialized and resilient across cold restarts.
-  - P1-7 / P1-8: Verification & Hosted Android CI: 157 automated tests passing (0 failures), 0 static analysis issues (`flutter analyze`), 100% formatted (`dart format`), debug APK built in 32.9s.
+- **Current milestone**: **C3-FINAL** — Training Evidence Hardening, Durable Workout Persistence & Verified Consent
+- **Implementation issue**: https://github.com/abuhmaid28/callforge-voice-academy/issues/13
+- **Current feature branch**: `feat/c3-final-training-evidence`
+- **Draft PR**: [#14](https://github.com/abuhmaid28/callforge-voice-academy/pull/14)
+- **Base merge commit**: `ff83dacdced92534be45226d225e2ee5b907532d` (approved C3-MEGA squash merge)
+- **C3-FINAL implementation status**: **COMPLETED**.
+  - A1: Zero Phantom Scores on Drill/Scenario Back/Cancel: Eliminating unconditional 85%/75% fallback scores and requiring fresh attempts after `stepStartTime`.
+  - A2: Honest Workout Completion Gating: Gating session completion behind `session.canCompleteWorkout`, requiring the primary scenario to pass and all steps to be completed or skipped; warning on partial review.
+  - A3: Durable Workout Persistence Across Restarts: `WorkoutSessionLocalDataSource` backed by `SharedPreferences` (`callforge_active_workout_session_v1`), `toJson`/`fromJson` on `WorkoutSessionState`, automatic cold-restart rehydration.
+  - A4: Independent Ethical Sales Consent & Disclosure Verification: Decoupled consent verification checking affirmative customer confirmation and absence of refusal; mandatory disclosure evaluation requiring contradiction/negation detection and >= 30% distinct informative vocabulary match; routing ambiguous utterances to `needs_check` or `friction`.
+  - A5: 48×3 Sales Scenarios Trajectory & Reachability: Fixed branch target typo in `sales-01` (`turn-w01-05B`), exhaustive validation and execution loop in `test/data/all_48_scenarios_reachability_test.dart` proving zero dead ends, cycle safety, and full reachability across all 48 scenarios.
+  - A6: Full-Call Scoring Truth in History: Recording `accuracyPercentage: avgScore.round()` matching `callPassed` threshold, and joining all agent turn transcripts in `MultiTurnController`.
+  - Hosted Integration & E2E Verification: Added `C3-02` integration test to `test/integration/app_smoke_test.dart` and `integration_test/app_test.dart`.
+  - Verification & Hosted Android CI: 164 automated tests passing (0 failures), 0 static analysis issues (`flutter analyze`), 100% formatted (`dart format`), debug APK built in 37.9s.
 - **Binding verification strategy**: No personal Android phone, Windows local emulator, local ADB/USB scans, paid APIs, unverified real AT&T offers, proprietary scripts or real customer PII. Native audio remains simulated.
 - **Product Owner's authorization**: Complete autonomous execution without routine approvals; standing squash merge authorization granted upon 100% green CI.
 
@@ -30,7 +31,7 @@
 | **GitHub CLI** | `VERIFIED` | Authenticated as `abuhmaid28` via git operations protocol HTTPS |
 | **Hardware Environment**| `VERIFIED` | Windows 10 Enterprise x64 (8 GB RAM constraint managed with `-Xmx2048m`) |
 | **Verification Strategy**| `VERIFIED` | Phone-free hosted Linux CI (GitHub Actions) & Android Emulator integration tests (ADR 010) |
-| **Automated Tests** | `VERIFIED` | 157 tests passing (unit, widget, integration) with 0 static analysis issues |
+| **Automated Tests** | `VERIFIED` | 164 tests passing (unit, widget, integration) with 0 static analysis issues |
 
 ---
 

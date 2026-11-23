@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/audio/speech_service.dart';
 import '../../core/evaluation/speech_evaluator.dart';
+import '../../data/models/attempt_record.dart';
+import '../../domain/repositories/attempt_repository.dart';
 import '../../domain/repositories/progress_repository.dart';
 
 enum FloorDrillType { pbContrast, fastNumbers, aerdFramework }
@@ -43,6 +45,7 @@ class FastNumberItem {
 class FloorSkillsController extends ChangeNotifier {
   final ISpeechService speechService;
   final IProgressRepository? progressRepository;
+  final IAttemptRepository? attemptRepository;
 
   FloorDrillType _activeDrillType = FloorDrillType.pbContrast;
   FloorDrillType get activeDrillType => _activeDrillType;
@@ -170,7 +173,11 @@ class FloorSkillsController extends ChangeNotifier {
   int _activeListenSession = 0;
   bool _isDisposed = false;
 
-  FloorSkillsController({required this.speechService, this.progressRepository});
+  FloorSkillsController({
+    required this.speechService,
+    this.progressRepository,
+    this.attemptRepository,
+  });
 
   @override
   void notifyListeners() {
@@ -310,6 +317,27 @@ class FloorSkillsController extends ChangeNotifier {
         score: score,
       );
     }
+
+    if (attemptRepository != null && normalized.isNotEmpty) {
+      await attemptRepository!.saveAttempt(
+        AttemptRecord(
+          id: 'att-floor-${DateTime.now().millisecondsSinceEpoch}',
+          scenarioId: currentPbItem.id,
+          timestamp: DateTime.now(),
+          transcript: _spokenTranscript,
+          accuracyPercentage: score.round(),
+          passed: score >= 70.0,
+          wpm: 0,
+          missingAnchors: const [],
+          pbErrors: (hasContrast || pbErrors.isNotEmpty)
+              ? [currentPbItem.wordB]
+              : const [],
+          arabicCoaching: _feedbackText,
+          scriptTitle: currentPbItem.practiceSentence,
+          attemptType: 'drill',
+        ),
+      );
+    }
     notifyListeners();
   }
 
@@ -376,6 +404,25 @@ class FloorSkillsController extends ChangeNotifier {
     } else {
       _feedbackText =
           'الأرقام غير متطابقة. المطلوب: $cleanExpected، المدخل: $cleanInput.';
+    }
+
+    if (attemptRepository != null && cleanInput.isNotEmpty) {
+      await attemptRepository!.saveAttempt(
+        AttemptRecord(
+          id: 'att-floor-${DateTime.now().millisecondsSinceEpoch}',
+          scenarioId: currentNumberItem.id,
+          timestamp: DateTime.now(),
+          transcript: _inputDigits,
+          accuracyPercentage: correct ? 100 : 0,
+          passed: correct,
+          wpm: 0,
+          missingAnchors: const [],
+          pbErrors: const [],
+          arabicCoaching: _feedbackText,
+          scriptTitle: currentNumberItem.label,
+          attemptType: 'drill',
+        ),
+      );
     }
     notifyListeners();
   }

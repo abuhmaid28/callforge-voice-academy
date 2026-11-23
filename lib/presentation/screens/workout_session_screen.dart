@@ -113,6 +113,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     IAttemptRepository? attemptRepo,
   ) async {
     final speech = ServiceLocator.get<ISpeechService>();
+    final stepStartTime = DateTime.now();
 
     if (step.drillType == 'discovery') {
       await Navigator.push(
@@ -159,15 +160,44 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
     if (!mounted) return;
 
-    // Record drill completion result
-    await _controller.recordStepResult(
-      stepIndex: stepIndex,
-      result: WorkoutStepResult(
-        stepId: step.id,
-        type: step.type,
-        title: step.title,
-        score: 85.0,
-        passed: true,
+    // Check for fresh attempt executed after step started
+    if (attemptRepo != null) {
+      final attempts = await attemptRepo.getAttempts(scenarioId: step.targetId);
+      final fresh = attempts
+          .where(
+            (a) => a.timestamp.isAfter(
+              stepStartTime.subtract(const Duration(seconds: 2)),
+            ),
+          )
+          .toList();
+      if (fresh.isNotEmpty) {
+        final last = fresh.first;
+        await _controller.recordStepResult(
+          stepIndex: stepIndex,
+          result: WorkoutStepResult(
+            stepId: step.id,
+            type: step.type,
+            title: step.title,
+            score: last.accuracyPercentage.toDouble(),
+            passed: last.passed,
+            transcript: last.transcript,
+            arabicCoaching: last.arabicCoaching,
+            missingAnchors: last.missingAnchors,
+            pbErrors: last.pbErrors,
+          ),
+        );
+        return;
+      }
+    }
+
+    // No fresh attempt recorded: user pressed Back or cancelled drill
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Drill practice was interrupted or cancelled. You can retry or skip.',
+        ),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -177,6 +207,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     int stepIndex,
     IAttemptRepository? attemptRepo,
   ) async {
+    final stepStartTime = DateTime.now();
+
     final salesScenario = SalesScenarioCatalog.findById(step.targetId);
     if (salesScenario != null) {
       await Navigator.push(
@@ -205,42 +237,46 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
     if (!mounted) return;
 
-    // Load recent attempt to populate evidence-based result
-    double recordedScore = 75.0;
-    bool recordedPassed = true;
-    String? arabicCoaching;
-    List<String> missingAnchors = [];
-    List<String> pbErrors = [];
-    String? salesOutcome;
-    Map<String, dynamic>? salesScorecard;
-
+    // Check for fresh attempt executed after step started
     if (attemptRepo != null) {
       final attempts = await attemptRepo.getAttempts(scenarioId: step.targetId);
-      if (attempts.isNotEmpty) {
-        final last = attempts.last;
-        recordedScore = last.accuracyPercentage.toDouble();
-        recordedPassed = last.passed;
-        arabicCoaching = last.arabicCoaching;
-        missingAnchors = last.missingAnchors;
-        pbErrors = last.pbErrors;
-        salesOutcome = last.salesOutcomeType;
-        salesScorecard = last.salesScorecard;
+      final fresh = attempts
+          .where(
+            (a) => a.timestamp.isAfter(
+              stepStartTime.subtract(const Duration(seconds: 2)),
+            ),
+          )
+          .toList();
+      if (fresh.isNotEmpty) {
+        final last = fresh.first;
+        await _controller.recordStepResult(
+          stepIndex: stepIndex,
+          result: WorkoutStepResult(
+            stepId: step.id,
+            type: step.type,
+            title: step.title,
+            score: last.accuracyPercentage.toDouble(),
+            passed: last.passed,
+            transcript: last.transcript,
+            missingAnchors: last.missingAnchors,
+            pbErrors: last.pbErrors,
+            arabicCoaching: last.arabicCoaching,
+            salesOutcomeType: last.salesOutcomeType,
+            salesScorecard: last.salesScorecard,
+          ),
+        );
+        return;
       }
     }
 
-    await _controller.recordStepResult(
-      stepIndex: stepIndex,
-      result: WorkoutStepResult(
-        stepId: step.id,
-        type: step.type,
-        title: step.title,
-        score: recordedScore,
-        passed: recordedPassed,
-        missingAnchors: missingAnchors,
-        pbErrors: pbErrors,
-        arabicCoaching: arabicCoaching,
-        salesOutcomeType: salesOutcome,
-        salesScorecard: salesScorecard,
+    // No fresh attempt recorded: user pressed Back or cancelled simulation
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Simulation was cancelled or not completed. Please try again or skip.',
+        ),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -530,13 +566,16 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'CURRENT STEP: ${step.title.toUpperCase()}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF00A3E0),
-                    letterSpacing: 0.8,
+                Expanded(
+                  child: Text(
+                    'CURRENT STEP: ${step.title.toUpperCase()}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00A3E0),
+                      letterSpacing: 0.8,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -780,34 +819,90 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
               const SizedBox(height: 14),
             ],
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                key: const Key('btn_complete_workout_session'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            if (session.canCompleteWorkout) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  key: const Key('btn_complete_workout_session'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ),
-                icon: const Icon(Icons.check_rounded),
-                label: const Text(
-                  'COMPLETE WORKOUT & RETURN',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.8,
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text(
+                    'COMPLETE WORKOUT & RETURN',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
                   ),
+                  onPressed: () async {
+                    final completed = await _controller.completeEntireWorkout();
+                    if (mounted) {
+                      Navigator.pop(context, completed);
+                    }
+                  },
                 ),
-                onPressed: () async {
-                  await _controller.completeEntireWorkout();
-                  if (mounted) {
-                    Navigator.pop(context, true);
-                  }
-                },
               ),
-            ),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade700),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.amber.shade400,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        session.primaryScenarioResult == null
+                            ? 'Primary scenario has not been completed. Passing score (>= 70%) required to complete daily workout.'
+                            : (session.primaryScenarioResult!.passed
+                                  ? 'Some exercises are still pending. Please complete or skip all steps.'
+                                  : 'Primary scenario did not meet passing standard. Retry required to complete workout.'),
+                        style: const TextStyle(fontSize: 12, height: 1.3),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const Key('btn_complete_workout_session'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Color(0xFF00A3E0)),
+                  ),
+                  icon: const Icon(
+                    Icons.exit_to_app_rounded,
+                    color: Color(0xFF00A3E0),
+                  ),
+                  label: const Text(
+                    'SAVE PROGRESS & EXIT (PARTIAL)',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context, false);
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),

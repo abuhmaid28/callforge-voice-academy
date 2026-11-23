@@ -8,6 +8,7 @@ import 'data/datasources/attempt_local_datasource.dart';
 import 'data/datasources/custom_offers_local_datasource.dart';
 import 'data/datasources/disclosure_local_datasource.dart';
 import 'data/datasources/progress_local_datasource.dart';
+import 'data/datasources/workout_session_local_datasource.dart';
 import 'data/repositories/attempt_repository_impl.dart';
 import 'data/repositories/disclosure_repository_impl.dart';
 import 'data/repositories/progress_repository_impl.dart';
@@ -47,10 +48,13 @@ Future<void> main() async {
     customOffersDataSource,
   );
 
+  final sessionDataSource = WorkoutSessionLocalDataSource(prefs);
   final workoutController = WorkoutSessionController(
     progressRepository: progressRepo,
     attemptRepository: attemptRepo,
+    sessionDataSource: sessionDataSource,
   );
+  await workoutController.initializeFromStorage();
   ServiceLocator.registerSingleton<WorkoutSessionController>(workoutController);
 
   runApp(const CallForgeApp(home: MainScaffold()));
