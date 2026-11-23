@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 
+import '../../core/di/service_locator.dart';
+import '../../domain/repositories/attempt_repository.dart';
 import '../controllers/progress_controller.dart';
+import 'history_screen.dart';
 
 class ProgressScreen extends StatelessWidget {
   final ProgressController progressController;
 
   const ProgressScreen({super.key, required this.progressController});
+
+  void _openHistory(BuildContext context) {
+    if (ServiceLocator.isRegistered<IAttemptRepository>()) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HistoryScreen(
+            repository: ServiceLocator.get<IAttemptRepository>(),
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +36,12 @@ class ProgressScreen extends StatelessWidget {
           appBar: AppBar(
             title: const Text('Learning Progress & Streaks'),
             actions: [
+              IconButton(
+                key: const Key('btn_view_history'),
+                icon: const Icon(Icons.history_rounded),
+                tooltip: 'View Practice History',
+                onPressed: () => _openHistory(context),
+              ),
               IconButton(
                 icon: const Icon(Icons.delete_outline_rounded),
                 tooltip: 'Reset Progress Data',
@@ -120,7 +142,35 @@ class ProgressScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 14),
+
+                    // Detailed History Quick-Access Card
+                    Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFF00A3E0)
+                              .withValues(alpha: 0.2),
+                          child: const Icon(
+                            Icons.history_rounded,
+                            color: Color(0xFF00A3E0),
+                          ),
+                        ),
+                        title: const Text(
+                          'Practice Attempt History',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Inspect transcripts, WER, and timestamps across all drills',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => _openHistory(context),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
                     // Skill Tag Breakdown
                     Text(
@@ -201,6 +251,39 @@ class ProgressScreen extends StatelessWidget {
                           ),
                         );
                       }),
+
+                    const SizedBox(height: 20),
+
+                    // Honest Educational Boundary Notice
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Educational simulation. Evaluates recognized-text similarity, not acoustic spectrograms or employer certification.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
         );

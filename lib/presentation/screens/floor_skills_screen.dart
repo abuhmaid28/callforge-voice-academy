@@ -122,6 +122,45 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
               ),
             ),
 
+            if (_controller.errorMessage != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                color: Colors.red.shade900,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _controller.errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      tooltip: 'Dismiss',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: _controller.clearError,
+                    ),
+                  ],
+                ),
+              ),
+
             // Main Drill Workspace
             Expanded(
               child: _controller.activeDrillType == FloorDrillType.pbContrast
@@ -156,25 +195,29 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.shade900.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'CONTRAST PAIR: ${item.wordP} vs ${item.wordB}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal.shade300,
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade900.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'CONTRAST PAIR: ${item.wordP} vs ${item.wordB}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal.shade300,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       '${_controller.currentPbIndex + 1} / ${FloorSkillsController.pbDrillItems.length}',
                       style: TextStyle(
@@ -208,12 +251,14 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
                       color: Colors.amber,
                     ),
                     const SizedBox(width: 6),
-                    const Text(
-                      'Egyptian Arabic Phonetic Drill Tip:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber,
+                    const Expanded(
+                      child: Text(
+                        'Egyptian Arabic Phonetic Drill Tip:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber,
+                        ),
                       ),
                     ),
                   ],
@@ -315,31 +360,34 @@ class FloorSkillsScreenState extends State<FloorSkillsScreen> {
         WaveformIndicator(isRecording: isListening),
         const SizedBox(height: 12),
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FloatingActionButton.extended(
-              heroTag: null,
-              onPressed: () {
-                if (isListening) {
-                  _controller.stopPbRecordingAndEvaluate();
-                } else {
-                  _controller.startPbRecording();
-                }
-              },
-              backgroundColor: isListening
-                  ? Colors.red.shade700
-                  : const Color(0xFF00A3E0),
-              icon: Icon(isListening ? Icons.stop : Icons.mic),
-              label: Text(isListening ? 'STOP & CHECK' : 'RECORD SENTENCE'),
-            ),
-            const SizedBox(width: 12),
-            IconButton.filledTonal(
-              icon: const Icon(Icons.skip_next_rounded),
-              tooltip: 'Next Contrast Pair',
-              onPressed: () => _controller.nextPbDrill(),
-            ),
-          ],
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FloatingActionButton.extended(
+                heroTag: null,
+                onPressed: () {
+                  if (isListening) {
+                    _controller.stopPbRecordingAndEvaluate();
+                  } else {
+                    _controller.startPbRecording();
+                  }
+                },
+                backgroundColor: isListening
+                    ? Colors.red.shade700
+                    : const Color(0xFF00A3E0),
+                icon: Icon(isListening ? Icons.stop : Icons.mic),
+                label: Text(isListening ? 'STOP & CHECK' : 'RECORD SENTENCE'),
+              ),
+              const SizedBox(width: 12),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.skip_next_rounded),
+                tooltip: 'Next Contrast Pair',
+                onPressed: () => _controller.nextPbDrill(),
+              ),
+            ],
+          ),
         ),
       ],
     );

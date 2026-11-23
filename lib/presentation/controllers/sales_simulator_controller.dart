@@ -810,6 +810,16 @@ class SalesSimulatorController extends ChangeNotifier {
     return stopWords.contains(word);
   }
 
+  void clearError() {
+    if (_errorMessage != null) {
+      _errorMessage = null;
+      if (_state == SalesSimulatorState.error) {
+        _state = SalesSimulatorState.idle;
+      }
+      notifyListeners();
+    }
+  }
+
   void cancelListening() {
     _activeListenSession++;
     _sessionGeneration++;

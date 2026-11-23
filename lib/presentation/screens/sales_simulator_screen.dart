@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/audio/speech_service.dart';
 import '../../core/constants/app_colors.dart';
@@ -271,7 +272,7 @@ class _SalesSimulatorScreenState extends State<SalesSimulatorScreen> {
   Widget _buildErrorBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       color: AppColors.error.withValues(alpha: 0.15),
       child: Row(
         children: [
@@ -282,6 +283,25 @@ class _SalesSimulatorScreenState extends State<SalesSimulatorScreen> {
               _controller.errorMessage!,
               style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
+          ),
+          if (_controller.errorMessage!.toLowerCase().contains('permission'))
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.error,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              onPressed: () => openAppSettings(),
+              child: const Text(
+                'Settings',
+                style: TextStyle(decoration: TextDecoration.underline),
+              ),
+            ),
+          IconButton(
+            icon: const Icon(Icons.close, color: AppColors.error, size: 16),
+            tooltip: 'Dismiss',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: _controller.clearError,
           ),
         ],
       ),

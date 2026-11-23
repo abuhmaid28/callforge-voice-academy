@@ -40,54 +40,64 @@ class MicControlButton extends StatelessWidget {
       label = 'Tap to Speak';
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: isProcessing || isCustomerSpeaking ? null : onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              color: buttonColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: buttonColor.withValues(
-                    alpha: isListening ? 0.6 : 0.25,
-                  ),
-                  blurRadius: isListening ? 24 : 12,
-                  spreadRadius: isListening ? 6 : 2,
-                ),
-              ],
-            ),
-            child: Center(
-              child: isProcessing
-                  ? const SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        color: Colors.white,
+    final isClickable = !isProcessing && !isCustomerSpeaking;
+
+    return Semantics(
+      button: true,
+      enabled: isClickable,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onTap: isClickable ? onTap : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: buttonColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: buttonColor.withValues(
+                        alpha: isListening ? 0.6 : 0.25,
                       ),
-                    )
-                  : Icon(icon, size: 36, color: Colors.white),
+                      blurRadius: isListening ? 24 : 12,
+                      spreadRadius: isListening ? 6 : 2,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: isProcessing
+                      ? const SizedBox(
+                          width: 30,
+                          height: 30,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(icon, size: 36, color: Colors.white),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isListening
+                    ? AppColors.micListeningGlow
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isListening
-                ? AppColors.micListeningGlow
-                : AppColors.textSecondary,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -1050,5 +1050,56 @@ void main() {
         expect(find.textContaining('Qualified Accept'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'B1-01: MainScaffold renders all 6 navigation destinations at 360dp width without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final repository = AttemptRepositoryImpl(AttemptLocalDataSource(prefs));
+        final disclosureRepo = DisclosureRepositoryImpl(
+          DisclosureLocalDataSource(prefs),
+        );
+        final progressRepo = ProgressRepositoryImpl(
+          ProgressLocalDataSource(prefs),
+        );
+        final mockSpeech = MockSpeechService();
+
+        ServiceLocator.reset();
+        ServiceLocator.registerSingleton<ISpeechService>(mockSpeech);
+        ServiceLocator.registerSingleton<IAttemptRepository>(repository);
+        ServiceLocator.registerSingleton<IDisclosureRepository>(disclosureRepo);
+        ServiceLocator.registerSingleton<IProgressRepository>(progressRepo);
+
+        await tester.pumpWidget(const MaterialApp(home: MainScaffold()));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('nav_today')), findsOneWidget);
+        expect(find.byKey(const Key('nav_arena')), findsOneWidget);
+        expect(find.byKey(const Key('nav_disclosures')), findsOneWidget);
+        expect(find.byKey(const Key('nav_floor_skills')), findsOneWidget);
+        expect(find.byKey(const Key('nav_sales_lab')), findsOneWidget);
+        expect(find.byKey(const Key('nav_progress')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('nav_arena')));
+        await tester.pumpAndSettle();
+        expect(find.text('30-Scenario Voice Arena'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('nav_progress')));
+        await tester.pumpAndSettle();
+        expect(find.text('Practice Attempt History'), findsOneWidget);
+
+        await tester.tap(find.text('Practice Attempt History'));
+        await tester.pumpAndSettle();
+        expect(find.text('Academy Practice History'), findsOneWidget);
+      },
+    );
   });
 }

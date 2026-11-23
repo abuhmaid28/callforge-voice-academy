@@ -393,6 +393,16 @@ class MultiTurnController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearError() {
+    if (_errorMessage != null) {
+      _errorMessage = null;
+      if (_state == MultiTurnState.error) {
+        _state = MultiTurnState.idle;
+      }
+      notifyListeners();
+    }
+  }
+
   void resetAudioSession() {
     _activeListenSession++;
     _sessionGeneration++;

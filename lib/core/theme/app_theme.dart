@@ -30,6 +30,50 @@ abstract class AppTheme {
         ),
         iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 66,
+        elevation: 3,
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.22),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(
+              fontSize: 10.0,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: AppColors.primaryLight,
+            );
+          }
+          return const TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
+            color: AppColors.textSecondary,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(size: 22, color: AppColors.primaryLight);
+          }
+          return const IconThemeData(size: 20, color: AppColors.textSecondary);
+        }),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF1E293B),
+        contentTextStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 13,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: AppColors.surfaceElevated),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
       cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 2,

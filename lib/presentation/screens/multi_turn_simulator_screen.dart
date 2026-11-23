@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/di/service_locator.dart';
 import '../../domain/entities/scenario.dart';
@@ -299,17 +300,20 @@ class _MultiTurnSimulatorScreenState extends State<MultiTurnSimulatorScreen> {
                 ),
               ),
 
-            // Error Display
+            // Error Display with Actionable Recovery
             if (_controller.errorMessage != null)
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 color: Colors.red.shade900,
                 child: Row(
                   children: [
                     const Icon(
                       Icons.error_outline,
                       color: Colors.white,
-                      size: 16,
+                      size: 18,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -320,6 +324,33 @@ class _MultiTurnSimulatorScreenState extends State<MultiTurnSimulatorScreen> {
                           fontSize: 12,
                         ),
                       ),
+                    ),
+                    if (_controller.errorMessage!.toLowerCase().contains(
+                      'permission',
+                    ))
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        onPressed: () => openAppSettings(),
+                        child: const Text(
+                          'Settings',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      tooltip: 'Dismiss',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: _controller.clearError,
                     ),
                   ],
                 ),

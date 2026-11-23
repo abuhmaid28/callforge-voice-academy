@@ -6,13 +6,9 @@ import '../../domain/repositories/attempt_repository.dart';
 
 class HistoryScreen extends StatefulWidget {
   final IAttemptRepository repository;
-  final String scenarioId;
+  final String? scenarioId;
 
-  const HistoryScreen({
-    super.key,
-    required this.repository,
-    required this.scenarioId,
-  });
+  const HistoryScreen({super.key, required this.repository, this.scenarioId});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -39,7 +35,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Practice History'),
+        title: Text(
+          widget.scenarioId == null
+              ? 'Academy Practice History'
+              : 'Practice History',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -89,20 +89,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.history, size: 64, color: AppColors.textMuted),
-                  SizedBox(height: 12),
+                children: [
+                  const Icon(
+                    Icons.history,
+                    size: 64,
+                    color: AppColors.textMuted,
+                  ),
+                  const SizedBox(height: 12),
                   Text(
-                    'No practice attempts yet.',
-                    style: TextStyle(
+                    widget.scenarioId == null
+                        ? 'No practice attempts recorded across the academy yet.'
+                        : 'No practice attempts yet for this scenario.',
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 16,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Complete a voice greeting drill to log your progress.',
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Complete a voice greeting drill or scenario to log your progress.',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

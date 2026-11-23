@@ -81,6 +81,58 @@ class _MainScaffoldState extends State<MainScaffold> {
       ProgressScreen(progressController: _progressController),
     ];
 
+    final isWide = MediaQuery.of(context).size.width >= 640;
+
+    if (isWide) {
+      return Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: _handleDestinationSelected,
+              labelType: NavigationRailLabelType.all,
+              destinations: const [
+                NavigationRailDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
+                  label: Text('Today'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.record_voice_over_outlined),
+                  selectedIcon: Icon(Icons.record_voice_over_rounded),
+                  label: Text('Arena'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.gavel_outlined),
+                  selectedIcon: Icon(Icons.gavel_rounded),
+                  label: Text('Disclosures'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.tune_outlined),
+                  selectedIcon: Icon(Icons.tune_rounded),
+                  label: Text('Floor Skills'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.storefront_outlined),
+                  selectedIcon: Icon(Icons.storefront_rounded),
+                  label: Text('Sales Lab'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.bar_chart_outlined),
+                  selectedIcon: Icon(Icons.bar_chart_rounded),
+                  label: Text('Progress'),
+                ),
+              ],
+            ),
+            const VerticalDivider(thickness: 1, width: 1),
+            Expanded(
+              child: IndexedStack(index: _currentIndex, children: screens),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
@@ -88,31 +140,37 @@ class _MainScaffoldState extends State<MainScaffold> {
         onDestinationSelected: _handleDestinationSelected,
         destinations: const [
           NavigationDestination(
+            key: Key('nav_today'),
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Today',
           ),
           NavigationDestination(
+            key: Key('nav_arena'),
             icon: Icon(Icons.record_voice_over_outlined),
             selectedIcon: Icon(Icons.record_voice_over_rounded),
             label: 'Arena',
           ),
           NavigationDestination(
+            key: Key('nav_disclosures'),
             icon: Icon(Icons.gavel_outlined),
             selectedIcon: Icon(Icons.gavel_rounded),
             label: 'Disclosures',
           ),
           NavigationDestination(
+            key: Key('nav_floor_skills'),
             icon: Icon(Icons.tune_outlined),
             selectedIcon: Icon(Icons.tune_rounded),
             label: 'Floor Skills',
           ),
           NavigationDestination(
+            key: Key('nav_sales_lab'),
             icon: Icon(Icons.storefront_outlined),
             selectedIcon: Icon(Icons.storefront_rounded),
             label: 'Sales Lab',
           ),
           NavigationDestination(
+            key: Key('nav_progress'),
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart_rounded),
             label: 'Progress',

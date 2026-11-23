@@ -65,36 +65,43 @@ class _WaveformIndicatorState extends State<WaveformIndicator>
         AnimatedBuilder(
           animation: _animController,
           builder: (context, child) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(12, (index) {
-                final double factor = active
-                    ? (((index % 4) + 1) * 0.22 * _animController.value + 0.15)
-                          .clamp(0.1, 1.0)
-                    : 0.15;
-                return Container(
-                  width: 3.5,
-                  height: 32.0 * factor,
-                  margin: const EdgeInsets.symmetric(horizontal: 2.0),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(2.0),
-                  ),
-                );
-              }),
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(12, (index) {
+                  final double factor = active
+                      ? (((index % 4) + 1) * 0.22 * _animController.value +
+                                0.15)
+                            .clamp(0.1, 1.0)
+                      : 0.15;
+                  return Container(
+                    width: 3.5,
+                    height: 32.0 * factor,
+                    margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(2.0),
+                    ),
+                  );
+                }),
+              ),
             );
           },
         ),
         const SizedBox(height: 4),
-        Text(
-          widget.isRecording
-              ? 'MIC ACTIVE (LISTENING)'
-              : (widget.isPlaying ? 'AUDIO PLAYBACK' : 'IDLE'),
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            color: color,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            widget.isRecording
+                ? 'MIC ACTIVE (LISTENING)'
+                : (widget.isPlaying ? 'AUDIO PLAYBACK' : 'IDLE'),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+              color: color,
+            ),
           ),
         ),
       ],
