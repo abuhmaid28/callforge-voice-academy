@@ -496,16 +496,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           appBar: AppBar(
+            centerTitle: false,
             title: const Row(
               children: [
-                Icon(Icons.bolt_rounded, color: Color(0xFF00A3E0)),
-                SizedBox(width: 8),
-                Text(
-                  'CALLFORGE ACADEMY',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                    fontSize: 17,
+                Icon(Icons.bolt_rounded, color: Color(0xFF00A3E0), size: 20),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'CALLFORGE ACADEMY',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      fontSize: 15,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -595,19 +599,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          _statChip(
-                            label: 'Simulations',
-                            value: '${progress.totalSimulationsCompleted}',
+                          Expanded(
+                            child: _statChip(
+                              label: 'Simulations',
+                              value: '${progress.totalSimulationsCompleted}',
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          _statChip(
-                            label: 'Disclosures',
-                            value: '${progress.totalDisclosuresCompleted}',
+                          Expanded(
+                            child: _statChip(
+                              label: 'Disclosures',
+                              value: '${progress.totalDisclosuresCompleted}',
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          _statChip(
-                            label: 'Mastery',
-                            value: '${progress.overallMasteryPercent}%',
+                          Expanded(
+                            child: _statChip(
+                              label: 'Mastery',
+                              value: '${progress.overallMasteryPercent}%',
+                            ),
                           ),
                         ],
                       ),
@@ -628,11 +638,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Color(0xFF00A3E0),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        '90-DAY ADAPTIVE ACADEMY',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.8,
+                      Expanded(
+                        child: Text(
+                          '90-DAY ADAPTIVE ACADEMY',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

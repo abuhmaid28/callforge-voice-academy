@@ -336,6 +336,16 @@ class DisclosureController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearError() {
+    if (_errorMessage != null) {
+      _errorMessage = null;
+      if (_state == DisclosureState.error) {
+        _state = DisclosureState.idle;
+      }
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _isDisposed = true;

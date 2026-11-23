@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/di/service_locator.dart';
 import '../../data/models/disclosure_script.dart';
@@ -256,14 +257,61 @@ class DisclosureStudioScreenState extends State<DisclosureStudioScreen> {
                   ),
                 ),
 
-                // Error Banner
+                // Error Banner with Actionable Recovery
                 if (_controller.errorMessage != null)
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     color: Colors.red.shade900,
-                    child: Text(
-                      _controller.errorMessage!,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _controller.errorMessage!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        if (_controller.errorMessage!.toLowerCase().contains(
+                          'permission',
+                        ))
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                            ),
+                            onPressed: () => openAppSettings(),
+                            child: const Text(
+                              'Settings',
+                              style: TextStyle(
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          tooltip: 'Dismiss',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: _controller.clearError,
+                        ),
+                      ],
                     ),
                   ),
 

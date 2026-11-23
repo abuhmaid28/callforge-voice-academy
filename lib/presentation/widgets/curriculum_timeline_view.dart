@@ -111,13 +111,22 @@ class CurriculumTimelineView extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                milestone.titleArabic,
-                textDirection: TextDirection.rtl,
-                style: const TextStyle(color: Color(0xFFFDE68A), fontSize: 12),
-              ),
+              if (summary.currentWeek > milestone.weekNumber)
+                const Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: Colors.greenAccent,
+                ),
             ],
           ),
+          if (milestone.titleArabic.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              milestone.titleArabic,
+              textDirection: TextDirection.rtl,
+              style: const TextStyle(color: Color(0xFFFDE68A), fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
             milestone.title,
@@ -147,19 +156,26 @@ class CurriculumTimelineView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Day ${summary.currentDay} of 90',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+            Flexible(
+              child: Text(
+                'Day ${summary.currentDay} of 90',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            Text(
-              '${(summary.completionPercentage * 100).round()}% Completed',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                '${(summary.completionPercentage * 100).round()}% Completed',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -262,18 +278,26 @@ class CurriculumTimelineView extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           if (workout.isRecoveryWorkout) _buildRecoveryBanner(),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text(
                 'Target Duration: ',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
-              const Spacer(),
-              _buildDurationPill(10),
-              const SizedBox(width: 6),
-              _buildDurationPill(20),
-              const SizedBox(width: 6),
-              _buildDurationPill(30),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDurationPill(10),
+                  const SizedBox(width: 6),
+                  _buildDurationPill(20),
+                  const SizedBox(width: 6),
+                  _buildDurationPill(30),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 12),

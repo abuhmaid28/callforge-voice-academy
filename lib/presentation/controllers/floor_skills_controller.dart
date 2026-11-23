@@ -440,6 +440,13 @@ class FloorSkillsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearError() {
+    if (_errorMessage != null) {
+      _errorMessage = null;
+      notifyListeners();
+    }
+  }
+
   void resetAudioSession() {
     _activeListenSession++;
     _sessionGeneration++;
